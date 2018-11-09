@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>brainCloud Tests</title>
+
+
+<link rel="stylesheet" href="lib/qunit-1.18.0.css" />
+
+<script src="lib/qunit-1.18.0.js"></script>
+<script src="lib/jquery-1.12.4.js"></script>
+<script src="lib/md5.js"></script>
+
+
+<script src="client/brainCloudBase.js"></script>
+<script src="client/brainCloudClient.js"></script>
+<script src="client/brainCloudClient-authentication.js"></script>
+<script src="client/brainCloudClient-data-stream.js"></script>
+<script src="client/brainCloudClient-player-statistics.js"></script>
+<script src="client/brainCloudClient-entity.js"></script>
+<script src="client/brainCloudClient-chat.js"></script>
+<script src="client/brainCloudClient-lobby.js"></script>
+<script src="client/brainCloudClient-messaging.js"></script>
+<script src="client/brainCloudClient-presence.js"></script>
+<script src="client/brainCloudClient-rttRegistration.js"></script>
+<script src="client/brainCloudRttComms.js"></script>
+<script src="client/brainCloudClient-virtual-currency.js"></script>
+<script src="client/brainCloudClient-app-store.js"></script>
+<script src="client/brainCloudClient-globalentity.js"></script>
+<script src="client/brainCloudClient-products.js"></script>
+<script src="client/brainCloudClient-async-match.js"></script>
+<script src="client/brainCloudClient-push-notifications.js"></script>
+<script src="client/brainCloudClient-player-statistics-event.js"></script>
+<script src="client/brainCloudClient-global-app.js"></script>
+<script src="client/brainCloudClient-friend.js"></script>
+<script src="client/brainCloudClient-events.js"></script>
+<script src="client/brainCloudClient-gamification.js"></script>
+<script src="client/brainCloudClient-global-statistics.js"></script>
+<script src="client/brainCloudClient-match-making.js"></script>
+<script src="client/brainCloudClient-one-way-match.js"></script>
+<script src="client/brainCloudClient-playback-stream.js"></script>
+<script src="client/brainCloudClient-player-state.js"></script>
+<script src="client/brainCloudClient-profanity.js"></script>
+<script src="client/brainCloudClient-script.js"></script>
+<script src="client/brainCloudClient-social-leaderboards.js"></script>
+<script src="client/brainCloudClient-time.js"></script>
+<script src="client/brainCloudClient-tournament.js"></script>
+<script src="client/brainCloudClient-abtests.js"></script>
+<script src="client/brainCloudClient-global-app.js"></script>
+<script src="client/brainCloudClient-s3-handler.js"></script>
+<script src="client/brainCloudClient-identity.js"></script>
+<script src="client/brainCloudClient-redemption-code.js"></script>
+<script src="client/brainCloudClient-file.js"></script>
+<script src="client/brainCloudClient-group.js"></script>
+<script src="client/brainCloudClient-mail.js"></script>
+<script src="client/brainCloudWrapper.js"></script>
+
+<script src="client/brainCloudClient-reason-codes.js"></script>
+<script src="client/brainCloudClient-status-codes.js"></script>
+
+	<style>
+		p.shrink {
+			width: 500px;
+			text-align: left;
+		}
+		table.shrink {
+			height: 600px;
+			width: 800px;
+			text-align: left;
+			overflow: scroll;
+			display: block;
+		}
+
+
+		div.margins {
+			width: 100%;
+			align-content: center;
+			margin-left: 50px;
+			margin-right: 50px;
+		}
+
+
+	</style>
+
+<script type="text/javascript">
+
+	var brainCloud = new BrainCloudWrapper("PlayerOne");
+
+
+	$(window).load(function() {
+		document.getElementById("appId").value = "12081";
+		document.getElementById("appSecret").value = "2c12184f-3500-496b-ace5-d4df9f356bf8";
+		document.getElementById("serverUrl").value = "https://sharedprod.braincloudservers.com";
+
+		document.getElementById("userName").value = "TEST_USER";
+		document.getElementById("password").value = "1309Carling";
+
+		document.getElementById("cloudPath").value = "images";
+		document.getElementById("cloudFileName").value = "logo.png";
+		document.getElementById("isShareable").checked = true;
+		document.getElementById("replaceIfExists").checked = true;
+
+
+		document.getElementById("incomingResponse").innerHTML = "no response";
+
+
+		brainCloud.brainCloudClient.setDebugEnabled(true);
+	})
+
+	var downloadPath = "downloader/bc/g/";
+
+	function getFullPath() {
+		return document.getElementById("serverUrl").value +
+			"/downloader/bc/g/" +
+			document.getElementById("appId").value +
+			"/u/" +
+			document.getElementById("profileId").value +
+			"/f/" +
+			document.getElementById("cloudPath").value +
+			"/" +
+			document.getElementById("cloudFileName").value;
+	}
+
+
+	function initialize() {
+		brainCloud.brainCloudClient.initialize(document.getElementById("appId").value, document.getElementById("appSecret").value, "1.0.0");
+		brainCloud.brainCloudClient.setServerUrl(document.getElementById("serverUrl").value);
+		brainCloud.brainCloudClient.useJQuery(true);
+		document.getElementById('clientState').innerHTML = "Client Initialized";
+	}
+
+	function authenticate() {
+
+		brainCloud.brainCloudClient.authentication.anonymousId = null;
+		brainCloud.brainCloudClient.authentication.profileId = null;
+
+		brainCloud.brainCloudClient.authentication.authenticateUniversal(document.getElementById("userName").value, document.getElementById("password").value, true, function(result) {
+			document.getElementById("incomingResponse").innerHTML = "authenticateUniversal: " + JSON.stringify(result, null, 2);
+			
+			if (result.status == 200) {
+	    		document.getElementById('sessionId').innerHTML = "SessionId: " + brainCloud.brainCloudClient.getSessionId();
+				document.getElementById('profileId').innerHTML = "ProfileId: " + brainCloud.brainCloudClient.authentication.profileId;
+				document.getElementById('profileId').value = brainCloud.brainCloudClient.authentication.profileId;
+
+			}
+		});
+	}
+
+	function fileSelected() {
+		var file = document.getElementById('fileToUpload').files[0];
+		if (file) {
+			var fileSize = 0;
+			if (file.size > 1024 * 1024)
+				fileSize = (Math.round(file.size * 100 / (1024 * 1024)) / 100).toString() + 'MB';
+			else
+				fileSize = (Math.round(file.size * 100 / 1024) / 100).toString() + 'KB';
+
+			document.getElementById('fileName').innerHTML = 'Name: ' + file.name;
+			document.getElementById('fileSize').innerHTML = 'Size: ' + fileSize;
+			document.getElementById('fileType').innerHTML = 'Type: ' + file.type;
+		}
+	}
+	
+	function updateProgress(progress) {
+		progress = progress >= 0 ? (progress <= 100 ? progress : 100) : 0;
+		document.getElementById('progress').innerHTML = "Progress: " + progress + "%";
+	}
+	
+	function uploadProgress(oEvent) {
+		if (oEvent.lengthComputable) {
+		   var percentComplete = oEvent.loaded / oEvent.total;
+		   updateProgress(percentComplete * 100.0);
+		}
+		else {
+		   // Unable to compute progress information since the total size is unknown
+		}
+	}
+	
+	function uploadComplete(evt) {
+		console.log("Upload complete: " + evt);
+		if (this.status == 200) {
+            var response = JSON.parse(this.responseText);
+            console.log(JSON.stringify(response, null, 2));
+		}
+
+		var path = getFullPath();
+
+		document.getElementById('downloadLink').innerHTML = path;
+		document.getElementById('downloadImage').src = path;
+
+	}
+	
+	function uploadFailed(evt) {
+		console.log("Upload failed: " + evt);
+	}
+	
+	function uploadCanceled(evt) {
+		console.log("Upload canceled: " + evt);
+	}
+
+	function uploadFile() {
+		var xhr = new XMLHttpRequest();
+		var file = document.getElementById('fileToUpload').files[0];
+
+		if(file === undefined) {
+			console.log("Please select a file in Step 2. to upload.");
+			document.getElementById("incomingResponse").innerHTML = "Error uploading file. Please select a file in Step 2. to upload. ";
+		}
+
+		var fileSize = file.size;
+		
+		xhr.upload.addEventListener("progress", uploadProgress, false);
+		xhr.addEventListener("load", uploadComplete, false);
+		xhr.addEventListener("error", uploadFailed, false);
+		xhr.addEventListener("abort", uploadCanceled, false);
+
+
+		brainCloud.file.prepareFileUpload(
+			document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value, document.getElementById("isShareable").checked, document.getElementById("replaceIfExists").checked, fileSize,
+			function(result) {
+				if (result.status == 200) {
+					var uploadId = result.data.fileDetails.uploadId;
+
+					document.getElementById("incomingResponse").innerHTML = "prepareFileUpload: " + JSON.stringify(result, null, 2);
+
+
+
+					brainCloud.file.uploadFile(xhr, file, uploadId);
+				}
+			}
+		);
+	}
+
+	function listUserFiles() {
+		brainCloud.file.listUserFiles(document.getElementById("cloudPath").value, true,
+			function(result) {
+				document.getElementById("incomingResponse").innerHTML = "listUserFiles: " + JSON.stringify(result, null, 2);
+			}
+		);
+	}
+
+	function deleteUserFile() {
+		brainCloud.file.deleteUserFile(document.getElementById("cloudPath").value, true,
+			function(result) {
+				document.getElementById("incomingResponse").innerHTML = "deleteUserFile: " + JSON.stringify(result, null, 2);
+			}
+		);
+	}
+
+	function getCdnUrl() {
+		brainCloud.file.getCDNUrl(document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value,
+			function(result) {
+				document.getElementById("incomingResponse").innerHTML = "getCdnUrl: " + JSON.stringify(result, null, 2);
+			}
+		);
+	}
+
+</script>
+
+
+<body>
+
+
+<div width="100%" class="margins">
+	<img src="logo.png"alt="brainCloud" >
+
+	<table border="0" width="80%" cellspacing="0" cellpadding="0" >
+	<tbody>
+	<tr><td><hr/></td><td><hr/></td><td><hr/></td></tr>
+	<tr>
+		<td>
+			<h1>File Tester</h1>
+
+			<p class="shrink">This app is for testing around brainCloud file uploads. </p>
+		</td>
+		<td>&nbsp; &nbsp; &nbsp;&nbsp;</td>
+		<td>
+			<h2>Step 1</h2>
+			<table border="0" width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr>
+					<td>Set up your app information and initialize. Then -></td>
+					<td>Set up your user details and authenticate</td>
+				</tr>
+				<tr>
+					<td>
+						<p>App ID <input type="text" id="appId" /></p>
+						<p>App Secret <input type="text" id="appSecret" /></p>
+						<p>Server URL <input type="text" id="serverUrl" /></p>
+						<br/>
+						<p><input type="button" onclick="initialize()" value="Initialize" /></p>
+						<div id="clientState"></div>
+					</td>
+					<td>
+						<p>Username <input type="text" id="userName" /></p>
+						<p>Password <input type="text" id="password" /></p>
+						<br/>
+						<br/>
+						<p><input type="button" onclick="authenticate()" value="Authenticate" /></p>
+						<div id="sessionId"></div>
+						<div id="profileId"></div>
+					</td>
+					</td>
+
+				</tr>
+				</tbody>
+
+			</table>
+		</td>
+	</tr>
+	<tr><td><hr/></td><td><hr/></td><td><hr/></td></tr>
+	<tr>
+		<td>
+			<h2>Step 2</h2>
+			<table border="0" width="100%" cellspacing="0" cellpadding="0">
+				<tbody>
+				<tr>
+				</tr>
+				<tr>
+				</tr>
+				</tbody>
+			</table>
+			<p>Select a file to upload</p>
+			<form action="Upload.aspx" enctype="multipart/form-data" method="post">
+				<input
+						type="file" name="fileToUpload" id="fileToUpload"
+						onchange="fileSelected();" />
+				<p>&nbsp;</p>
+				<div id="fileName"></div>
+				<div id="fileSize"></div>
+				<div id="fileType"></div>
+				<p>&nbsp;</p>
+				<div></div>
+			</form>
+		</td>
+		<td>&nbsp;</td>
+		<td>
+			<h2>Step 3</h2>
+			<p>Set upload information</p>
+			<p>Cloud Path&nbsp;<input type="text" id="cloudPath" /></p>
+			<p>Cloud File Name&nbsp;<input type="text" id="cloudFileName" /></p>
+			<p>Is Shareable&nbsp;<input type="checkbox" id="isShareable" /></p>
+			<p>Replace If Exists&nbsp;<input type="checkbox" id="replaceIfExists" /></p>
+			<p>&nbsp;</p>
+		</td>
+	</tr>
+	<tr><td><hr/></td><td><hr/></td><td><hr/></td></tr>
+	<tr>
+		<td>
+			<h2>Step 4</h2>
+			<p>Upload the file or run a different action</p>
+			<p>&nbsp;<input type="button" style="width:120px;" onclick="uploadFile()" value="Upload File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfile">DocLink</a> <div id="progress"></div></p>
+			<p>&nbsp;<input type="button" style="width:120px;" onclick="listUserFiles()" value="List User Files" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-listuserfiles">DocLink</a></p>
+			<p>&nbsp;<input type="button" style="width:120px;" onclick="deleteUserFile()" value="Delete User File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-deleteuserfile">DocLink</a></p>
+			<p>&nbsp;<input type="button" style="width:120px;" onclick="getCdnUrl()" value="Get CDN URL" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-getcdnurl">DocLink</a></p>
+			<p id="downloadLink"></p>
+			<img src="logo.png" id="downloadImage" alt="brainCloud" width = "300px" >
+		</td>
+		<td>&nbsp;</td>
+		<td>
+			&nbsp;
+			<h2>Step 5</h2>
+			<p>Review the data.&nbsp;</p>
+			<table class="shrink">
+				<tbody>
+				<tr>
+					<td><strong>Last Incoming Response</strong></td>
+				</tr>
+				<tr>
+					<td>&nbsp;<div id="incomingResponse"  style = "white-space:PRE"></div></td>
+				</tr>
+				</tr>
+				</tbody>
+			</table>
+			<p>&nbsp;</p>
+		</td>
+	</tr>
+	<tr><td><hr/></td><td><hr/></td><td><hr/></td></tr>
+	</tbody>
+</table>
+
+
+</div>
+</body>
