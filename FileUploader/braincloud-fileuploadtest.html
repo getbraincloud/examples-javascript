@@ -19,6 +19,14 @@
 <script src="client/brainCloudClient-data-stream.js"></script>
 <script src="client/brainCloudClient-player-statistics.js"></script>
 <script src="client/brainCloudClient-entity.js"></script>
+<script src="client/brainCloudClient-chat.js"></script>
+<script src="client/brainCloudClient-lobby.js"></script>
+<script src="client/brainCloudClient-messaging.js"></script>
+<script src="client/brainCloudClient-presence.js"></script>
+<script src="client/brainCloudClient-rttRegistration.js"></script>
+<script src="client/brainCloudRttComms.js"></script>
+<script src="client/brainCloudClient-virtual-currency.js"></script>
+<script src="client/brainCloudClient-app-store.js"></script>
 <script src="client/brainCloudClient-globalentity.js"></script>
 <script src="client/brainCloudClient-products.js"></script>
 <script src="client/brainCloudClient-async-match.js"></script>
@@ -81,8 +89,8 @@
 
 
 	$(window).load(function() {
-		document.getElementById("appId").value = "YOUR_APP_ID";
-		document.getElementById("appSecret").value = "YOUR_APP_SECRET";
+		document.getElementById("appId").value = "12081";
+		document.getElementById("appSecret").value = "2c12184f-3500-496b-ace5-d4df9f356bf8";
 		document.getElementById("serverUrl").value = "https://sharedprod.braincloudservers.com";
 
 		document.getElementById("userName").value = "TEST_USER";
@@ -94,7 +102,6 @@
 		document.getElementById("replaceIfExists").checked = true;
 
 
-		document.getElementById("outgoingRequest").innerHTML = "no request";
 		document.getElementById("incomingResponse").innerHTML = "no response";
 
 
@@ -129,7 +136,9 @@
 		brainCloud.brainCloudClient.authentication.profileId = null;
 
 		brainCloud.brainCloudClient.authentication.authenticateUniversal(document.getElementById("userName").value, document.getElementById("password").value, true, function(result) {
-	    	if (result.status == 200) {
+			document.getElementById("incomingResponse").innerHTML = "authenticateUniversal: " + JSON.stringify(result, null, 2);
+			
+			if (result.status == 200) {
 	    		document.getElementById('sessionId').innerHTML = "SessionId: " + brainCloud.brainCloudClient.getSessionId();
 				document.getElementById('profileId').innerHTML = "ProfileId: " + brainCloud.brainCloudClient.authentication.profileId;
 				document.getElementById('profileId').value = brainCloud.brainCloudClient.authentication.profileId;
@@ -194,6 +203,11 @@
 		var xhr = new XMLHttpRequest();
 		var file = document.getElementById('fileToUpload').files[0];
 
+		if(file === undefined) {
+			console.log("Please select a file in Step 2. to upload.");
+			document.getElementById("incomingResponse").innerHTML = "Error uploading file. Please select a file in Step 2. to upload. ";
+		}
+
 		var fileSize = file.size;
 		
 		xhr.upload.addEventListener("progress", uploadProgress, false);
@@ -208,6 +222,10 @@
 				if (result.status == 200) {
 					var uploadId = result.data.fileDetails.uploadId;
 
+					document.getElementById("incomingResponse").innerHTML = "prepareFileUpload: " + JSON.stringify(result, null, 2);
+
+
+
 					brainCloud.file.uploadFile(xhr, file, uploadId);
 				}
 			}
@@ -217,7 +235,7 @@
 	function listUserFiles() {
 		brainCloud.file.listUserFiles(document.getElementById("cloudPath").value, true,
 			function(result) {
-
+				document.getElementById("incomingResponse").innerHTML = "listUserFiles: " + JSON.stringify(result, null, 2);
 			}
 		);
 	}
@@ -225,7 +243,7 @@
 	function deleteUserFile() {
 		brainCloud.file.deleteUserFile(document.getElementById("cloudPath").value, true,
 			function(result) {
-
+				document.getElementById("incomingResponse").innerHTML = "deleteUserFile: " + JSON.stringify(result, null, 2);
 			}
 		);
 	}
@@ -233,7 +251,7 @@
 	function getCdnUrl() {
 		brainCloud.file.getCDNUrl(document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value,
 			function(result) {
-
+				document.getElementById("incomingResponse").innerHTML = "getCdnUrl: " + JSON.stringify(result, null, 2);
 			}
 		);
 	}
@@ -347,14 +365,7 @@
 			<table class="shrink">
 				<tbody>
 				<tr>
-					<td><strong>Outgoing Request</strong></td>
-				</tr>
-				<tr>
-					<td>&nbsp;<div id="outgoingRequest"  style = "white-space:PRE"></div></td>
-					<p>&nbsp;</p>
-				</tr>
-				<tr>
-					<td><strong>Incoming Response</strong></td>
+					<td><strong>Last Incoming Response</strong></td>
 				</tr>
 				<tr>
 					<td>&nbsp;<div id="incomingResponse"  style = "white-space:PRE"></div></td>

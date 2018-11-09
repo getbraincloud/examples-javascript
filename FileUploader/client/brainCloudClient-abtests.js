@@ -9,6 +9,8 @@ function BCAbTest() {
 	bc.abtests = {};
 
 	bc.abtests.loadABTestData = function (dataUrl, callback) {
+		console.log("called loadABTestData(" + dataUrl + ",callback)");
+
 		// Retrieve AB Test data from AppServer S3 service.
 		jQuery.ajax({
 			timeout: 15000,

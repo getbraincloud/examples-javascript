@@ -3,365 +3,443 @@
 // The variable that will contain the AB Test data retrieved from S3.
 var abTestData;
 
-(function(brainCloudManager, undefined)
+
+function BrainCloudManager ()
 {
-    var _sendQueue = [];
-    var _inProgressQueue = [];
-    var _abTestingId = -1;
-    var _sessionId = "";
-    var _packetId = -1;
-    var _loader = null;
-    var _eventCallback = null;
-    var _rewardCallback = null;
-    var _errorCallback = null;
-    var _jsonedQueue = "";
+    var bcm = this;
 
-    var _appId = "";
-    var _secret = "";
-    var _serverUrl = "https://sharedprod.braincloudservers.com";
-    var _dispatcherUrl = _serverUrl + "/dispatcherv2";
-    var _fileUploadUrl = _serverUrl + "/uploader";
-    var _appVersion = "";
-    var _debugEnabled = false;
+    bcm.name = "BrainCloudManager";
 
-    var _useJQuery = true;
-    var _requestInProgress = false;
+    bcm._sendQueue = [];
+    bcm._inProgressQueue = [];
+    bcm._abTestingId = -1;
+    bcm._sessionId = "";
+    bcm._packetId = -1;
+    bcm._loader = null;
+    bcm._eventCallback = null;
+    bcm._rewardCallback = null;
+    bcm._errorCallback = null;
+    bcm._jsonedQueue = "";
+    bcm._idleTimeout = 30;
+    bcm._heartBeatIntervalId = null;
 
-    var _statusCodeCache = 403;
-    var _reasonCodeCache = 40304;
-    var _statusMessageCache = "No session";
+    bcm._appId = "";
+    bcm._secret = "";
+    bcm._secretMap = {};
+    bcm._serverUrl = "https://sharedprod.braincloudservers.com";
+    bcm._dispatcherUrl = bcm._serverUrl + "/dispatcherv2";
+    bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
+    bcm._appVersion = "";
+    bcm._debugEnabled = false;
+
+    bcm._useJQuery = true;
+    bcm._requestInProgress = false;
+
+    bcm._statusCodeCache = 403;
+    bcm._reasonCodeCache = 40304;
+    bcm._statusMessageCache = "No session";
 
     //kill switch
-    var _killSwitchThreshold = 11;
-    var _killSwitchEngaged = false;
-    var _killSwitchErrorCount = 0;
-    var _killSwitchService = "";
-    var _killSwitchOperation = "";
+    bcm._killSwitchThreshold = 11;
+    bcm._killSwitchEngaged = false;
+    bcm._killSwitchErrorCount = 0;
+    bcm._killSwitchService = "";
+    bcm._killSwitchOperation = "";
 
-    var _isInitialized = false;
-    var _isAuthenticated = false;
+    bcm._isInitialized = false;
+    bcm._isAuthenticated = false;
 
-    brainCloudManager.initialize = function(appId, secret, appVersion)
+    bcm.initialize = function(appId, secret, appVersion)
     {
-        _appId = appId;
-        _secret = secret;
-        _appVersion = appVersion;
-        _isInitialized = true;
+        bcm._appId = appId;
+        bcm._secret = secret;
+        bcm._secretMap = {};
+        bcm._secretMap[appId] = secret;
+        bcm._appVersion = appVersion;
+        bcm._isInitialized = true;
     };
 
-    brainCloudManager.setServerUrl = function(serverUrl)
+    bcm.initializeWithApps = function(defaultAppId, secretMap, appVersion)
     {
-        _serverUrl = serverUrl;
-        while (_serverUrl.length > 0 && _serverUrl.charAt(_serverUrl.length - 1) == '/')
+        bcm._appId = defaultAppId;
+        bcm._secret = secretMap[defaultAppId];
+        bcm._secretMap = secretMap;
+        bcm._appVersion = appVersion;
+        bcm._isInitialized = true;
+    };
+
+    bcm.setServerUrl = function(serverUrl)
+    {
+        bcm._serverUrl = serverUrl;
+        while (bcm._serverUrl.length > 0 && bcm._serverUrl.charAt(bcm._serverUrl.length - 1) == '/')
         {
-            _serverUrl = _serverUrl.substring(0, _serverUrl.length - 1);
+            bcm._serverUrl = bcm._serverUrl.substring(0, bcm._serverUrl.length - 1);
         }
-        _dispatcherUrl = _serverUrl + "/dispatcherv2";
-        _fileUploadUrl = _serverUrl + "/uploader";
+        bcm._dispatcherUrl = bcm._serverUrl + "/dispatcherv2";
+        bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
     };
 
-    brainCloudManager.getDispatcherUrl = function()
+    bcm.getDispatcherUrl = function()
     {
-        return _dispatcherUrl;
+        return bcm._dispatcherUrl;
     };
 
-    brainCloudManager.getFileUploadUrl = function()
+    bcm.getFileUploadUrl = function()
     {
-        return _fileUploadUrl;
+        return bcm._fileUploadUrl;
     };
 
-    brainCloudManager.setABTestingId = function(abTestingId)
+    bcm.setABTestingId = function(abTestingId)
     {
-        _abTestingId = abTestingId;
+        bcm._abTestingId = abTestingId;
     };
 
-    brainCloudManager.getABTestingId = function()
+    bcm.getABTestingId = function()
     {
-        return _abTestingId;
+        return bcm._abTestingId;
     };
 
-    brainCloudManager.getSessionId = function()
+    bcm.getSessionId = function()
     {
-        return _sessionId;
+        return bcm._sessionId;
     };
 
-    brainCloudManager.setSessionId = function(sessionId)
+    bcm.setSessionId = function(sessionId)
     {
-        _sessionId = sessionId;
+        bcm._sessionId = sessionId;
     };
 
-    brainCloudManager.getSecret = function()
+    bcm.getSecret = function()
     {
-        return _secret;
+        return bcm._secret;
     };
 
-    brainCloudManager.setSecret = function(secret)
+    bcm.setSecret = function(secret)
     {
-        _secret = secret;
-    };
-
-    /**
-     * @deprecated Use getAppVersion() instead - Removal after September 1 2017
-     */
-    brainCloudManager.getGameVersion = function()
-    {
-        return _appVersion;
+        bcm._secret = secret;
     };
 
     /**
      * @deprecated Use getAppVersion() instead - Removal after September 1 2017
      */
-    brainCloudManager.getVersion = function()
+    bcm.getGameVersion = function()
     {
-        return _appVersion;
+        return bcm._appVersion;
     };
 
-    brainCloudManager.getAppVersion = function()
+    /**
+     * @deprecated Use getAppVersion() instead - Removal after September 1 2017
+     */
+    bcm.getVersion = function()
     {
-        return _appVersion;
+        return bcm._appVersion;
+    };
+
+    bcm.getAppVersion = function()
+    {
+        return bcm._appVersion;
     };
 
     /**
      * @deprecated Use setAppVersion() instead - Removal after September 1 2017
      */
-    brainCloudManager.setGameVersion = function(appVersion)
+    bcm.setGameVersion = function(appVersion)
     {
-        _appVersion = appVersion;
+        bcm._appVersion = appVersion;
     };
 
     /**
      * @deprecated Use setAppVersion() instead - Removal after September 1 2017
      */
-    brainCloudManager.setVersion = function(appVersion)
+    bcm.setVersion = function(appVersion)
     {
-        _appVersion = appVersion;
+        bcm._appVersion = appVersion;
     };
 
-    brainCloudManager.setAppVersion = function(appVersion)
+    bcm.setAppVersion = function(appVersion)
     {
-        _appVersion = appVersion;
+        bcm._appVersion = appVersion;
     };
 
     /**
      * @deprecated Use getAppId() instead - Removal after September 1 2017
      */
-    brainCloudManager.getGameId = function()
+    bcm.getGameId = function()
     {
-        return _appId;
+        return bcm._appId;
     };
 
-    brainCloudManager.getAppId = function()
+    bcm.getAppId = function()
     {
-        return _appId;
+        return bcm._appId;
     };
 
 
     /**
      * @deprecated Use setAppId() instead - Removal after September 1 2017
      */
-    brainCloudManager.setGameId = function(appId)
+    bcm.setGameId = function(appId)
     {
-        _appId = appId;
+        bcm._appId = appId;
     };
 
-    brainCloudManager.setAppId = function(appId)
+    bcm.setAppId = function(appId)
     {
-        _appId = appId;
+        bcm._appId = appId;
     };
 
-    brainCloudManager.registerEventCallback = function(eventCallback)
+    bcm.registerEventCallback = function(eventCallback)
     {
-        _eventCallback = eventCallback;
+        bcm._eventCallback = eventCallback;
     };
 
-    brainCloudManager.deregisterEventCallback = function()
+    bcm.deregisterEventCallback = function()
     {
-        _eventCallback = null;
+        bcm._eventCallback = null;
     };
 
-    brainCloudManager.registerRewardCallback = function(rewardCallback)
+    bcm.registerRewardCallback = function(rewardCallback)
     {
-        _rewardCallback = rewardCallback;
+        bcm._rewardCallback = rewardCallback;
     };
 
-    brainCloudManager.deregisterRewardCallback = function()
+    bcm.deregisterRewardCallback = function()
     {
-        _rewardCallback = null;
+        bcm._rewardCallback = null;
     };
 
-    brainCloudManager.setErrorCallback = function(errorCallback)
+    bcm.setErrorCallback = function(errorCallback)
     {
-        _errorCallback = errorCallback;
+        bcm._errorCallback = errorCallback;
     };
 
-    brainCloudManager.setDebugEnabled = function(debugEnabled)
+    bcm.setDebugEnabled = function(debugEnabled)
     {
-        _debugEnabled = debugEnabled;
+        bcm._debugEnabled = debugEnabled;
     };
 
-    brainCloudManager.useJQuery = function(value)
+    bcm.useJQuery = function(value)
     {
-        _useJQuery = value;
+        bcm._useJQuery = value;
     };
 
-    brainCloudManager.isInitialized = function()
+    bcm.isInitialized = function()
     {
-        return _isInitialized;
+        return bcm._isInitialized;
     };
 
-    brainCloudManager.isAuthenticated = function()
+    bcm.isAuthenticated = function()
     {
-        return _isAuthenticated;
+        return bcm._isAuthenticated;
     };
 
-    brainCloudManager.setAuthenticated = function()
+    bcm.setAuthenticated = function()
     {
-        _isAuthenticated = true;
+        bcm._isAuthenticated = true;
+        bcm.startHeartBeat();
     };
 
-    function debugLog(msg, isError)
+    bcm.debugLog = function(msg, isError)
     {
-        if(_debugEnabled)
-        {
-            if(isError)
-                console.error(msg);
+        if(bcm._debugEnabled === true) {
+            if (isError)
+            {
+                console.error (msg);
+            }
             else
-                console.log(msg);
+            {
+                console.log (msg);
+            }
         }
     }
 
-    brainCloudManager.sendRequest = function(request)
+    bcm.sendRequest = function(request)
     {
-        debugLog("SendRequest: " + JSON.stringify(request));
+        bcm.debugLog("SendRequest: " + JSON.stringify(request));
 
-        _sendQueue.push(request);
-        if (!_requestInProgress)
+        bcm._sendQueue.push(request);
+        if (!bcm._requestInProgress)
         {
-            processQueue();
+            bcm.processQueue();
         }
     };
 
-    brainCloudManager.resetCommunication = function()
+    bcm.resetCommunication = function()
     {
-        _sendQueue = [];
-        _inProgressQueue = [];
-        _sessionId = "";
-        _isAuthenticated = false;
-        _requestInProgress = false;
-        brainCloudClient.authentication.profileId = "";
-        resetErrorCache();
+        bcm.stopHeartBeat();
+
+        bcm._sendQueue = [];
+        bcm._inProgressQueue = [];
+        bcm._sessionId = "";
+        bcm._isAuthenticated = false;
+        bcm._requestInProgress = false;
+
+        bcm.resetErrorCache();
     };
 
-    function resetErrorCache()
+    bcm.resetErrorCache = function()
     {
-        _statusCodeCache = 403;
-        _reasonCodeCache = 40304;
-        _statusMessageCache = "No session";
+        bcm._statusCodeCache = 403;
+        bcm._reasonCodeCache = 40304;
+        bcm._statusMessageCache = "No session";
     }
 
-    function updateKillSwitch(service, operation, statusCode)
+    bcm.updateKillSwitch = function(service, operation, statusCode)
     {
-        if (statusCode == brainCloudClient.statusCodes.CLIENT_NETWORK_ERROR) return;
+        if (statusCode === bcm.statusCodes.CLIENT_NETWORK_ERROR)
+        {
+            return;
+        }
 
-		if (_killSwitchService.length === 0)
-		{
-			_killSwitchService = service;
-			_killSwitchOperation = operation;
-			_killSwitchErrorCount++;
-		}
-		else if (service === _killSwitchService && operation === _killSwitchOperation)
-			_killSwitchErrorCount++;
+        if (bcm._killSwitchService.length === 0)
+        {
+            bcm._killSwitchService = service;
+            bcm._killSwitchOperation = operation;
+            bcm._killSwitchErrorCount++;
+        }
+        else if (service === bcm._killSwitchService && operation === bcm._killSwitchOperation)
+        {
+            bcm._killSwitchErrorCount++;
+        }
 
-		if (!_killSwitchEngaged && _killSwitchErrorCount >= _killSwitchThreshold)
-		{
-			_killSwitchEngaged = true;
-			debugLog("Client disabled due to repeated errors from a single API call: " + service + " | " + operation);
-		}
+        if (!bcm._killSwitchEngaged && bcm._killSwitchErrorCount >= bcm._killSwitchThreshold)
+        {
+            bcm._killSwitchEngaged = true;
+            bcm.debugLog("Client disabled due to repeated errors from a single API call: " + service + " | " + operation);
+        }
     }
 
-    function resetKillSwitch()
+    bcm.resetKillSwitch = function()
     {
-        _killSwitchErrorCount = 0;
-        _killSwitchService = "";
-        _killSwitchOperation = "";
+        bcm._killSwitchErrorCount = 0;
+        bcm._killSwitchService = "";
+        bcm._killSwitchOperation = "";
+    }
+
+    bcm.startHeartBeat = function()
+    {
+        bcm.stopHeartBeat();
+        bcm._heartBeatIntervalId = setInterval(function()
+        {
+            bcm.sendRequest({
+                service : "heartbeat",
+                operation : "READ",
+                callback : function(result) {}
+            });
+        }, bcm._idleTimeout * 1000);
+    }
+
+    bcm.stopHeartBeat = function()
+    {
+        if (bcm._heartBeatIntervalId)
+        {
+            clearInterval(bcm._heartBeatIntervalId);
+            bcm._heartBeatIntervalId = null;
+        }
     }
 
     //Handle response bundles with HTTP 200 response
-    function handleSuccessResponse(response)
+    bcm.handleSuccessResponse = function(response)
     {
         var messages = response["responses"];
 
-        if (_debugEnabled)
+        if (bcm._debugEnabled)
         {
             for (var c = 0; c < messages.length; ++c)
             {
                 if (messages[c].status == 200)
                 {
-                    debugLog("Response(" + messages[c].status + "): " +
+                    bcm.debugLog("Response(" + messages[c].status + "): " +
                         JSON.stringify(messages[c]));
                 }
                 else
                 {
-                    debugLog("Response(" + messages[c].status + "): " +
+                    bcm.debugLog("Response(" + messages[c].status + "): " +
                         JSON.stringify(messages[c]), true);
                 }
             }
         }
 
-        for (var c = 0; c < _inProgressQueue.length && c < messages.length; ++c)
+        for (var c = 0; c < bcm._inProgressQueue.length && c < messages.length; ++c)
         {
-            callback = _inProgressQueue[c].callback;
+            var callback = bcm._inProgressQueue[c].callback;
 
-            if (callback)
+            if (bcm._inProgressQueue[c] != null && bcm._errorCallback && messages[c].status != 200)
             {
-                callback(messages[c]);
+                bcm._errorCallback(messages[c]);
             }
 
-            if (_inProgressQueue[c] != null && _errorCallback && essages[c].status != 200)
-            {
-                _errorCallback(messages[c]);
-            }
-
-            if (_inProgressQueue[c] == null) return; //comms was reset
+            if (bcm._inProgressQueue[c] == null) return; //comms was reset
 
             if (messages[c].status == 200)
             {
-                resetKillSwitch();
+                bcm.resetKillSwitch();
 
                 var data = messages[c].data;
 
-                if (_inProgressQueue[c].service == "playerState" &&
-                    (_inProgressQueue[c].operation == "LOGOUT" || _inProgressQueue[c].operation == "FULL_RESET"))
+                // A session id or a profile id could potentially come back in any messages
+                if (data)
                 {
-                    _isAuthenticated = false;
-                    _sessionId = "";
-                    brainCloudClient.authentication.profileId = "";
-                }
-                else if (_inProgressQueue[c].operation == "AUTHENTICATE")
-                {
-                    _isAuthenticated = true;
-                    if(data.hasOwnProperty("maxKillCount"))
-                        _killSwitchThreshold = data.maxKillCount;
-                    resetErrorCache();
+                    if (data.sessionId)
+                    {
+                        bcm._sessionId = data.sessionId;
+                    }
+                    if (data.profileId)
+                    {
+                        bcm.authentication.profileId = data.profileId;
+                    }
+                    if (data.switchToAppId)
+                    {
+                        bcm._appId = data.switchToAppId;
+                        bcm._secret = bcm._secretMap[data.switchToAppId];
+                    }
                 }
 
-                if (_rewardCallback)
+                if (bcm._inProgressQueue[c].service == "playerState" &&
+                    (bcm._inProgressQueue[c].operation == "LOGOUT" || bcm._inProgressQueue[c].operation == "FULL_RESET"))
+                {
+                    bcm.stopHeartBeat();
+                    bcm._isAuthenticated = false;
+                    bcm._sessionId = "";
+                    bcm.authentication.profileId = "";
+                }
+                else if (bcm._inProgressQueue[c].operation == "AUTHENTICATE")
+                {
+                    bcm._isAuthenticated = true;
+                    if (data.hasOwnProperty("playerSessionExpiry"))
+                    {
+                        bcm._idleTimeout = data.playerSessionExpiry * 0.85;
+                    }
+                    else
+                    {
+                        bcm._idleTimeout = 30;
+                    }
+                    if(data.hasOwnProperty("maxKillCount"))
+                    {
+                        bcm._killSwitchThreshold = data.maxKillCount;
+                    }
+                    bcm.resetErrorCache();
+                    bcm.startHeartBeat();
+                }
+
+                if (bcm._rewardCallback)
                 {
                     var rewards = null;
-                    if (_inProgressQueue[c].service &&
-                        _inProgressQueue[c].operation)
+                    if (data &&
+                        bcm._inProgressQueue[c].service &&
+                        bcm._inProgressQueue[c].operation)
                     {
-                        if (_inProgressQueue[c].service == "authenticationV2" &&
-                            _inProgressQueue[c].operation == "AUTHENTICATE")
+                        if (bcm._inProgressQueue[c].service == "authenticationV2" &&
+                            bcm._inProgressQueue[c].operation == "AUTHENTICATE")
                         {
-                            resetErrorCache();
+                            bcm.resetErrorCache();
                             if (data.rewards && data.rewards.rewards)
                             {
                                 rewards = data.rewards;
                             }
                         }
-                        else if ((_inProgressQueue[c].service == "playerStatistics" && _inProgressQueue[c].operation == "UPDATE") ||
-                            (_inProgressQueue[c].service == "playerStatisticsEvent" && (_inProgressQueue[c].operation == "TRIGGER" || _inProgressQueue[c].operation ==
+                        else if ((bcm._inProgressQueue[c].service == "playerStatistics" && bcm._inProgressQueue[c].operation == "UPDATE") ||
+                            (bcm._inProgressQueue[c].service == "playerStatisticsEvent" && (bcm._inProgressQueue[c].operation == "TRIGGER" || bcm._inProgressQueue[c].operation ==
                                 "TRIGGER_MULTIPLE")))
                         {
                             if (data.rewards)
@@ -372,7 +450,7 @@ var abTestData;
 
                         if (rewards)
                         {
-                            _rewardCallback(rewards);
+                            bcm._rewardCallback(rewards);
                         }
                     }
                 }
@@ -380,41 +458,48 @@ var abTestData;
             else
             {
                 var statusCode = messages[c].status;
-                var resonCode = messages[c].reason_code;
+                var reasonCode = messages[c].reason_code;
 
-                if (resonCode === 40303 ||
-                    resonCode === 40304 ||
-                    resonCode === 40356)
+                if (reasonCode === 40303 ||
+                    reasonCode === 40304 ||
+                    reasonCode === 40356)
                 {
-                    _isAuthenticated = false;
-                    _sessionID = "";
+                    bcm.stopHeartBeat();
+                    bcm._isAuthenticated = false;
+                    bcm._sessionID = "";
 
                     // cache error if session related
-                    _statusCodeCache = statusCode;
-                    _reasonCodeCache = resonCode;
-                    _statusMessageCache = messages[c].status_message;
+                    bcm._statusCodeCache = statusCode;
+                    bcm._reasonCodeCache = reasonCode;
+                    bcm._statusMessageCache = messages[c].status_message;
                 }
 
-                updateKillSwitch(_inProgressQueue[c].service, _inProgressQueue[c].operation, statusCode)
+                console.log("STATUSCodes:" + bcm.statusCodes.CLIENT_NETWORK_ERROR);
+                bcm.updateKillSwitch(bcm._inProgressQueue[c].service, bcm._inProgressQueue[c].operation, statusCode)
             }
 
-            var events = response["events"];
-            if (events && _eventCallback)
+            if (callback)
             {
-                for (var c = 0; c < events.length; ++c)
-                {
-                    var eventsJson = {
-                        events: events
-                    };
-                    _eventCallback(eventsJson);
-                }
+                callback(messages[c]);
+            }
+        }
+
+        var events = response["events"];
+        if (events && bcm._eventCallback)
+        {
+            for (var c = 0; c < events.length; ++c)
+            {
+                var eventsJson = {
+                    events: events
+                };
+                bcm._eventCallback(eventsJson);
             }
         }
     }
 
-    function fakeErrorResponse(statusCode, reasonCode, message)
+    bcm.fakeErrorResponse = function(statusCode, reasonCode, message)
     {
-        var responses = [_inProgressQueue.length];
+        var responses = [bcm._inProgressQueue.length];
 
         var response = {};
         response.status = statusCode;
@@ -422,35 +507,212 @@ var abTestData;
         response.status_message = message;
         response.severity = "ERROR";
 
-        for (var i = 0; i < _inProgressQueue.length; i++)
+        for (var i = 0; i < bcm._inProgressQueue.length; i++)
         {
             responses[i] = response;
         }
 
-        handleSuccessResponse(
-        {
-            "responses": responses
-        });
-    }
-
-    function setHeader(xhr)
-    {
-        var sig = CryptoJS.MD5(_jsonedQueue + _secret);
-        xhr.setRequestHeader('X-SIG', sig);
-    }
-
-    function processQueue()
-    {
-        if (_sendQueue.length > 0)
-        {
-            _inProgressQueue = [];
-            var itemsProcessed;
-            for (itemsProcessed = 0; itemsProcessed < _sendQueue.length; ++itemsProcessed)
+        bcm.handleSuccessResponse(
             {
-                var message = _sendQueue[itemsProcessed];
+                "responses": responses
+            });
+    }
+
+    bcm.setHeader = function(xhr)
+    {
+        var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
+        xhr.setRequestHeader('X-SIG', sig);
+        xhr.setRequestHeader('X-APPID', bcm._appId);
+    }
+
+    bcm.retry = function()
+    {
+        if (bcm._retry <= 2)
+        {
+            bcm._retry++;
+            bcm.debugLog("Retry # " + bcm._retry.toString(), false);
+            if (bcm._retry === 1)
+            {
+                bcm.debugLog("Retrying right away", false);
+                bcm.performQuery();
+            }
+            else
+            {
+                bcm.debugLog("Waiting for 10 sec...", false);
+                setTimeout(bcm.performQuery, 10000);
+            }
+        }
+        else
+        {
+            bcm.debugLog("Failed after " + bcm._retry + " retries.", true);
+
+            if ((bcm._errorCallback != undefined) &&
+                (typeof bcm._errorCallback == 'function'))
+            {
+                bcm._errorCallback(errorThrown);
+            }
+
+            bcm.fakeErrorResponse(bcm.statusCodes.CLIENT_NETWORK_ERROR, bcm.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT, "Request timed out");
+
+            bcm._requestInProgress = false;
+            // Now call bcm.processQueue again if there is more data...
+            bcm.processQueue();
+        }
+    }
+
+    bcm.performQuery = function()
+    {
+        if (bcm._useJQuery)
+        {
+            bcm._requestInProgress = true;
+            bcm._loader = jQuery.ajax({
+                timeout: 15000,
+                url: bcm._dispatcherUrl,
+                type: "POST",
+                contentType: "application/json",
+                dataType: "json",
+                beforeSend: bcm.setHeader,
+                data: bcm._jsonedQueue
+            })
+            .done(function(response)
+            {
+                bcm.handleSuccessResponse(response);
+
+                bcm._loader = null;
+                bcm._requestInProgress = false;
+                // Now call bcm.processQueue again if there is more data...
+                bcm.processQueue();
+            })
+            .fail(function(jqXhr, textStatus, errorThrown)
+            {
+                bcm.retry();
+            });
+        }
+        else
+        {
+            clearTimeout(bcm.xml_timeoutId);
+            bcm.xml_timeoutId = null;
+
+            bcm._requestInProgress = true;
+            var xmlhttp;
+            if (window.XMLHttpRequest)
+            {
+                // code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else
+            {
+                // code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            xmlhttp.ontimeout_bc = function()
+            {
+                if (xmlhttp.readyState < 4)
+                {
+                    xmlhttp.hasTimedOut = true;
+                    xmlhttp.abort();
+                    xmlhttp.hasTimedOut = null;
+
+                    bcm.xml_timeoutId = null;
+
+                    bcm.debugLog("timeout", false);
+                    bcm.retry();
+                }
+            }
+
+            xmlhttp.onreadystatechange = function()
+            {
+                if (xmlhttp.hasTimedOut)
+                {
+                    return;
+                }
+
+                if (xmlhttp.readyState == XMLHttpRequest.DONE)
+                {
+                    clearTimeout(bcm.xml_timeoutId);
+                    bcm.xml_timeoutId = null;
+
+                    bcm.debugLog("response status : " + xmlhttp.status);
+                    bcm.debugLog("response : " + xmlhttp.responseText);
+
+                    if (xmlhttp.status == 200)
+                    {
+                        var response = JSON.parse(xmlhttp.responseText);
+
+                        bcm.handleSuccessResponse(response);
+
+                        bcm._requestInProgress = false;
+                        bcm.processQueue();
+                    }
+                    else if (xmlhttp.status == 503)
+                    {
+                        bcm.debugLog("packet in progress", false);
+                        bcm.retry();
+                        return;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var errorResponse = JSON.parse(xmlhttp.responseText);
+                            if (errorResponse["reason_code"])
+                            {
+                                reasonCode = errorResponse["reason_code"];
+                            }
+                            if (errorResponse["status_message"])
+                            {
+                                statusMessage = errorResponse["status_message"];
+                            }
+                            else
+                            {
+                                statusMessage = xmlhttp.responseText;
+                            }
+                        }
+                        catch (e)
+                        {
+                            reasonCode = 0;
+                            statusMessage = xmlhttp.responseText;
+                        }
+
+                        // TODO: New error handling will split out the parts... for now
+                        // just send back the response text.
+                        var errorMessage = xmlhttp.responseText;
+                        bcm.debugLog("Failed", true);
+
+                        if ((bcm._errorCallback != undefined) &&
+                            (typeof bcm._errorCallback == 'function'))
+                        {
+                            bcm._errorCallback(errorMessage);
+                        }
+                    }
+                }
+            }; // end inner function
+
+            // Set a timeout. Some implementation doesn't implement the XMLHttpRequest timeout and ontimeout (Including nodejs and chrome!)
+            bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, 15000);
+
+            xmlhttp.open("POST", bcm._dispatcherUrl, true);
+            xmlhttp.setRequestHeader("Content-type", "application/json");
+            var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
+            xmlhttp.setRequestHeader("X-SIG", sig);
+            xmlhttp.setRequestHeader('X-APPID', bcm._appId);
+            xmlhttp.send(bcm._jsonedQueue);
+        }
+    }
+
+    bcm.processQueue = function()
+    {
+        if (bcm._sendQueue.length > 0)
+        {
+            bcm._inProgressQueue = [];
+            var itemsProcessed;
+            for (itemsProcessed = 0; itemsProcessed < bcm._sendQueue.length; ++itemsProcessed)
+            {
+                var message = bcm._sendQueue[itemsProcessed];
                 if (message.operation == "END_BUNDLE_MARKER")
                 {
-                    if (_inProgressQueue.length == 0)
+                    if (bcm._inProgressQueue.length == 0)
                     {
                         // ignore bundle markers at the beginning of the bundle
                         continue;
@@ -462,36 +724,38 @@ var abTestData;
                         break;
                     }
                 }
-                _inProgressQueue.push(message);
+                bcm._inProgressQueue.push(message);
             }
-            _sendQueue.splice(0, itemsProcessed);
-            if (_inProgressQueue.length <= 0)
+            bcm._sendQueue.splice(0, itemsProcessed);
+            if (bcm._inProgressQueue.length <= 0)
             {
                 return;
             }
 
-            _jsonedQueue = JSON.stringify(
-            {
-                messages: _inProgressQueue,
-                gameId: _appId,
-                sessionId: _sessionId,
-                packetId: _packetId++
-            });
+            bcm._jsonedQueue = JSON.stringify(
+                {
+                    messages: bcm._inProgressQueue,
+                    gameId: bcm._appId,
+                    sessionId: bcm._sessionId,
+                    packetId: bcm._packetId++
+                });
 
-            if(_killSwitchEngaged)
+            localStorage.setItem("lastPacketId", bcm._packetId);
+
+            if(bcm._killSwitchEngaged)
             {
-                fakeErrorResponse(brainCloudClient.statusCodes.CLIENT_NETWORK_ERROR,
-                    brainCloudClient.reasonCodes.CLIENT_DISABLED,
+                bcm.fakeErrorResponse(bcm.statusCodes.CLIENT_NETWORK_ERROR,
+                    bcm.reasonCodes.CLIENT_DISABLED,
                     "Client disabled due to repeated errors from a single API call");
                 return;
             }
 
-            if (!_isAuthenticated)
+            if (!bcm._isAuthenticated)
             {
                 var isAuth = false;
-                for (i = 0; i < _inProgressQueue.length; i++)
+                for (i = 0; i < bcm._inProgressQueue.length; i++)
                 {
-                    if (_inProgressQueue[i].operation == "AUTHENTICATE" || _inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD")
+                    if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD")
                     {
                         isAuth = true;
                         break;
@@ -499,156 +763,16 @@ var abTestData;
                 }
                 if (!isAuth)
                 {
-                    fakeErrorResponse(_statusCodeCache, _reasonCodeCache, _statusMessageCache);
+                    bcm.fakeErrorResponse(bcm._statusCodeCache, bcm._reasonCodeCache, bcm._statusMessageCache);
                     return;
                 }
             }
 
-            if (_useJQuery)
-            {
-                _requestInProgress = true;
-                _loader = jQuery.ajax(
-                {
-                    timeout: 15000,
-                    url: _dispatcherUrl,
-                    type: "POST",
-                    contentType: "application/json",
-                    dataType: "json",
-                    beforeSend: setHeader,
-                    data: _jsonedQueue
-                }).done(function(response)
-                {
-                    handleSuccessResponse(response);
-                }).fail(
-                    function(jqXhr, textStatus, errorThrown)
-                    {
-                        debugLog("Failed: " + jqXhr + ", " +
-                            textStatus + ", " + errorThrown, true);
-
-                        if ((_errorCallback != undefined) &&
-                            (typeof _errorCallback == 'function'))
-                        {
-                            _errorCallback(errorThrown);
-                        }
-                    }).always(function(jqXhr, textStatus, errorThrown)
-                {
-                    //console.log("Complete: " + jqXhr + ", " + textStatus + ", " + errorThrown);
-                    _loader = null;
-                    _requestInProgress = false;
-                    // Now call processQueue again if there is more data...
-                    processQueue();
-                });
-            }
-            else
-            { // don't use jquery for the request
-                _requestInProgress = true;
-                var xmlhttp;
-                if (window.XMLHttpRequest)
-                {
-                    // code for IE7+, Firefox, Chrome, Opera, Safari
-                    xmlhttp = new XMLHttpRequest();
-                }
-                else
-                {
-                    // code for IE6, IE5
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
-                xmlhttp.onreadystatechange = function()
-                {
-                    if (xmlhttp.readyState == XMLHttpRequest.DONE)
-                    {
-                        debugLog("response status : " + xmlhttp.status);
-                        debugLog("response : " + xmlhttp.responseText);
-
-                        if (xmlhttp.status == 200)
-                        {
-                            var response = JSON.parse(xmlhttp.responseText);
-                            handleSuccessResponse(response);
-                        }
-                        else
-                        {
-                            try
-                            {
-                                var errorResponse = JSON
-                                    .parse(xmlhttp.responseText);
-                                if (errorResponse["reason_code"])
-                                {
-                                    reasonCode = errorResponse["reason_code"];
-                                }
-                                if (errorResponse["status_message"])
-                                {
-                                    statusMessage = errorResponse["status_message"];
-                                }
-                                else
-                                {
-                                    statusMessage = xmlhttp.responseText;
-                                }
-
-                            }
-                            catch (e)
-                            {
-                                reasonCode = 0;
-                                statusMessage = xmlhttp.responseText;
-                            }
-
-                            // TODO: New error handling will split out the parts... for now
-                            // just send back the response text.
-                            var errorMessage = xmlhttp.responseText;
-                            debugLog("Failed", true);
-
-                            if ((_errorCallback != undefined) &&
-                                (typeof _errorCallback == 'function'))
-                            {
-                                _errorCallback(errorMessage);
-                            }
-                        }
-                    }
-
-                    _requestInProgress = false;
-                    processQueue();
-                }; // end inner function
-
-                xmlhttp.timeout = 15000; //millis
-                xmlhttp.open("POST", _dispatcherUrl, true);
-                xmlhttp.setRequestHeader("Content-type", "application/json");
-                var sig = CryptoJS.MD5(_jsonedQueue + _secret);
-                xmlhttp.setRequestHeader("X-SIG", sig);
-                xmlhttp.send(_jsonedQueue);
-            }
+            bcm._retry = 0;
+            bcm.performQuery();
         }
     }
-}(window.brainCloudManager = window.brainCloudManager ||
-{}));
-
-var brainCloudClient = function(undefined)
-{
-
-    var exports = {};
-
-    // private...
-    exports.sendRequest = function(serviceRequest)
-    {
-        brainCloudManager.sendRequest(serviceRequest);
-    };
-
-    return exports;
-
-}(window.brainCloudClient = window.brainCloudClient ||
-{});
-
-// See the singleton pattern here:
-// https://code.google.com/p/jslibs/wiki/JavascriptTips#Singleton_pattern
-function BrainCloudAuthentication()
-{
-
-    // Singleton
-    if (arguments.callee._bcAuthenticationInstance)
-        return arguments.callee._bcAuthenticationInstance;
-
-    arguments.callee._bcAuthentication = this;
-
-    this.initialize = function(in_profileId, in_anonymousId) {
-
-    };
 }
+
+BrainCloudManager.apply(window.brainCloudManager = window.brainCloudManager || {});
+

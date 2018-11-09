@@ -1,7 +1,15 @@
-brainCloudClient.statusCodes = {};
+function BCStatusCodes() {
+    var bc = this;
 
-brainCloudClient.statusCodes.OK = 200;
-brainCloudClient.statusCodes.FORBIDDEN = 403;
-brainCloudClient.statusCodes.INTERNAL_SERVER_ERROR = 500;
+	bc.statusCodes = {};
 
-brainCloudClient.statusCodes.CLIENT_NETWORK_ERROR = 900;
+	bc.statusCodes.OK = 200;
+	bc.statusCodes.BAD_REQUEST = 400;
+	bc.statusCodes.FORBIDDEN = 403;
+	bc.statusCodes.INTERNAL_SERVER_ERROR = 500;
+
+	bc.statusCodes.CLIENT_NETWORK_ERROR = 900;
+
+}
+
+BCStatusCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
