@@ -1,0 +1,53 @@
+.ActionPicker {
+    background-color: chartreuse;
+}
+
+.ActionPicker-ScreenBlocker {
+    background-color: rgba(0, 0, 0, .25);
+    position: absolute;
+    z-index: 100;
+    width: 100vw;
+    height: 100vh;
+    left: 0;
+    top: 0;
+}
+
+.ActionPicker-Panel-Container {
+    position: relative;
+}
+
+.ActionPicker-Panel {
+    background-color: var(--SecondaryBGColor);
+    position: fixed;
+    display: inline;
+    z-index: 101;
+    border: 1px solid var(--TrimColor);
+    overflow: hidden;
+    max-width: 300px;
+    animation-name: ActionPicker-Panel-Anim;
+    animation-duration: 0.5s;
+}
+
+@keyframes ActionPicker-Panel-Anim {
+    from {max-width:10px;}
+    to {max-width:300px;}
+}
+
+.ActionPicker-ActionItem {
+    background-color:rgba(0, 0, 0, 0);
+    margin: 4px;
+    padding: 12px;
+    cursor: pointer;
+    font-size: 14pt;
+    text-align: right;
+    max-height: 20px;
+    min-height: 20px;
+}
+
+.ActionPicker-ActionItem:hover {
+    background-color: var(--TrimColor);
+}
+
+.ActionPicker-ActionItem:active {
+    background-color: var(--MainBGColor);
+}
