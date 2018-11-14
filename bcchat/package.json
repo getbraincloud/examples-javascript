@@ -1,6 +1,6 @@
 {
   "name": "bcchat",
-  "version": "0.1.46",
+  "version": "0.1.47",
   "private": true,
   "dependencies": {
     "braincloud-react": "^3.9.1",

@@ -1,6 +1,6 @@
 {
   "name": "warstone",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "dependencies": {
     "braincloud-react": "^3.8.1",
