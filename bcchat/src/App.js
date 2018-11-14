@@ -1010,11 +1010,12 @@ class App extends Component
             }
             case AppState.LogIn:
             {
+                let versionSuffix = currentApp.url ? " - dev" : " - prod"
                 return (
                     <div className="App">
                         <LogInScreen onLogin={this.handleLogin.bind(this)} games={Object.keys(GAMES)} />
                         <div style={{color:Theme.DarkTextColor, marginTop:"16px"}}>
-                            {"version: " + packageJson.version}
+                            {`version: ${packageJson.version}${versionSuffix}`}
                         </div>
                     </div>
                 );
