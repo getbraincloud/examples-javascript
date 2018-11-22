@@ -1,0 +1,10 @@
+.PresenceTab {
+    float: right;
+    width: 250px;
+    height: 100%;
+    overflow-y: scroll;
+}
+
+.OnlineDot {
+    background-color: var(--OnlineColor);
+}

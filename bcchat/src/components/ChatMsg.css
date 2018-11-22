@@ -1,0 +1,35 @@
+.ChatMsg {
+    padding-bottom: 16px;
+}
+
+.ChatMsg:hover {
+    background-color: var(--SecondaryBGColor);
+}
+
+.ChatMsg p {
+    white-space: pre-line;
+    margin: 0px 0;
+}
+
+.ChatMsg-Markdown {
+    margin-left:56px;
+    font-size:11pt;
+}
+
+.ChatMsg-Timestamp {
+    float:right;
+    padding-top:8px;
+    font-size:8pt;
+}
+
+.ChatMsg-RemoveButton {
+    float: right;
+    padding-left: 8px;
+    padding-top: 0px;
+}
+
+.ChatMsgNoPic-RemoveButton {
+    float: right;
+    padding-left: 8px;
+    padding-top: 2px;
+}

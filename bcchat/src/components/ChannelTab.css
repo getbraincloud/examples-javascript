@@ -1,0 +1,23 @@
+.ChannelTab {
+    padding: 0;
+    margin: 8px 0;
+    color: var(--TextColor);
+    background-color: var(--TabColor);
+    height: 56px;
+}
+
+.ChannelTab:first-child {
+    margin: 0 0 8px 0;
+}
+
+.ChannelTab-Title {
+    padding: 0;
+    margin: 0;
+    height: 30px;
+    line-height: 30px;
+    position: relative;
+    top: calc(50% - 15px);
+    float: left;
+    margin-left: 16px;
+    font-size: 12pt;
+}

@@ -1,0 +1,3 @@
+[submodule "public/brainCloud"]
+	path = public/brainCloud
+	url = https://github.com/getbraincloud/braincloud-js.git

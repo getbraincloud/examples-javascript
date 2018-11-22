@@ -1,0 +1,36 @@
+.Channel {
+    background-color: var(--SecondaryBGColor);
+    position: relative;
+    cursor: pointer;
+}
+
+.Channel:hover {
+    background-color: var(--TrimColor);
+}
+
+.Channel:active {
+    background-color: var(--MainBGColor);
+}
+
+.Channel-selected {
+    background-color: var(--MainBGColor);
+}
+
+.DirtyDot {
+    background-color: var(--TextColor);
+    border-radius: 4px;
+    width: 8px;
+    height: 8px;
+    content: " ";
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    left: 8px;
+    top: 24px;
+}
+
+.Channel-selected-AddButton {
+    float: right;
+    margin-top: 14px;
+    margin-right: -16px;
+}

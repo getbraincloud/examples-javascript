@@ -1,0 +1,24 @@
+.MsgFeed-Parent {
+    padding-left: 16px;
+    padding-right: 16px;
+    overflow-y: scroll;
+    height: 100%;
+}
+
+.MsgFeed-Content {
+}
+
+.EditMsg-ScreenBlocker {
+    background-color: rgba(0, 0, 0, .25);
+    position: absolute;
+    z-index: 100;
+    width: 100vw;
+    height: 100vh;
+    left: 0;
+    top: 0;
+}
+
+.EditMsg-TextArea {
+    z-index: 101;
+    position: relative;
+}

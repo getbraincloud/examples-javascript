@@ -1,0 +1,26 @@
+.AddButton {
+    float: right;
+    text-align: center;
+    position: relative;
+    top: calc(50% - 12px);
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 14px;
+    margin-right: 12px;
+    color: var(--TextColor);
+    background-color: var(--SecondaryBGColor);
+    border: 1.5px solid var(--TrimColor);
+    cursor: pointer;
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.AddButton:hover {
+    border-color: var(--TextColor);
+}
+
+.AddButton:active {
+    border-color: var(--TrimColor);
+    background-color: var(--MainBGColor);
+}
