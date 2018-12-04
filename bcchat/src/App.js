@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import Theme from './Theme';
 import packageJson from '../package.json';
-import BC from 'braincloud-react';
+import BC from 'braincloud';
 
 // Component imports
 import AddFriendScreen from './components/screens/AddFriendScreen';
