@@ -6,7 +6,7 @@ import MainMenuScreen from './MainMenuScreen';
 import GameScreen from './GameScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 
-let brainCloud = require("braincloud-react")
+let brainCloud = require("braincloud")
 
 let appId = ids.appId
 let appSecret = ids.appSecret
