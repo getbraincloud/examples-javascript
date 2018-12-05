@@ -21,6 +21,7 @@ import PresenceTab from '../PresenceTab';
 //  onRemoveMessage(message)
 //  onUpdateMessage(message)
 //  onLogoutClicked()
+//  onSettingsClicked()
 class ChatScreen extends Component
 {
     constructor()
@@ -85,6 +86,11 @@ class ChatScreen extends Component
         this.props.onLogoutClicked();
     }
 
+    onSettingsClicked()
+    {
+        this.props.onSettingsClicked();
+    }
+
     render()
     {
         return (
@@ -105,7 +111,8 @@ class ChatScreen extends Component
                 <div style={{backgroundColor:Theme.MainBGColor, marginLeft:"300px", height:"100%"}}>
                     <div style={{height:"56px"}}>
                         <StatusBar user={this.props.user}
-                                   onLogoutClicked={this.onLogoutClicked.bind(this)} />
+                                   onLogoutClicked={this.onLogoutClicked.bind(this)}
+                                   onSettingsClicked={this.onSettingsClicked.bind(this)} />
                     </div>
                     <div style={{height:"calc(100% - 106px)"}}>
                         {
