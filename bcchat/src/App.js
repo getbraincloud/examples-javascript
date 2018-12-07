@@ -10,6 +10,7 @@ import ChatScreen from './components/screens/ChatScreen';
 import CreateGroupScreen from './components/screens/CreateGroupScreen';
 import EnterNameScreen from './components/screens/EnterNameScreen';
 import LogInScreen from './components/screens/LogInScreen';
+import SettingsScreen from './components/screens/SettingsScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 
 let GAMES = {
@@ -37,7 +38,8 @@ const AppState = {
     Chat: 3,
     AddFriend: 4,
     CreateGroup: 5,
-    InviteMember: 6
+    InviteMember: 6,
+    Settings: 7
 }
 
 let pendingOutgoingMessages = [];
@@ -193,6 +195,79 @@ class App extends Component
         this.setState(state);
     }
 
+    onSettingsChanged(settings)
+    {
+        let state = this.state;
+        if (settings.name !== state.user.name && settings.name !== '')
+        {
+            state.user.name = settings.name;
+
+            console.log("BC: updateUserName");
+            this.bcWrapper.playerState.updateUserName(state.user.name, result =>
+            {
+                console.log(JSON.stringify(result));
+                if (result.status !== 200)
+                {
+                    this.dieWithMessage("Failed to update username to brainCloud");
+                }
+            });
+        }
+        if (settings.picFile != null)
+        {
+            console.log("BC: updateUserPic");
+            this.bcWrapper.file.prepareUserUpload("userImages", settings.picFile.name, true, true, settings.picFile.size, result =>
+            {
+                console.log(JSON.stringify(result));
+                if (result.status !== 200)
+                {
+                    this.dieWithMessage("Failed to prepareUserUpload");
+                    return;
+                }
+
+                let xhr = new XMLHttpRequest();
+                this.bcWrapper.file.uploadFile(xhr, settings.picFile, result.data.fileDetails.uploadId);
+
+                xhr.addEventListener("load", () =>
+                {
+                    this.bcWrapper.file.listUserFiles("userImages", false, result =>
+                    {
+                        console.log(JSON.stringify(result));
+                        if (result.status !== 200)
+                        {
+                            this.dieWithMessage("Failed to listUserFiles");
+                            return;
+                        }
+                        let file = result.data.fileList.find(file => file.cloudFilename === settings.picFile.name);
+                        if (!file)
+                        {
+                            this.dieWithMessage("Pic not found in listUserFiles");
+                            return;
+                        }
+                        let state = this.state;
+                        state.user.pic = file.downloadUrl;
+                        this.setState(state);
+                        this.bcWrapper.playerState.updatePlayerPictureUrl(file.downloadUrl, result =>
+                        {
+                            console.log(JSON.stringify(result));
+                            if (result.status !== 200)
+                            {
+                                this.dieWithMessage("Failed to updatePlayerPictureUrl");
+                                return;
+                            }
+                        });
+                    });
+                });
+                xhr.addEventListener("error", () =>
+                {
+                    alert("Failed to upload file");
+                    // We don't kill the app tho
+                })
+            });
+        }
+
+        this.setState(state);
+    }
+
     onLoggedIn()
     {
         // Turn on RTT
@@ -328,7 +403,7 @@ class App extends Component
                                 group.members.push({
                                     id: profileId,
                                     name: member.playerName,
-                                    pic: null,
+                                    pic: member.pic,
                                     online: state.user.id === profileId
                                 });
                             });
@@ -345,7 +420,7 @@ class App extends Component
                                         var member = group.members.find(member => presence.user.id === member.id);
                                         if (member)
                                         {
-                                            member.pic = presence.user.pic;
+                                            member.pic = presence.user.pic || member.pic;
                                             member.online = presence.online;
                                         }
                                     });
@@ -539,6 +614,13 @@ class App extends Component
     }
 
     onDismissCommonDialogScreen()
+    {
+        let state = this.state;
+        state.appState = AppState.Chat;
+        this.setState(state);
+    }
+
+    onDismissSettingsScreen()
     {
         let state = this.state;
         state.appState = AppState.Chat;
@@ -840,6 +922,13 @@ class App extends Component
         });     
     }
 
+    showSettings()
+    {
+        let state = this.state;
+        state.appState = AppState.Settings;
+        this.setState(state);
+    }
+
     onRemoveFriend(friend)
     {
         if (friend.id === this.state.user.id)
@@ -991,7 +1080,8 @@ class App extends Component
                            onInviteMemberToGroupClicked={this.onInviteMemberToGroupClicked.bind(this)}
                            onRemoveMessage={this.removeMessage.bind(this)}
                            onUpdateMessage={this.updateMessage.bind(this)}
-                           onLogoutClicked={this.logout.bind(this)} />
+                           onLogoutClicked={this.logout.bind(this)}
+                           onSettingsClicked={this.showSettings.bind(this)} />
     }
 
     render()
@@ -1068,6 +1158,17 @@ class App extends Component
                         <AddFriendScreen bcWrapper={this.bcWrapper} 
                                          onDismiss={this.onDismissCommonDialogScreen.bind(this)}
                                          onFriendSelected={this.onAddFriendToGroup.bind(this)} />
+                    </div>
+                );
+            }
+            case AppState.Settings:
+            {
+                return (
+                    <div className="App" style={{height:"100vh"}}>
+                        {this.renderChatScreen()}
+                        <SettingsScreen user={this.state.user}
+                                        onDismiss={this.onDismissSettingsScreen.bind(this)}
+                                        onSettingsChanged={this.onSettingsChanged.bind(this)}/>
                     </div>
                 );
             }

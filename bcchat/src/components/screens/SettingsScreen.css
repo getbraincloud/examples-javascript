@@ -1,0 +1,50 @@
+.SettingsScreen {
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.SettingsScreen form {
+    margin-top: 0;
+}
+
+.SettingsScreen h1 {
+    background-color: var(--TabColor);
+    padding: 16px 48px;
+    margin: -16px -50px 16px -50px;
+    border-radius: 10px 10px 0 0;
+    /* float: left; */
+}
+
+.SettingsScreen .closeBtn {
+    float: right;
+    margin: -16px -48px -16px 0;
+    padding: 16px 0;
+    text-align: center;
+    width: 80px;
+    border-radius: 0 10px 0 0;
+}
+
+.SettingsScreen .closeBtn:hover {
+    background-color: var(--TrimColor);
+}
+
+.SettingsScreen .closeBtn:active {
+    background-color: var(--SecondaryBGColor);
+}
+
+.block {
+    margin: 16px 0
+}
+
+.block label {
+    margin-bottom: 4px
+}
+
+.SettingsScreen .dropZonePic {
+    position: absolute;
+    padding: 38px;
+}
