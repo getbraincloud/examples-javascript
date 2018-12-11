@@ -61,10 +61,12 @@ We first need to create the application in the brainCloud portal, then upload co
 ### Run the client ###
 1. Clone the WarStone example from here: https://github.com/getbraincloud/warstone
 
-2. In the file `src/App.js`, fill in the following in formation:
+2. In the `src` folder, create a ids.js file. See `src\ids-example.js` for a reference.
+
+2. In the file `src/ids.js`, fill in the following information:
    ```
-   let appId = "..." // Fill in the appId
-   let appSecret = "..." // Fill in the appSecret
+   let appId = "...";  // Fill in the appId
+   let appSecret = "...";   // Fill in the appId
    ```
    Found in **Design / Core App Info / Application IDs**
 3. Install npm modules: `npm install`
