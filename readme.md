@@ -38,16 +38,16 @@ We first need to create the application in the brainCloud portal, then upload co
     ```
     git clone https://github.com/getbraincloud/examples-javascript.git
     ```
-2. In the `warstone/rsm/src` folder, create a ids.js file. See `warstone/rsm/src/ids-example.js` for a reference.
+2. In the `warstone/rsm/Scripts` folder, create a ids.js file. See `warstone/rsm/Scripts/ids-example.js` for a reference.
 
-3. In the new file `warstone/rsm/src/ids.js`, fill in the following information:
+3. In the new file `warstone/rsm/Scripts/ids.js`, fill in the following information:
    ```
    let appId = "...";  // Fill in your appId
    let appSecret = "...";   // Fill in your appSecret
    ```
    Found in **Design / Core App Info / Application IDs**
 
-4. Make sure your router allows for TCP ports 9306/9308/9310. If you wish to change the ports, check in the file `warstone/rsm/src/ids.js` for `tcp`, `http` and `port`.
+4. Make sure your router allows for TCP ports 9306/9308/9310. If you wish to change the ports, check in the file `warstone/rsm/Scripts/ids.js` for `tcp`, `http` and `port`.
 
    Don't forget to update the URL for the RSM in the portal.
 
