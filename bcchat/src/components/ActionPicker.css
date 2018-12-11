@@ -1,5 +1,6 @@
 .ActionPicker {
     background-color: chartreuse;
+    color: var(--TextColor);
 }
 
 .ActionPicker-ScreenBlocker {

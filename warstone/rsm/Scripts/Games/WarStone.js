@@ -14,7 +14,7 @@
 // }
 
 var brainclouds2s = require('brainclouds2s');
-var S2S = require('../S2S.js');
+let S2S = require('./S2S')
 
 var CARD_TYPE_SKIP_TURN = "SkipTurnSpell";
 var CARD_TYPE_BLOCK= "BarrierSpell";

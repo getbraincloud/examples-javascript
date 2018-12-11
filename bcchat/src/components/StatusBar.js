@@ -2,25 +2,37 @@ import React, { Component } from 'react';
 import Theme from '../Theme';
 
 // Component imports
-import PictureWord from './PictureWord';
+import './StatusBar.css';
+import Channel from './Channel';
+import ActionPicker from './ActionPicker';
 
 // Props:
 //  user {}
 //  onLogoutClicked()
 class StatusBar extends Component
 {
-    onLogoutClicked(e)
+    onUserClicked(channel)
     {
-        this.props.onLogoutClicked();
+        this.refs.actionPicker.open();
+    }
+
+    onAction(action)
+    {
+        switch (action)
+        {
+            case "logout": this.props.onLogoutClicked(); break;
+            case "settings": this.props.onSettingsClicked(); break;
+            default: break;
+        }
     }
 
     render()
     {
         return (
             <div style={{backgroundColor:Theme.TabColor, height:"100%", padding:"0 16px"}}>
-                <button style={{float:"right", marginTop:"10px"}} onClick={this.onLogoutClicked.bind(this)}>Log Out</button>
                 <div style={{float:"right"}}>
-                    <PictureWord id={this.props.user.id} url={this.props.user.pic} text={this.props.user.name} />
+                    <Channel channel={this.props.user} onSelected={this.onUserClicked.bind(this)} />
+                    <div className="ActionPicker"><ActionPicker ref="actionPicker" actions={["settings", "logout"]} onAction={this.onAction.bind(this)} /></div>
                 </div>
             </div>
         );
