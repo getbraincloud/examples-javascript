@@ -4,9 +4,9 @@ var RoomServerManager = require('./RoomServerManager.js')
 var ConnectionManager = require('./ConnectionManager.js');
 const publicIp = require('public-ip');
 var brainclouds2s = require('brainclouds2s');
-var S2S = require('./S2S.js');
 const WebSocket = require('ws');
-let ids = require('./ids.js');
+let ids = require('./ids');
+let S2S = require('./S2S')
 
 // Constants
 var HTTP_PORT = ids.ports.http;
