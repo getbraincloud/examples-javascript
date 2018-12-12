@@ -4,6 +4,7 @@ This repository contains example JavaScript projects that use the brainCloud cli
 
 Examples:
 - War Stone - RTT multiplayer card game example
+- bcChat - RTT chat system example
 - Acey Deucey - Simple single player card game example
 - File Update - Example tool for uploading files to brainCloud
 
@@ -33,8 +34,13 @@ We first need to create the application in the brainCloud portal, then upload co
 3. In the **Design / Cloud Code / Web Services** section of the portal, edit the **Base URL** of the **RSM** service. By default, it points to the example RSM instance.
 4. Now in the portal, go in the section **Monitoring / Global Entities** and **Bulk Actions / Import from Raw JSON Object file** from `warstone/game/portal-configs/global-entities_raw.json`
 
+#### Prerequisites
+If you don't have it already, install NodeJS https://nodejs.org/.
+
+[optional] We recommend to install Visual Studio Code https://code.visualstudio.com/.
+
 #### Run the server
-1. Clone the WarStone example: 
+1. Clone this repository: 
     ```
     git clone https://github.com/getbraincloud/examples-javascript.git
     ```
@@ -73,10 +79,7 @@ We first need to create the application in the brainCloud portal, then upload co
    ```
 
 #### Run the client
-1. Clone the WarStone example: 
-    ```
-    git clone https://github.com/getbraincloud/examples-javascript.git
-    ```
+1. Clone this repository
 
 2. In the `warstone/game/src` folder, create a ids.js file. See `warstone/game/src/ids-example.js` for a reference.
 
@@ -97,6 +100,53 @@ We first need to create the application in the brainCloud portal, then upload co
 
 
 
+----------
+
+
+
+## BCChat
+Test chat app built in ReactJS that exercise the brainCloud Real-time Tech Tech (RTT)
+
+![](screenshots/Capture.PNG)
+
+### How to test this app yourself
+
+#### Prerequisites
+If you don't have it already, install NodeJS https://nodejs.org/.
+
+[optional] We recommend to install Visual Studio Code https://code.visualstudio.com/.
+
+#### App setup
+1. Create a new app in the portal if you don't already have one here: https://portal.braincloudservers.com
+2. In **Advanced Settings** of the portal, check "**Real-time Tech (RTT) Enabled**"
+3. In **Messaging - Chat** section of the portal, enable "**Chat Service Enabled**", then click save.
+4. In **Messaging - Chat Channels** Channels section of the portal, create some new global chat channels to be visible in the app.
+
+#### Running locally
+1. Clone this repository
+2. In the `bcchat/src` folder, create a ids.js file. See `bcchat/src/ids-example.js` for a reference.
+`brainCloudServerURL`:
+    ```
+    appId = "...", // PLEASE FILL
+    appSecret = "...", // PLEASE FILL
+    
+    ```
+    That information can be found in **Core App Info - Application IDs** section of the portal.
+3. Open Terminal into the repository and type:
+   ```
+   npm install
+   ```
+4. Then type:
+   ```
+   npm start
+   ```
+
+The terminal should launch BCChat into a tab in your browser, and it should just work! Enjoy.
+
+
+----------
+
+
 ## AceyDeucy
 
 Card game example.
@@ -104,7 +154,7 @@ Card game example.
 Additional information can be found here: https://getbraincloud.com/apidocs/tutorials/javascript-tutorials/javascript-example-game/
 
 
-
+----------
 
 ## FileUploader
 
