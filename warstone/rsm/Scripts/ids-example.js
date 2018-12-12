@@ -1,9 +1,9 @@
 
-//TODO Replace with your app id.
-let appId = "12037"; 
+//TODO Add your app id.
+let appId = "..."; 
 
-//TODO Replace with your app secret.
-let appSecret = "8e5b27b4-9157-4bdd-b2bf-159fd29cf8a4"; 
+//TODO Add your app secret.
+let appSecret = "..."; 
 
 let ports = { 
     tcp: 9306,
