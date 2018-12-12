@@ -30,7 +30,7 @@ To further familiarize yourself with the system, it is a good idea to try to run
 We first need to create the application in the brainCloud portal, then upload configuration that defines the settings and rules of the game.
 1. Create a new app, call it `Warstone` or your chosen project name.
 
-2. In the **Design / Core App Info / Admin Tools** section of the portal, then **Import Configuration Data** from `warstone/game/portal-configs/configuration-data.bcconfig`.
+2. In the **Design / Core App Info / Admin Tools** section of the portal, then **Import Configuration Data** from `warstone/portal-configs/configuration-data.bcconfig`.
 3. In the **Design / Cloud Code / Web Services** section of the portal, edit the **Base URL** of the **RSM** service. By default, it points to the example RSM instance.
 4. Now in the portal, go in the section **Monitoring / Global Entities** and **Bulk Actions / Import from Raw JSON Object file** from `warstone/portal-configs/global-entities_raw.json`
 
@@ -51,13 +51,14 @@ If you don't have it already, install NodeJS https://nodejs.org/.
    let appId = "...";  // Fill in your appId
    let appSecret = "...";   // Fill in your appSecret
 
-   let tcp = 0;
+    // Choose your ports
+    let tcp = 0;
     let http = 0;
     let ws = 0;
    ```
-   Found in **Design / Core App Info / Application IDs**
+   Your App Id and Secret is found in **Design / Core App Info / Application IDs**
 
-4. Make sure your router allows for TCP ports 9306/9308/9310. If you wish to change the ports, check in the file `rsm/Scripts/ids.js` for `tcp`, `http` and `port`.
+4. Make sure your router allows for TCP ports for your chosen ports, in `rsm/Scripts/ids.js`.
 
    Don't forget to update the URL for the RSM in the portal.
 
@@ -77,7 +78,7 @@ If you don't have it already, install NodeJS https://nodejs.org/.
 
 5. It's a nodejs project. It can be started by calling the following via the cmdline:
    ```
-   cd warstone/rsm/
+   cd rsm/
    npm install
    node Scripts/main.js
    ```
