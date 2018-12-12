@@ -3,13 +3,13 @@
 This repository contains example JavaScript projects that use the brainCloud client. This is a good place to start learning how the various brainCloud APIs can be used.
 
 Examples:
-- War Stone - RTT multiplayer card game example
+- Warstone - RTT multiplayer card game example
 - bcChat - RTT chat system example
 - Acey Deucey - Simple single player card game example
 - File Update - Example tool for uploading files to brainCloud
 
 
-## War Stone
+## Warstone
 Turned Based card game, built as an example for brainCloud real-time Room Server Manager (RSM) and real-time Matchmaking
 
 ![](screenshots/warstone.png)
@@ -24,11 +24,11 @@ http://ec2-18-219-26-183.us-east-2.compute.amazonaws.com:3000/
 ### How to run your instance
 You might want to modify this example, for your individual needs and debugging purposes. 
 
-To further familiarize yourself with the system, it is a good idea to try to run your own War Stone project.
+To further familiarize yourself with the system, it is a good idea to try to run your own Warstone project.
 
 #### Portal setup
 We first need to create the application in the brainCloud portal, then upload configuration that defines the settings and rules of the game.
-1. Create a new app, call it `War Stone` or your chosen project name.
+1. Create a new app, call it `Warstone` or your chosen project name.
 
 2. In the **Design / Core App Info / Admin Tools** section of the portal, then **Import Configuration Data** from `warstone/game/portal-configs/configuration-data.bcconfig`.
 3. In the **Design / Cloud Code / Web Services** section of the portal, edit the **Base URL** of the **RSM** service. By default, it points to the example RSM instance.
@@ -127,8 +127,8 @@ If you don't have it already, install NodeJS https://nodejs.org/.
 2. In the `bcchat/src` folder, create a ids.js file. See `bcchat/src/ids-example.js` for a reference.
 `brainCloudServerURL`:
     ```
-    appId = "...", // PLEASE FILL
-    appSecret = "...", // PLEASE FILL
+    appId = "...", // Fill in your appId
+    appSecret = "...", // Fill in your appSecret
     
     ```
     That information can be found in **Core App Info - Application IDs** section of the portal.

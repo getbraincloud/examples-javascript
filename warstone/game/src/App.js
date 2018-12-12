@@ -61,7 +61,7 @@ class App extends Component
     renderTitle()
     {
         return (
-            <h1>War Stone</h1>
+            <h1>Warstone</h1>
         )
     }
 
