@@ -41,6 +41,9 @@ app.filter('card', function () {
 	}
 });
 
+
+var _bc = new BrainCloudWrapper("_mainWrapper");
+
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
 	const cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
@@ -92,10 +95,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.message = "You're a Winner!";
 
 	// we initialize the brainCloud client library here with our game id, secret, and game version
-	brainCloudClient.initialize("10129", "b983ec3d-208d-4ea3-be89-27e5acc7a3c0", "1.0.0");
+	_bc.initialize("10129", "b983ec3d-208d-4ea3-be89-27e5acc7a3c0", "1.0.0");
 
 	// to spit json requests/responses to the console
-	//brainCloudClient.enableLogging(true);
+	//_bc.enableLogging(true);
 
 	// change this url if you want to point to another brainCloud server
 	// brainCloudManager.setDispatcherURL("https://sharedprod.braincloudservers.com/dispatcher");
@@ -154,7 +157,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(true);
 
-			brainCloudClient.product.awardCurrency(
+			_bc.product.awardCurrency(
 				"bucks",
 				$scope.bet,
 				function (result) {
@@ -175,7 +178,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			brainCloudClient.product.consumeCurrency(
+			_bc.product.consumeCurrency(
 				"bucks",
 				$scope.bet * 2,
 				function (result) {
@@ -195,7 +198,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			brainCloudClient.product.consumeCurrency(
+			_bc.product.consumeCurrency(
 				"bucks",
 				$scope.bet,
 				function (result) {
@@ -228,19 +231,19 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.longestStreak = longestStreak;
 		}
 
-		brainCloudClient.playerStatistics.incrementPlayerStats(
+		_bc.playerStatistics.incrementPlayerStats(
 			incrementData,
 			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
-		brainCloudClient.globalStatistics.incrementGlobalStats(
+		_bc.globalStatistics.incrementGlobalStats(
 			{ GamesPlayed: 1 },
 			function (result) { console.log(true, "incrementGlobalGameStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
-		brainCloudClient.socialLeaderboard.postScoreToLeaderboard(
+		_bc.socialLeaderboard.postScoreToLeaderboard(
 			"AceyDeucyPlayers",
 			($scope.dollarsWon * 1000) - $scope.refills,
 			{ "DollarsWon": $scope.dollarsWon, "Refills": $scope.refills },
@@ -274,7 +277,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				$scope.userId = result.data.id;
 
 				if (result.data && result.data.newUser === "false") {
-					brainCloudClient.playerStatistics.readAllUserStats(
+					_bc.playerStatistics.readAllUserStats(
 						function (result) {
 							console.log(true, "readPlayerStatisticsCallback");
 							console.log(result);
@@ -291,7 +294,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						}
 					);
 
-					brainCloudClient.entity.getEntitiesByType(
+					_bc.entity.getEntitiesByType(
 						'congratsMessage',
 						function (result) {
 							console.log(true, "readEntityByType");
@@ -316,7 +319,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 				} else {
 
-					brainCloudClient.product.awardCurrency(
+					_bc.product.awardCurrency(
 						"bucks",
 						100,
 						function (result) {
@@ -344,7 +347,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			}
 		}
 
-		brainCloudClient.authentication.authenticateEmailPassword(
+		_bc.authenticateEmailPassword(
 			$scope.email,
 			$scope.password,
 			true,
@@ -354,14 +357,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.setUsername = function () {
 
-		brainCloudClient.playerState.updatePlayerName($scope.username, function (result) {
+		_bc.playerState.updatePlayerName($scope.username, function (result) {
 			console.log(true, "updatePlayerName");
 			console.log(result);
 
 		}
 		);
 
-		brainCloudClient.entity.createEntity(
+		_bc.entity.createEntity(
 			"congratsMessage", { "msg": $scope.message }, null,
 			function (result) {
 				console.log(true, "readEntityByType");
@@ -382,13 +385,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		var incrementData = { Refills: 1 };
 
 		$scope.refills++;
-		brainCloudClient.playerStatistics.incrementUserStats(
+		_bc.playerStatistics.incrementUserStats(
 			incrementData,
 			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
-		brainCloudClient.product.awardCurrency(
+		_bc.product.awardCurrency(
 			"bucks",
 			100,
 			function (result) {
@@ -413,7 +416,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 
 	$scope.resetPassword = function () {
-		brainCloudClient.authentication.resetEmailPassword(
+		_bc.brainCloudClient.authentication.resetEmailPassword(
 			$scope.email,
 			function (result) {
 				console.log(result);
@@ -437,9 +440,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.showLeaderboards = function () {
 		$scope.showGame = false;
 
-		brainCloudClient.socialLeaderboard.getGlobalLeaderboardView(
+		_bc.socialLeaderboard.getGlobalLeaderboardView(
 			"AceyDeucyPlayers",
-			brainCloudClient.socialLeaderboard.sortOrder.HIGH_TO_LOW,
+			_bc.socialLeaderboard.sortOrder.HIGH_TO_LOW,
 			leaderBoardAround - 1,
 			leaderBoardAround,
 			function (result) {
@@ -478,9 +481,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		}
 		var end = start + (2 * leaderBoardAround) - 1;
-		brainCloudClient.socialLeaderboard.getGlobalLeaderboardPage(
+		_bc.socialLeaderboard.getGlobalLeaderboardPage(
 			"AceyDeucyPlayers",
-			brainCloudClient.socialLeaderboard.sortOrder.HIGH_TO_LOW,
+			_bc.socialLeaderboard.sortOrder.HIGH_TO_LOW,
 			start,
 			end,
 			function (result) {
