@@ -1,13 +1,14 @@
 <html lang="en" ng-app="CardGame">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="HandheldFriendly" content="true" />
 
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta name="HandheldFriendly" content="true" />
 
-    <style>
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
 
-      md-toolbar h1 {
+	<style>
+
+		md-toolbar h1 {
       font-size: 1.250em;
       font-weight: 400;
       margin: auto;
@@ -97,325 +98,326 @@
       font-variant: small-caps;
       }
     </style>
-  </head>
-  <body layout="column" ng-controller="GameCtrl" ng-cloak class="ng-cloak">
+</head>
 
-     <md-toolbar layout="row">
+<body layout="column" ng-controller="GameCtrl" ng-cloak class="ng-cloak">
 
-       <md-button class="md-raised md-primary"
-		  ng-click="toggleLeftSideMenu()"
-		  ng-show="showGame || showLeaderboard"
-		  style="margin-left: 5px; min-width: 40px;">
+	<md-toolbar layout="row">
 
-	 <img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
+		<md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()" ng-show="showGame || showLeaderboard" style="margin-left: 5px; min-width: 40px;">
 
-       </md-button>
+			<img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
 
-      <h1>{{title}}</h1>
-
-    </md-toolbar>
-
-      <form name="loginForm" ng-submit="login()" ng-show="showLogin">
-
-	<div layout="row">
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-	  <div flex>
-	    <md-content class="md-padding" layout="column">
-	      <md-input-container>
-		<label>Email</label>
-		<input ng-model="email" type="email" required>
-	      </md-input-container>
-	      <md-input-container>
-		<label>Password</label>
-		<input ng-model="password" type="password" required>
-	      </md-input-container>
-
-	      <md-input-container>
-		<md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Login</md-button>
-		<img src="loading-bubbles.svg" alt="Loading icon" style="height: 70px;" ng-show="loggingIn"/>
-	      </md-input-container>
-
-
-
-
-	      <md-input-container>
-		<md-button class="md-raised md-warn md-primary" type="button" ng-click=" showForgotPassword = true; showLogin = false; " ng-hide="loggingIn">Forgot Password</md-button>
-	      </md-input-container>
-
-	    </md-content>
-	  </div>
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-
-	</div>
-      </form>
-
-      <form name="forgotPasswordForm" ng-submit="login()" ng-show="showForgotPassword" class="animate-show">
-
-	<div layout="row">
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-	  <div flex>
-	    <md-content class="md-padding" layout="column">
-	      <md-input-container>
-		<label>Email</label>
-		<input ng-model="email" type="email" required>
-	      </md-input-container>
-
-	      <md-input-container>
-		<md-button class="md-raised md-primary" type="button" ng-click="resetPassword()" ng-hide="loggingIn">Send Password Reset Email</md-button>
-	      </md-input-container>
-
-	    </md-content>
-	  </div>
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-	</div>
-      </form>
-
-      <form name="usernameForm" ng-submit="setUsername()" ng-show="showUsername" class="animate-show">
-
-	<div layout="row">
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-	  <div flex>
-	    <md-content class="md-padding" layout="column">
-	      <md-input-container>
-		<label>Player Name</label>
-		<input ng-model="username" type="text" required>
-	      </md-input-container>
-
-	      <md-input-container>
-		<label>Congratulations Message</label>
-		<input ng-model="message" type="text" required>
-	      </md-input-container>
-
-	      <md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Save</md-button>
-	      <img src="loading-bubbles.svg" alt="Loading icon" style="height: 70px;" ng-show="loggingIn"/>
-	    </md-content>
-	  </div>
-
-	  <div flex hide-sm hide-md>
-	  </div>
-
-
-	</div>
-
-
-      </form>
-
-
-      <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 64px">
-	<md-toolbar class="md-theme-indigo">
-          <h1 class="md-toolbar-tools">Options</h1>
-	</md-toolbar>
-	<md-content class="md-padding">
-
-	  <md-content>
-	    <md-list>
-	      <md-item>
-		<md-item-content ng-click="showGameAgain()" class="sidenav-link">
-		  <div class="md-tile-content">
-		    <h3>Game</h3>
-		  </div>
-		</md-item-content>
-	      </md-item>
-
-	      <md-item>
-		<md-item-content ng-click="showLeaderboards()" class="sidenav-link">
-		  <div class="md-tile-content">
-		    <h3>Leaderboards</h3>
-		  </div>
-		</md-item-content>
-	      </md-item>
-
-	      <md-item>
-		<md-item-content ng-click="showHelp()" class="sidenav-link">
-		  <div class="md-tile-content">
-		    <h3>Help</h3>
-		  </div>
-		</md-item-content>
-	      </md-item>
-
-	    </md-list>
-	  </md-content>
-
-	</md-content>
-      </md-sidenav>
-
-
-    <div layout="row" flex ng-show="showGame" class="animate-show">
-
-
-        <div layout="column" flex id="content">
-            <md-content layout="column" flex class="md-padding" style="overflow-x: hidden;">
-              <md-list>
-		<md-item >
-		  <md-item-content>
-		    <div class="md-tile-content">
-		      <div layout="row" layout-align="space-around">
-			<h3>${{money}}</h3>
-		      </div>
-		    </div>
-		  </md-item-content>
-		  <md-divider></md-divider>
-		</md-item>
-		<md-item >
-		  <md-item-content>
-		    <div class="md-tile-content">
-		      <div layout="row" layout-align="space-around">
-			<h3 ng-show="username">{{username}}, you've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</h3>
-		      </div>
-		    </div>
-		  </md-item-content>
-		  <md-divider></md-divider>
-		</md-item>
-	      </md-list>
-
-
-	      <div layout="row" layout-align="center">
-
-	       <md-card class="card">
-		 <md-card-content >
-		   <div ng-bind-html="card1 | card"></div>
-		 </md-card-content>
-	       </md-card>
-
-	       <md-card class="card">
-		 <md-card-content >
-		   <div ng-bind-html="card2 | card"></div>
-
-		 </md-card-content>
-	       </md-card>
-
-	      </div>
-
-	      <div layout="row" layout-align="space-around">
-
-	       <md-card class="card" ng-class="{ 'card-back' : card3 === '' }">
-		 <md-card-content style="min-height: 100px">
-		   <div ng-bind-html="card3 | card"></div>
-		 </md-card-content>
-	       </md-card>
-
-	      </div>
-
-	      <div layout="row">
-
-		<div flex="10" layout layout-align="center center">
-		  <span>My Bet</span>
-		</div>
-
-		<div flex="80">
-		  <md-slider md-discrete ng-model="bet" step="1" min="1" max="50" aria-label="bet" ng-disabled=" state !== 'NEW_HAND' ">
-		  </md-slider>
-		</div>
-
-	      </div>
-
-	      <div layout="row" layout-align="space-around">
-		  <h3>{{bet | currency}}</h3>
-	      </div>
-
-
-	      <div layout="row" layout-align="space-around" style="min-height: 60px;">
-		  <h3>{{gameStatusMsg}}</h3>
-	      </div>
-
-	      <div layout="row" layout-align="space-around">
-		<md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
-		  <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon" style="width: 24px; height: 24px;"/>
-		  <img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon" style="width: 24px; height: 24px;"/>
 		</md-button>
-	      </div>
+
+		<h1>{{title}}</h1>
+
+	</md-toolbar>
+
+	<form name="loginForm" ng-submit="login()" ng-show="showLogin">
+
+		<div layout="row">
+
+			<div flex hide-sm hide-md>
+			</div>
+
+			<div flex>
+				<md-content class="md-padding" layout="column">
+					<md-input-container>
+						<label>Email</label>
+						<input ng-model="email" type="email" required>
+					</md-input-container>
+					<md-input-container>
+						<label>Password</label>
+						<input ng-model="password" type="password" required>
+					</md-input-container>
+
+					<md-input-container>
+						<md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Login</md-button>
+						<img src="loading-bubbles.svg" alt="Loading icon" style="height: 70px;" ng-show="loggingIn" />
+					</md-input-container>
 
 
-	      <div layout="row" layout-align="space-around">
-		  <h3>{{state | stateLabel}}</h3>
-	      </div>
 
 
-	      <div layout="row" layout-align="space-around" >
-	      	<md-button class="md-raised md-primary" ng-click="freeMoney()">Free Money</md-button>
+					<md-input-container>
+						<md-button class="md-raised md-warn md-primary" type="button" ng-click=" showForgotPassword = true; showLogin = false; "
+						 ng-hide="loggingIn">Forgot Password</md-button>
+					</md-input-container>
 
-	      </div>
+				</md-content>
+			</div>
 
-
-
-            </md-content>
-        </div>
-    </div>
-
-    <div layout="row" flex ng-show="showLeaderboard" class="animate-show">
-
-      <div flex hide-sm hide-md>
-      </div>
+			<div flex hide-sm hide-md>
+			</div>
 
 
-      <div flex>
+		</div>
+	</form>
 
-	 <md-content>
+	<form name="forgotPasswordForm" ng-submit="login()" ng-show="showForgotPassword" class="animate-show">
+
+		<div layout="row">
+
+			<div flex hide-sm hide-md>
+			</div>
+
+			<div flex>
+				<md-content class="md-padding" layout="column">
+					<md-input-container>
+						<label>Email</label>
+						<input ng-model="email" type="email" required>
+					</md-input-container>
+
+					<md-input-container>
+						<md-button class="md-raised md-primary" type="button" ng-click="resetPassword()" ng-hide="loggingIn">Send
+							Password Reset Email</md-button>
+					</md-input-container>
+
+				</md-content>
+			</div>
+
+			<div flex hide-sm hide-md>
+			</div>
+
+		</div>
+	</form>
+
+	<form name="usernameForm" ng-submit="setUsername()" ng-show="showUsername" class="animate-show">
+
+		<div layout="row">
+
+			<div flex hide-sm hide-md>
+			</div>
+
+			<div flex>
+				<md-content class="md-padding" layout="column">
+					<md-input-container>
+						<label>Player Name</label>
+						<input ng-model="username" type="text" required>
+					</md-input-container>
+
+					<md-input-container>
+						<label>Congratulations Message</label>
+						<input ng-model="message" type="text" required>
+					</md-input-container>
+
+					<md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Save</md-button>
+					<img src="loading-bubbles.svg" alt="Loading icon" style="height: 70px;" ng-show="loggingIn" />
+				</md-content>
+			</div>
+
+			<div flex hide-sm hide-md>
+			</div>
 
 
-	  <md-list layout="column">
+		</div>
 
-	    <div layout="row">
-	      <md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)" ng-disabled="disablePrev">Prev</md-button>
 
-	      <md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)" ng-disabled="disableNext">Next</md-button>
-	    </div>
+	</form>
 
-	    <md-item ng-repeat="player in leaderboard">
 
-	       <md-item-content>
-		 <div class="md-tile-left leaderboard-badge">
-		   {{player.rank}}
-		 </div>
-		 <div class="md-tile-content" style="padding-left: 20px;">
-		   <h3>{{ player.name || player.playerId}}</h3>
-		   <h4>Dollars Won: {{ player.data.DollarsWon | currency:undefined:0}} Refills: {{ player.data.Refills}}</h4>
-		 </div>
-               </md-item-content>
+	<md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 64px">
+		<md-toolbar class="md-theme-indigo">
+			<h1 class="md-toolbar-tools">Options</h1>
+		</md-toolbar>
+		<md-content class="md-padding">
 
-	    </md-item>
+			<md-content>
+				<md-list>
+					<md-item>
+						<md-item-content ng-click="showGameAgain()" class="sidenav-link">
+							<div class="md-tile-content">
+								<h3>Game</h3>
+							</div>
+						</md-item-content>
+					</md-item>
 
-	  </md-list>
-	 </md-content>
+					<md-item>
+						<md-item-content ng-click="showLeaderboards()" class="sidenav-link">
+							<div class="md-tile-content">
+								<h3>Leaderboards</h3>
+							</div>
+						</md-item-content>
+					</md-item>
 
-      </div>
+					<md-item>
+						<md-item-content ng-click="showHelp()" class="sidenav-link">
+							<div class="md-tile-content">
+								<h3>Help</h3>
+							</div>
+						</md-item-content>
+					</md-item>
 
-      <div flex hide-sm hide-md>
-      </div>
+				</md-list>
+			</md-content>
 
-    </div>
+		</md-content>
+	</md-sidenav>
 
-    <!-- Angular Material Dependencies -->
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-animate.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-aria.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-sanitize.min.js"></script>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.js"></script>
+	<div layout="row" flex ng-show="showGame" class="animate-show">
 
-    <!-- brainCloud Dependencies -->
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
 
-    <script src="brainCloudClient.min.js"></script>
+		<div layout="column" flex id="content">
+			<md-content layout="column" flex class="md-padding" style="overflow-x: hidden;">
+				<md-list>
+					<md-item>
+						<md-item-content>
+							<div class="md-tile-content">
+								<div layout="row" layout-align="space-around">
+									<h3>${{money}}</h3>
+								</div>
+							</div>
+						</md-item-content>
+						<md-divider></md-divider>
+					</md-item>
+					<md-item>
+						<md-item-content>
+							<div class="md-tile-content">
+								<div layout="row" layout-align="space-around">
+									<h3 ng-show="username">{{username}}, you've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</h3>
+								</div>
+							</div>
+						</md-item-content>
+						<md-divider></md-divider>
+					</md-item>
+				</md-list>
 
-    <script src="md5.js"></script>
 
-    <script src="cardGame.js"></script>
+				<div layout="row" layout-align="center">
 
-  </body>
+					<md-card class="card">
+						<md-card-content>
+							<div ng-bind-html="card1 | card"></div>
+						</md-card-content>
+					</md-card>
+
+					<md-card class="card">
+						<md-card-content>
+							<div ng-bind-html="card2 | card"></div>
+
+						</md-card-content>
+					</md-card>
+
+				</div>
+
+				<div layout="row" layout-align="space-around">
+
+					<md-card class="card" ng-class="{ 'card-back' : card3 === '' }">
+						<md-card-content style="min-height: 100px">
+							<div ng-bind-html="card3 | card"></div>
+						</md-card-content>
+					</md-card>
+
+				</div>
+
+				<div layout="row">
+
+					<div flex="10" layout layout-align="center center">
+						<span>My Bet</span>
+					</div>
+
+					<div flex="80">
+						<md-slider md-discrete ng-model="bet" step="1" min="1" max="50" aria-label="bet" ng-disabled=" state !== 'NEW_HAND' ">
+						</md-slider>
+					</div>
+
+				</div>
+
+				<div layout="row" layout-align="space-around">
+					<h3>{{bet | currency}}</h3>
+				</div>
+
+
+				<div layout="row" layout-align="space-around" style="min-height: 60px;">
+					<h3>{{gameStatusMsg}}</h3>
+				</div>
+
+				<div layout="row" layout-align="space-around">
+					<md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
+						<img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon" style="width: 24px; height: 24px;" />
+						<img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon" style="width: 24px; height: 24px;" />
+					</md-button>
+				</div>
+
+
+				<div layout="row" layout-align="space-around">
+					<h3>{{state | stateLabel}}</h3>
+				</div>
+
+
+				<div layout="row" layout-align="space-around">
+					<md-button class="md-raised md-primary" ng-click="freeMoney()">Free Money</md-button>
+
+				</div>
+
+
+
+			</md-content>
+		</div>
+	</div>
+
+	<div layout="row" flex ng-show="showLeaderboard" class="animate-show">
+
+		<div flex hide-sm hide-md>
+		</div>
+
+
+		<div flex>
+
+			<md-content>
+
+
+				<md-list layout="column">
+
+					<div layout="row">
+						<md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)" ng-disabled="disablePrev">Prev</md-button>
+
+						<md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)" ng-disabled="disableNext">Next</md-button>
+					</div>
+
+					<md-item ng-repeat="player in leaderboard">
+
+						<md-item-content>
+							<div class="md-tile-left leaderboard-badge">
+								{{player.rank}}
+							</div>
+							<div class="md-tile-content" style="padding-left: 20px;">
+								<h3>{{ player.name || player.playerId}}</h3>
+								<h4>Dollars Won: {{ player.data.DollarsWon | currency:undefined:0}} Refills: {{ player.data.Refills}}</h4>
+							</div>
+						</md-item-content>
+
+					</md-item>
+
+				</md-list>
+			</md-content>
+
+		</div>
+
+		<div flex hide-sm hide-md>
+		</div>
+
+	</div>
+
+	<!-- Angular Material Dependencies -->
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-animate.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-aria.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-sanitize.min.js"></script>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.js"></script>
+
+	<!-- brainCloud Dependencies -->
+	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+
+	<script src="brainCloudClient.min.js"></script>
+
+	<script src="md5.js"></script>
+
+	<script src="cardGame.js"></script>
+
+</body>
+
 </html>
