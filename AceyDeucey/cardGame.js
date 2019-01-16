@@ -4,9 +4,9 @@ app.filter('stateLabel', function () {
 	return function (state) {
 		if ((state == undefined || state == null)) {
 			return state;
-		} else if(state === "NEW_HAND") {
+		} else if (state === "NEW_HAND") {
 			return "Flip";
-		} else if(state === "DEAL") {
+		} else if (state === "DEAL") {
 			return "Next Round";
 		}
 	}
@@ -26,11 +26,11 @@ app.filter('card', function () {
 		} else {
 			var str = "";
 
-			if(card.value > 10 && card.value < 14){
+			if (card.value > 10 && card.value < 14) {
 
 				return '<img src="' + faces[card.value] + '" class="card-class" />';
 
-			} else if(card.value === 14){
+			} else if (card.value === 14) {
 				str += faces[card.value]
 			} else {
 				str += card.value;
@@ -41,15 +41,15 @@ app.filter('card', function () {
 	}
 });
 
-app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope, $mdDialog, $mdSidenav){
+app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
-	const cards = [2, 3 ,4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+	const cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 	const suits = ["Diamonds", "Hearts", "Clubs", "Spades"];
 	const deck = [];
 
-	angular.forEach(suits, function(suit){
-		angular.forEach(cards, function(card){
-			deck.push({value: card, suit: suit});
+	angular.forEach(suits, function (suit) {
+		angular.forEach(cards, function (card) {
+			deck.push({ value: card, suit: suit });
 		});
 	});
 
@@ -100,23 +100,23 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 	// change this url if you want to point to another brainCloud server
 	// brainCloudManager.setDispatcherURL("https://sharedprod.braincloudservers.com/dispatcher");
 
-	$scope.dispatchButtonPress = function(){
-		if($scope.state === "NEW_HAND"){
+	$scope.dispatchButtonPress = function () {
+		if ($scope.state === "NEW_HAND") {
 			$scope.state = "DEAL";
 			$scope.deal();
-		} else if($scope.state === "DEAL"){
+		} else if ($scope.state === "DEAL") {
 			$scope.state = "NEW_HAND";
 			$scope.newHand();
 		}
 	};
 
-	$scope.randomCard = function() {
+	$scope.randomCard = function () {
 		var position = Math.floor(Math.random() * $scope.cards.length);
 		var card = $scope.cards.splice(position, 1)[0];
 		return card;
 	};
 
-	$scope.newHand = function(){
+	$scope.newHand = function () {
 
 		// Draw cards until they have different values
 		do {
@@ -125,7 +125,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			var t1 = $scope.randomCard();
 			var t2 = $scope.randomCard();
 
-		} while(t1.value === t2.value);
+		} while (t1.value === t2.value);
 
 		// Determine which one is low and which is high
 		var sorted = [t1, t2].sort(function compareNumbers(a, b) {
@@ -139,13 +139,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		$scope.gameStatusMsg = "";
 	};
 
-	$scope.deal = function(){
+	$scope.deal = function () {
 		$scope.card3 = $scope.randomCard();
 
 		var incrementData = {};
 
 		// In between
-		if($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value){
+		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
 			$scope.gameStatusMsg = $scope.message + " You Won $" + $scope.bet;
 			$scope.gamesWon++;
 			$scope.dollarsWon += $scope.bet;
@@ -157,8 +157,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			brainCloudClient.product.awardCurrency(
 				"bucks",
 				$scope.bet,
-				function(result) {
-					$scope.$apply(function(){
+				function (result) {
+					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
 					});
 				}
@@ -178,8 +178,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			brainCloudClient.product.consumeCurrency(
 				"bucks",
 				$scope.bet * 2,
-				function(result) {
-					$scope.$apply(function(){
+				function (result) {
+					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
 					});
 				}
@@ -198,8 +198,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			brainCloudClient.product.consumeCurrency(
 				"bucks",
 				$scope.bet,
-				function(result) {
-					$scope.$apply(function(){
+				function (result) {
+					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
 					});
 				}
@@ -210,9 +210,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		// Calculate the longest winning streak for current session
 		var longestStreak = 0;
 		var counter = 0;
-		angular.forEach($scope.gameResults, function(gameResult){
-			if(gameResult === false){
-				if(counter > longestStreak){
+		angular.forEach($scope.gameResults, function (gameResult) {
+			if (gameResult === false) {
+				if (counter > longestStreak) {
 					longestStreak = counter;
 				}
 				counter = 0;
@@ -223,48 +223,48 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		});
 
 		// And update the streak stat if it's larger
-		if(longestStreak > $scope.longestStreak){
+		if (longestStreak > $scope.longestStreak) {
 			incrementData["WinsInARow"] = longestStreak - $scope.longestStreak;
 			$scope.longestStreak = longestStreak;
 		}
 
 		brainCloudClient.playerStatistics.incrementPlayerStats(
 			incrementData,
-			function(result) { console.log(true,"updatePlayerStatistics"); console.log(result.status,200,"Expecting 200"); },
+			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
 		brainCloudClient.globalStatistics.incrementGlobalStats(
-			{GamesPlayed: 1},
-			function(result) { console.log(true,"incrementGlobalGameStatistics"); console.log(result.status,200,"Expecting 200"); },
+			{ GamesPlayed: 1 },
+			function (result) { console.log(true, "incrementGlobalGameStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
 		brainCloudClient.socialLeaderboard.postScoreToLeaderboard(
 			"AceyDeucyPlayers",
-			($scope.dollarsWon * 1000 ) - $scope.refills,
-			{"DollarsWon": $scope.dollarsWon, "Refills": $scope.refills},
-			function(result) { console.log(true,"postScoreCallback"); console.log(result.status,200,"Expecting 200");}
+			($scope.dollarsWon * 1000) - $scope.refills,
+			{ "DollarsWon": $scope.dollarsWon, "Refills": $scope.refills },
+			function (result) { console.log(true, "postScoreCallback"); console.log(result.status, 200, "Expecting 200"); }
 		);
 
 
 	};
 
-	$scope.login = function(){
+	$scope.login = function () {
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
-		if($scope.loggingIn || $scope.loginForm.$invalid){
+		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;
 		}
 
 		$scope.loggingIn = true;
 
-		var loginCallback = function(result) {
+		var loginCallback = function (result) {
 			$scope.loggingIn = false;
 
 			console.log("authenticationCallback");
 			console.log(result);
 
-			if(result.status === 200){
+			if (result.status === 200) {
 				try {
 					$scope.money = result.data.rewards.currency.bucks.balance;
 				} catch (e) {
@@ -273,14 +273,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 				$scope.userId = result.data.id;
 
-				if(result.data && result.data.newUser === "false"){
+				if (result.data && result.data.newUser === "false") {
 					brainCloudClient.playerStatistics.readAllUserStats(
-						function(result) {
-							console.log(true,"readPlayerStatisticsCallback");
+						function (result) {
+							console.log(true, "readPlayerStatisticsCallback");
 							console.log(result);
 
-							$scope.$apply(function(){
-								if(result.data && result.data.statistics){
+							$scope.$apply(function () {
+								if (result.data && result.data.statistics) {
 									$scope.gamesWon = result.data.statistics.Wins;
 									$scope.gamesLost = result.data.statistics.Losses;
 									$scope.refills = result.data.statistics.Refills;
@@ -293,13 +293,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 					brainCloudClient.entity.getEntitiesByType(
 						'congratsMessage',
-						function(result) {
-							console.log(true,"readEntityByType");
+						function (result) {
+							console.log(true, "readEntityByType");
 							console.log(result);
 
-							if(result.data && result.data.entities && result.data.entities.length > 0){
-								$scope.$apply(function(){
-									if(result.data.entities[0].data['msg']){
+							if (result.data && result.data.entities && result.data.entities.length > 0) {
+								$scope.$apply(function () {
+									if (result.data.entities[0].data['msg']) {
 										$scope.message = result.data.entities[0].data['msg'];
 									}
 								});
@@ -309,7 +309,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 
 					// Hide login section and display the gameplay
-					$scope.$apply(function(){
+					$scope.$apply(function () {
 						$scope.showLogin = false;
 						$scope.showGame = true;
 					});
@@ -319,8 +319,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 					brainCloudClient.product.awardCurrency(
 						"bucks",
 						100,
-						function(result) {
-							$scope.$apply(function(){
+						function (result) {
+							$scope.$apply(function () {
 								$scope.money = result.data.currencyMap.bucks.balance;
 							});
 						}
@@ -328,7 +328,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 
 					// Hide login section and display the user name config
-					$scope.$apply(function(){
+					$scope.$apply(function () {
 						$scope.showLogin = false;
 						$scope.showUsername = true;
 					});
@@ -352,22 +352,22 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		);
 	};
 
-	$scope.setUsername = function(){
+	$scope.setUsername = function () {
 
-		brainCloudClient.playerState.updatePlayerName($scope.username, function(result) {
-				console.log(true,"updatePlayerName");
-				console.log(result);
+		brainCloudClient.playerState.updatePlayerName($scope.username, function (result) {
+			console.log(true, "updatePlayerName");
+			console.log(result);
 
-			}
+		}
 		);
 
 		brainCloudClient.entity.createEntity(
 			"congratsMessage", { "msg": $scope.message }, null,
-			function(result) {
-				console.log(true,"readEntityByType");
+			function (result) {
+				console.log(true, "readEntityByType");
 				console.log(result);
 
-				$scope.$apply(function(){
+				$scope.$apply(function () {
 					$scope.showUsername = false;
 					$scope.showGame = true;
 				});
@@ -377,22 +377,22 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		);
 	};
 
-	$scope.freeMoney = function(){
+	$scope.freeMoney = function () {
 
-		var incrementData = {Refills: 1};
+		var incrementData = { Refills: 1 };
 
 		$scope.refills++;
 		brainCloudClient.playerStatistics.incrementUserStats(
 			incrementData,
-			function(result) { console.log(true,"updatePlayerStatistics"); console.log(result.status,200,"Expecting 200"); },
+			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
 		brainCloudClient.product.awardCurrency(
 			"bucks",
 			100,
-			function(result) {
-				$scope.$apply(function(){
+			function (result) {
+				$scope.$apply(function () {
 					$scope.money = result.data.currencyMap.bucks.balance;
 				});
 			}
@@ -400,7 +400,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 	};
 
-	$scope.showHelp = function() {
+	$scope.showHelp = function () {
 		$mdDialog.show(
 			$mdDialog.alert()
 				.title('Acey Duecey Rules')
@@ -412,10 +412,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 
 
-	$scope.resetPassword = function(){
+	$scope.resetPassword = function () {
 		brainCloudClient.authentication.resetEmailPassword(
 			$scope.email,
-			function(result){
+			function (result) {
 				console.log(result);
 
 				$mdDialog.show(
@@ -434,7 +434,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 	};
 
 
-	$scope.showLeaderboards = function(){
+	$scope.showLeaderboards = function () {
 		$scope.showGame = false;
 
 		brainCloudClient.socialLeaderboard.getGlobalLeaderboardView(
@@ -442,13 +442,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			brainCloudClient.socialLeaderboard.sortOrder.HIGH_TO_LOW,
 			leaderBoardAround - 1,
 			leaderBoardAround,
-			function(result) {
+			function (result) {
 
-				$scope.$apply(function(){
+				$scope.$apply(function () {
 					angular.copy(result.data.leaderboard, $scope.leaderboard);
 
-					angular.forEach($scope.leaderboard, function(l){
-						if(l.playerId === $scope.userId){
+					angular.forEach($scope.leaderboard, function (l) {
+						if (l.playerId === $scope.userId) {
 							$scope.leaderboardRank = l.rank;
 						}
 					});
@@ -464,13 +464,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 
 	};
 
-	$scope.pageLeaderboard = function(direction){
+	$scope.pageLeaderboard = function (direction) {
 
 		$scope.leaderboardPageOffset += direction;
 
-		var start = ($scope.leaderboardRank - 4 > 0 ? $scope.leaderboardRank - 4 : 0) + ($scope.leaderboardPageOffset * (leaderBoardAround*2));
+		var start = ($scope.leaderboardRank - 4 > 0 ? $scope.leaderboardRank - 4 : 0) + ($scope.leaderboardPageOffset * (leaderBoardAround * 2));
 
-		if(start <= 0){
+		if (start <= 0) {
 			start = 0;
 			$scope.disablePrev = true;
 		} else {
@@ -483,9 +483,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			brainCloudClient.socialLeaderboard.sortOrder.HIGH_TO_LOW,
 			start,
 			end,
-			function(result) {
+			function (result) {
 
-				$scope.$apply(function(){
+				$scope.$apply(function () {
 					angular.copy(result.data.leaderboard, $scope.leaderboard);
 
 					// if(result.data.social_leaderboard.length < (end - start) ){
@@ -494,7 +494,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 					//     $scope.disableNext = false;
 					// }
 
-					if(result.data.moreAfter){
+					if (result.data.moreAfter) {
 						$scope.disableNext = false;
 					} else {
 						$scope.disableNext = true;
@@ -506,7 +506,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 			});
 	};
 
-	$scope.showGameAgain = function(){
+	$scope.showGameAgain = function () {
 		$scope.showLeaderboard = false;
 		$scope.showGame = true;
 		$scope.title = "Acey Deucey";
@@ -514,9 +514,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function($scope
 		$mdSidenav('left').close();
 	};
 
-	$scope.toggleLeftSideMenu = function() {
+	$scope.toggleLeftSideMenu = function () {
 		$mdSidenav('left').toggle()
-			.then(function(){
+			.then(function () {
 				console.debug("toggle left is done");
 			});
 	};
