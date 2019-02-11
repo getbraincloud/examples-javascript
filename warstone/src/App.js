@@ -140,7 +140,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code === "ROOM_READY" && this.state.server)
+            if (result.data.reason.code === 80101)
             {
                 // Start the game!
                 this.setState({screen: "game"})
