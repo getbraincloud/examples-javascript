@@ -6,6 +6,15 @@
  * persisted upon successful authentication. When authenticating, any stored anonymous/profile ids will
  * be sent to the server. This strategy is useful when using anonymous authentication.
  */
+
+// Local storage
+if (typeof localStorage === "undefined" || localStorage === null) {
+    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
+    os = require('os');
+    var configDir = os.homedir() + "/.bciot";
+    localStorage = new LocalStorage(configDir);
+}
+
 function BrainCloudWrapper(wrapperName) {
 
     var bcw = this;
@@ -726,6 +735,43 @@ function BrainCloudWrapper(wrapperName) {
         };
 
         return identitiesCallback;
+    };
+
+	/**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPassword = function(email, responseHandler) {
+		bcw.brainCloudClient.authentication.resetEmailPassword(email, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPasswordAdvanced = function(emailAddress, serviceParams, responseHandler) {
+        bcw.brainCloudClient.authentication.resetEmailPasswordAdvanced(emailAddress, serviceParams, responseHandler);
     };
 
     /** Method authenticates the user using universal credentials

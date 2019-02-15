@@ -758,7 +758,9 @@ function BrainCloudManager ()
                 var isAuth = false;
                 for (i = 0; i < bcm._inProgressQueue.length; i++)
                 {
-                    if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD")
+                    if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || 
+                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD" || 
+                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD_ADVANCED")
                     {
                         isAuth = true;
                         break;
@@ -972,7 +974,7 @@ function BCAppStore() {
             storeId: storeId,
             category: category,
             priceInfoCriteria: {
-                user_currency: userCurrency
+                userCurrency: userCurrency
             }
         };
         
@@ -1413,6 +1415,7 @@ function BCAuthentication() {
 
 	bc.authentication.OPERATION_AUTHENTICATE = "AUTHENTICATE";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD = "RESET_EMAIL_PASSWORD";
+	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED = "RESET_EMAIL_PASSWORD_ADVANCED";
 
 	bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS = "Anonymous";
 	bc.authentication.AUTHENTICATION_TYPE_EMAIL = "Email";
@@ -1750,6 +1753,38 @@ function BCAuthentication() {
 
 		};
 		//console.log("Request: " + JSON.stringify(request));
+		bc.brainCloudManager.sendRequest(request);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetEmailPasswordAdvanced = function(emailAddress, serviceParams, responseHandler) {
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED,
+			data: {
+                gameId: appId,
+                emailAddress: emailAddress,
+				serviceParams: serviceParams
+            },
+            callback: responseHandler
+		};
 		bc.brainCloudManager.sendRequest(request);
     };
     
@@ -3223,6 +3258,9 @@ function BCFriend() {
 	bc.friend.OPERATION_GET_USERS_ONLINE_STATUS = "GET_USERS_ONLINE_STATUS";
 	bc.friend.OPERATION_FIND_USERS_BY_EXACT_NAME = "FIND_USERS_BY_EXACT_NAME";
 	bc.friend.OPERATION_FIND_USERS_BY_SUBSTR_NAME = "FIND_USERS_BY_SUBSTR_NAME";
+	bc.friend.OPERATION_FIND_USERS_BY_NAME_STARTING_WITH = "FIND_USERS_BY_NAME_STARTING_WITH";
+	bc.friend.OPERATION_FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH = "FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH";
+	bc.friend.OPERATION_FIND_USER_BY_EXACT_UNIVERSAL_ID = "FIND_USER_BY_EXACT_UNIVERSAL_ID";
 
 	bc.friend.friendPlatform = Object.freeze({ All : "All",  BrainCloud : "brainCloud",  Facebook : "Facebook" });
 
@@ -3413,10 +3451,7 @@ function BCFriend() {
 	};
 
 	/**
-	 * Retrieves profile information for the partial matches of the specified text.
-	 *
-	 * @param searchText Universal ID text on which to search.
-	 * @param maxResults Maximum number of results to return.
+	 * @deprecated Use findUserByExactUniversalId
 	 */
 	bc.friend.findUserByUniversalId = function(searchText, maxResults, callback) {
 		bc.brainCloudManager.sendRequest({
@@ -3425,6 +3460,22 @@ function BCFriend() {
 			data: {
 				searchText: searchText,
 				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
+	
+	/** Retrieves profile information for the partial matches of the specified text.
+	 *
+	 * @param searchText Universal ID text on which to search.
+	 * @param maxResults Maximum number of results to return.
+	 */
+	bc.friend.findUserByExactUniversalId = function(searchText, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USER_BY_EXACT_UNIVERSAL_ID,
+			data: {
+				searchText: searchText
 			},
 			callback: callback
 		});
@@ -3529,6 +3580,51 @@ function BCFriend() {
 		});
 	};
 
+	/**
+	 * Retrieves profile information for users whose names starts with search text. 
+	 * Optional parameter macResults allows you to search an amount of names. 
+	 *
+	 * Service Name - friend
+	 * Service Operation - FIND_USERS_BY_NAME_STARTING_WITH
+	 *
+	 * @param searchText Collection of profile IDs.
+	 * @param maxResults how many names you want to return.
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.findUsersByNameStartingWith  = function(searchText, maxResults, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USERS_BY_NAME_STARTING_WITH,
+			data: {
+				searchText: searchText,
+				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Retrieves profile information for users whose universal ID starts with search text. 
+	 * Optional parameter maxResults lets you search for a number of Universal IDs. 
+	 *
+	 * Service Name - friend
+	 * Service Operation - FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH
+	 *
+	 * @param searchText Collection of profile IDs.
+	 * @param maxResults how many names you want to return.
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.findUsersByUniversalIdStartingWith  = function(searchText, maxResults, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH,
+			data: {
+				searchText: searchText,
+				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
 }
 
 BCFriend.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -7133,19 +7229,36 @@ function BCMessaging() {
         });
     };
 
+    ///**
+    // * DEPRECATED - USE GETMESSAGES WITH MARKMESSAGEREAD... JS doesn't allow overload
+    // * Retrieves list of specified messages.
+    // *
+    // * Service Name - Messaging
+    // * Service Operation - GET_MESSAGES
+    // *
+    // * @param msgIds Arrays of message ids to get.
+    // * @param callback The method to be invoked when the server response is received
+    // */
+    // bc.messaging.getMessages = function(msgbox, msgIds, callback) {
+    //    getMessages(msgbox, msgIds, false, callback);
+    //};
+    
     /**
      * Retrieves list of specified messages.
      *
      * Service Name - Messaging
      * Service Operation - GET_MESSAGES
      *
+     * @param msgbox where the msg comes from ex. inbox
      * @param msgIds Arrays of message ids to get.
+     * @param markMessageRead mark the messagesyou get as read
      * @param callback The method to be invoked when the server response is received
      */
-    bc.messaging.getMessages = function(msgbox, msgIds, callback) {
+    bc.messaging.getMessages = function(msgbox, msgIds, markMessageRead, callback) {
         var message = {
             msgbox: msgbox,
-            msgIds: msgIds
+            msgIds: msgIds,
+            markMessageRead: markMessageRead 
         };
 
         bc.brainCloudManager.sendRequest({
@@ -9912,6 +10025,15 @@ function BCReasonCodes() {
     bc.reasonCodes.BASIC_AUTH_FAILURE = 550013;
     bc.reasonCodes.MONGO_DB_EXCEPTION = 600001;
     bc.reasonCodes.CONCURRENT_LOCK_ERROR = 600002;
+    bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
+    bc.reasonCodes.RTT_EVICTED = 80001;
+    bc.reasonCodes.RTT_LOST_CONNECTION = 80002;
+    bc.reasonCodes.RTT_TIMEOUT = 80100;
+    bc.reasonCodes.RTT_ROOM_READY = 80101;
+    bc.reasonCodes.RTT_ROOM_CANCELLED = 80102;
+    bc.reasonCodes.RTT_ERROR_ASSIGNING_ROOM = 80103;
+    bc.reasonCodes.RTT_ERROR_LAUNCHING_ROOM = 80104;
+    bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
     bc.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT = 90001;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_CANCELLED = 90100;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_TIMED_OUT = 90101;
@@ -11589,7 +11711,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "3.10.0";
+    bcc.version = "3.11.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -11890,6 +12012,13 @@ function BrainCloudClient() {
      */
     bcc.disableRTT = function() {
         bcc.brainCloudRttComms.disableRTT();
+    }
+
+    /**
+     * Returns true if RTT is enabled
+     */
+    bcc.getRTTEnabled = function() {
+        return bcc.brainCloudRttComms.isRTTEnabled();
     }
 
     /**
@@ -12227,6 +12356,14 @@ function BrainCloudRttComms () {
             bcrtt.socket.close();
             bcrtt.socket = null;
         }
+    }
+
+    /**
+     * Returns true is RTT is enabled.
+     */
+    bcrtt.isRTTEnabled = function()
+    {
+        return bcrtt.isEnabled;
     }
 
     bcrtt.registerRTTCallback = function(serviceName, callback) {
@@ -12980,6 +13117,43 @@ function BrainCloudWrapper(wrapperName) {
         };
 
         return identitiesCallback;
+    };
+
+	/**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPassword = function(email, responseHandler) {
+		bcw.brainCloudClient.authentication.resetEmailPassword(email, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPasswordAdvanced = function(emailAddress, serviceParams, responseHandler) {
+        bcw.brainCloudClient.authentication.resetEmailPasswordAdvanced(emailAddress, serviceParams, responseHandler);
     };
 
     /** Method authenticates the user using universal credentials
