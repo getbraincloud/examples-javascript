@@ -1,5 +1,5 @@
 if (typeof WebSocket === 'undefined') {
-    var WebSocket = require('isomorphic-ws');
+    WebSocket = require('ws');
 }
 
 var DEFAULT_RTT_HEARTBEAT = 10; // Seconds
@@ -256,6 +256,14 @@ function BrainCloudRttComms () {
             bcrtt.socket.close();
             bcrtt.socket = null;
         }
+    }
+
+    /**
+     * Returns true is RTT is enabled.
+     */
+    bcrtt.isRTTEnabled = function()
+    {
+        return bcrtt.isEnabled;
     }
 
     bcrtt.registerRTTCallback = function(serviceName, callback) {
