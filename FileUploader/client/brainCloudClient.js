@@ -147,7 +147,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "3.9.1";
+    bcc.version = "3.11.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -346,17 +346,6 @@ function BrainCloudClient() {
     };
 
     /**
-     * Set this flag to use (or not use) jquery as the underlying
-     * mechanism to execute http calls. By default, this is true.
-     *
-     * @param useJQuery
-     * {boolean} - True to use JQuery, false otherwise.
-     */
-    bcc.useJQuery = function(value) {
-        bcc.brainCloudManager.useJQuery(value);
-    };
-
-    /**
      * Returns whether the client is initialized.
      * @return True if initialized, false otherwise.
      */
@@ -459,6 +448,13 @@ function BrainCloudClient() {
      */
     bcc.disableRTT = function() {
         bcc.brainCloudRttComms.disableRTT();
+    }
+
+    /**
+     * Returns true if RTT is enabled
+     */
+    bcc.getRTTEnabled = function() {
+        return bcc.brainCloudRttComms.isRTTEnabled();
     }
 
     /**

@@ -6,15 +6,8 @@ let roomServers = [];
 exports.createRoomServer = function(room)
 {
     let roomServer = null;
-
-    switch (room.appId)
-    {
-        case ids.appId:
-            roomServer = new TurnBasedRoomServer(room, "Warstone");
-            break;
-        default:
-            return null;
-    }
+    
+    roomServer = new TurnBasedRoomServer(room, "WarStone");
 
     if (roomServer)
     {

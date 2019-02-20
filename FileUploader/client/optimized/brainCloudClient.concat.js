@@ -1,8 +1,33 @@
-// Inspired by: http://enterprisejquery.com/2010/10/how-good-c-habits-can-encourage-bad-javascript-habits-part-1/
-// Requires that jquery has been loaded as well...
-// The variable that will contain the AB Test data retrieved from S3.
-var abTestData;
+// MD5
+if (typeof CryptoJS === "undefined" || CryptoJS === null) {
+    CryptoJS = {};
+}
+if (!CryptoJS.MD5) {
+    CryptoJS.MD5 = require('md5');
+}
 
+// XMLHttpRequest
+if (typeof window === "undefined" || window === null) {
+    window = {}
+}
+if (!window.XMLHttpRequest) {
+    window.XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+    XMLHttpRequest = window.XMLHttpRequest;
+
+    XMLHttpRequest.UNSENT = 0;
+    XMLHttpRequest.OPENED = 1;
+    XMLHttpRequest.HEADERS_RECEIVED = 2;
+    XMLHttpRequest.LOADING = 3;
+    XMLHttpRequest.DONE = 4;
+}
+
+// Local storage
+if (typeof localStorage === "undefined" || localStorage === null) {
+    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
+    os = require('os');
+    var configDir = os.homedir() + "/.bciot";
+    localStorage = new LocalStorage(configDir);
+}
 
 function BrainCloudManager ()
 {
@@ -22,6 +47,7 @@ function BrainCloudManager ()
     bcm._jsonedQueue = "";
     bcm._idleTimeout = 30;
     bcm._heartBeatIntervalId = null;
+    bcm._bundlerIntervalId = null;
 
     bcm._appId = "";
     bcm._secret = "";
@@ -32,8 +58,8 @@ function BrainCloudManager ()
     bcm._appVersion = "";
     bcm._debugEnabled = false;
 
-    bcm._useJQuery = true;
     bcm._requestInProgress = false;
+    bcm._bundleDelayActive = false;
 
     bcm._statusCodeCache = 403;
     bcm._reasonCodeCache = 40304;
@@ -218,11 +244,6 @@ function BrainCloudManager ()
         bcm._debugEnabled = debugEnabled;
     };
 
-    bcm.useJQuery = function(value)
-    {
-        bcm._useJQuery = value;
-    };
-
     bcm.isInitialized = function()
     {
         return bcm._isInitialized;
@@ -258,9 +279,17 @@ function BrainCloudManager ()
         bcm.debugLog("SendRequest: " + JSON.stringify(request));
 
         bcm._sendQueue.push(request);
-        if (!bcm._requestInProgress)
+        if (!bcm._requestInProgress && !bcm._bundleDelayActive)
         {
-            bcm.processQueue();
+            // We can exploit the fact that JS is single threaded and process
+            // the queue 1 "frame" later. This way if the user is doing many
+            // consecussive calls they will be bundled
+            bcm._bundleDelayActive = true;
+            setTimeout(function()
+            {
+                bcm._bundleDelayActive = false;
+                bcm.processQueue();
+            }, 0);
         }
     };
 
@@ -562,149 +591,123 @@ function BrainCloudManager ()
 
     bcm.performQuery = function()
     {
-        if (bcm._useJQuery)
-        {
-            bcm._requestInProgress = true;
-            bcm._loader = jQuery.ajax({
-                timeout: 15000,
-                url: bcm._dispatcherUrl,
-                type: "POST",
-                contentType: "application/json",
-                dataType: "json",
-                beforeSend: bcm.setHeader,
-                data: bcm._jsonedQueue
-            })
-            .done(function(response)
-            {
-                bcm.handleSuccessResponse(response);
+        clearTimeout(bcm.xml_timeoutId);
+        bcm.xml_timeoutId = null;
 
-                bcm._loader = null;
-                bcm._requestInProgress = false;
-                // Now call bcm.processQueue again if there is more data...
-                bcm.processQueue();
-            })
-            .fail(function(jqXhr, textStatus, errorThrown)
-            {
-                bcm.retry();
-            });
+        bcm._requestInProgress = true;
+        var xmlhttp;
+        if (window.XMLHttpRequest)
+        {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
         }
         else
         {
-            clearTimeout(bcm.xml_timeoutId);
-            bcm.xml_timeoutId = null;
+            // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
 
-            bcm._requestInProgress = true;
-            var xmlhttp;
-            if (window.XMLHttpRequest)
+        xmlhttp.ontimeout_bc = function()
+        {
+            if (xmlhttp.readyState < 4)
             {
-                // code for IE7+, Firefox, Chrome, Opera, Safari
-                xmlhttp = new XMLHttpRequest();
+                xmlhttp.hasTimedOut = true;
+                xmlhttp.abort();
+                xmlhttp.hasTimedOut = null;
+
+                bcm.xml_timeoutId = null;
+
+                bcm.debugLog("timeout", false);
+                bcm.retry();
             }
-            else
+        }
+
+        xmlhttp.onreadystatechange = function()
+        {
+            if (xmlhttp.hasTimedOut)
             {
-                // code for IE6, IE5
-                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                return;
             }
 
-            xmlhttp.ontimeout_bc = function()
+            if (xmlhttp.readyState == XMLHttpRequest.DONE)
             {
-                if (xmlhttp.readyState < 4)
+                clearTimeout(bcm.xml_timeoutId);
+                bcm.xml_timeoutId = null;
+
+                bcm.debugLog("response status : " + xmlhttp.status);
+                bcm.debugLog("response : " + xmlhttp.responseText);
+
+                if (xmlhttp.status == 200)
                 {
-                    xmlhttp.hasTimedOut = true;
-                    xmlhttp.abort();
-                    xmlhttp.hasTimedOut = null;
+                    var response = JSON.parse(xmlhttp.responseText);
 
-                    bcm.xml_timeoutId = null;
+                    bcm.handleSuccessResponse(response);
 
-                    bcm.debugLog("timeout", false);
-                    bcm.retry();
+                    bcm._requestInProgress = false;
+                    bcm.processQueue();
                 }
-            }
-
-            xmlhttp.onreadystatechange = function()
-            {
-                if (xmlhttp.hasTimedOut)
+                else if (xmlhttp.status == 503)
                 {
+                    bcm.debugLog("packet in progress", false);
+                    bcm.retry();
                     return;
                 }
-
-                if (xmlhttp.readyState == XMLHttpRequest.DONE)
+                else
                 {
-                    clearTimeout(bcm.xml_timeoutId);
-                    bcm.xml_timeoutId = null;
-
-                    bcm.debugLog("response status : " + xmlhttp.status);
-                    bcm.debugLog("response : " + xmlhttp.responseText);
-
-                    if (xmlhttp.status == 200)
+                    try
                     {
-                        var response = JSON.parse(xmlhttp.responseText);
-
-                        bcm.handleSuccessResponse(response);
-
-                        bcm._requestInProgress = false;
-                        bcm.processQueue();
-                    }
-                    else if (xmlhttp.status == 503)
-                    {
-                        bcm.debugLog("packet in progress", false);
-                        bcm.retry();
-                        return;
-                    }
-                    else
-                    {
-                        try
+                        var errorResponse = JSON.parse(xmlhttp.responseText);
+                        if (errorResponse["reason_code"])
                         {
-                            var errorResponse = JSON.parse(xmlhttp.responseText);
-                            if (errorResponse["reason_code"])
-                            {
-                                reasonCode = errorResponse["reason_code"];
-                            }
-                            if (errorResponse["status_message"])
-                            {
-                                statusMessage = errorResponse["status_message"];
-                            }
-                            else
-                            {
-                                statusMessage = xmlhttp.responseText;
-                            }
+                            reasonCode = errorResponse["reason_code"];
                         }
-                        catch (e)
+                        if (errorResponse["status_message"])
                         {
-                            reasonCode = 0;
+                            statusMessage = errorResponse["status_message"];
+                        }
+                        else
+                        {
                             statusMessage = xmlhttp.responseText;
                         }
+                    }
+                    catch (e)
+                    {
+                        reasonCode = 0;
+                        statusMessage = xmlhttp.responseText;
+                    }
 
-                        // TODO: New error handling will split out the parts... for now
-                        // just send back the response text.
-                        var errorMessage = xmlhttp.responseText;
-                        bcm.debugLog("Failed", true);
+                    // TODO: New error handling will split out the parts... for now
+                    // just send back the response text.
+                    var errorMessage = xmlhttp.responseText;
+                    bcm.debugLog("Failed", true);
 
-                        if ((bcm._errorCallback != undefined) &&
-                            (typeof bcm._errorCallback == 'function'))
-                        {
-                            bcm._errorCallback(errorMessage);
-                        }
+                    if ((bcm._errorCallback != undefined) &&
+                        (typeof bcm._errorCallback == 'function'))
+                    {
+                        bcm._errorCallback(errorMessage);
                     }
                 }
-            }; // end inner function
+            }
+        }; // end inner function
 
-            // Set a timeout. Some implementation doesn't implement the XMLHttpRequest timeout and ontimeout (Including nodejs and chrome!)
-            bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, 15000);
+        // Set a timeout. Some implementation doesn't implement the XMLHttpRequest timeout and ontimeout (Including nodejs and chrome!)
+        bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, 15000);
 
-            xmlhttp.open("POST", bcm._dispatcherUrl, true);
-            xmlhttp.setRequestHeader("Content-type", "application/json");
-            var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
-            xmlhttp.setRequestHeader("X-SIG", sig);
-            xmlhttp.setRequestHeader('X-APPID', bcm._appId);
-            xmlhttp.send(bcm._jsonedQueue);
-        }
+        xmlhttp.open("POST", bcm._dispatcherUrl, true);
+        xmlhttp.setRequestHeader("Content-type", "application/json");
+        var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
+        xmlhttp.setRequestHeader("X-SIG", sig);
+        xmlhttp.setRequestHeader('X-APPID', bcm._appId);
+        xmlhttp.send(bcm._jsonedQueue);
     }
 
     bcm.processQueue = function()
     {
         if (bcm._sendQueue.length > 0)
         {
+            // Uncomment if you want to debug bundles
+            // bcm.debugLog("---BUNDLE---: " + JSON.stringify(bcm._sendQueue));
+
             bcm._inProgressQueue = [];
             var itemsProcessed;
             for (itemsProcessed = 0; itemsProcessed < bcm._sendQueue.length; ++itemsProcessed)
@@ -755,7 +758,9 @@ function BrainCloudManager ()
                 var isAuth = false;
                 for (i = 0; i < bcm._inProgressQueue.length; i++)
                 {
-                    if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD")
+                    if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || 
+                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD" || 
+                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD_ADVANCED")
                     {
                         isAuth = true;
                         break;
@@ -969,7 +974,7 @@ function BCAppStore() {
             storeId: storeId,
             category: category,
             priceInfoCriteria: {
-                user_currency: userCurrency
+                userCurrency: userCurrency
             }
         };
         
@@ -1390,6 +1395,16 @@ function BCAsyncMatch() {
 }
 
 BCAsyncMatch.apply(window.brainCloudClient = window.brainCloudClient || {});
+// User language
+if (typeof window === "undefined" || window === null) {
+    window = {}
+}
+if (!window.navigator) {
+    window.navigator = {}
+}
+if (!window.navigator.userLanguage && !window.navigator.language) {
+    window.navigator.userLanguage = require('get-user-locale').getUserLocale();
+}
 
 function BCAuthentication() {
 	var bc = this;
@@ -1400,6 +1415,7 @@ function BCAuthentication() {
 
 	bc.authentication.OPERATION_AUTHENTICATE = "AUTHENTICATE";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD = "RESET_EMAIL_PASSWORD";
+	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED = "RESET_EMAIL_PASSWORD_ADVANCED";
 
 	bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS = "Anonymous";
 	bc.authentication.AUTHENTICATION_TYPE_EMAIL = "Email";
@@ -1411,6 +1427,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_STEAM = "Steam";
 	bc.authentication.AUTHENTICATION_TYPE_TWITTER = "Twitter";
 	bc.authentication.AUTHENTICATION_TYPE_PARSE = "Parse";
+	bc.authentication.AUTHENTICATION_TYPE_HANDOFF = "Handoff";
 
 	bc.authentication.profileId = "";
 	bc.authentication.anonymousId = "";
@@ -1737,6 +1754,58 @@ function BCAuthentication() {
 		};
 		//console.log("Request: " + JSON.stringify(request));
 		bc.brainCloudManager.sendRequest(request);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetEmailPasswordAdvanced = function(emailAddress, serviceParams, responseHandler) {
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED,
+			data: {
+                gameId: appId,
+                emailAddress: emailAddress,
+				serviceParams: serviceParams
+            },
+            callback: responseHandler
+		};
+		bc.brainCloudManager.sendRequest(request);
+    };
+    
+	/**
+	 * Authenticate the user using a Pase userid and authentication token
+	 *
+	 * Service Name - Authenticate
+	 * Service Operation - Authenticate
+	 *
+	 * @param handoffId braincloud handoff Id generated from cloud script
+	 * @param securityToken The security token entered by the user
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.authentication.authenticateHandoff = function(handoffId, securityToken, callback) {
+		bc.authentication.authenticate(
+			handoffId,
+			securityToken,
+			bc.authentication.AUTHENTICATION_TYPE_HANDOFF,
+			null,
+			false,
+			callback);
 	};
 
 	/** Method allows a caller to authenticate with bc. Note that
@@ -2968,6 +3037,14 @@ function BCEvents() {
 }
 
 BCEvents.apply(window.brainCloudClient = window.brainCloudClient || {});
+// FormData
+if (typeof window === "undefined" || window === null) {
+    window = {}
+}
+if (!window.FormData) {
+    window.FormData = require('form-data');
+    FormData = window.FormData;
+}
 
 function BCFile() {
     var bc = this;
@@ -3181,6 +3258,9 @@ function BCFriend() {
 	bc.friend.OPERATION_GET_USERS_ONLINE_STATUS = "GET_USERS_ONLINE_STATUS";
 	bc.friend.OPERATION_FIND_USERS_BY_EXACT_NAME = "FIND_USERS_BY_EXACT_NAME";
 	bc.friend.OPERATION_FIND_USERS_BY_SUBSTR_NAME = "FIND_USERS_BY_SUBSTR_NAME";
+	bc.friend.OPERATION_FIND_USERS_BY_NAME_STARTING_WITH = "FIND_USERS_BY_NAME_STARTING_WITH";
+	bc.friend.OPERATION_FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH = "FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH";
+	bc.friend.OPERATION_FIND_USER_BY_EXACT_UNIVERSAL_ID = "FIND_USER_BY_EXACT_UNIVERSAL_ID";
 
 	bc.friend.friendPlatform = Object.freeze({ All : "All",  BrainCloud : "brainCloud",  Facebook : "Facebook" });
 
@@ -3371,10 +3451,7 @@ function BCFriend() {
 	};
 
 	/**
-	 * Retrieves profile information for the partial matches of the specified text.
-	 *
-	 * @param searchText Universal ID text on which to search.
-	 * @param maxResults Maximum number of results to return.
+	 * @deprecated Use findUserByExactUniversalId
 	 */
 	bc.friend.findUserByUniversalId = function(searchText, maxResults, callback) {
 		bc.brainCloudManager.sendRequest({
@@ -3383,6 +3460,22 @@ function BCFriend() {
 			data: {
 				searchText: searchText,
 				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
+	
+	/** Retrieves profile information for the partial matches of the specified text.
+	 *
+	 * @param searchText Universal ID text on which to search.
+	 * @param maxResults Maximum number of results to return.
+	 */
+	bc.friend.findUserByExactUniversalId = function(searchText, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USER_BY_EXACT_UNIVERSAL_ID,
+			data: {
+				searchText: searchText
 			},
 			callback: callback
 		});
@@ -3487,6 +3580,51 @@ function BCFriend() {
 		});
 	};
 
+	/**
+	 * Retrieves profile information for users whose names starts with search text. 
+	 * Optional parameter macResults allows you to search an amount of names. 
+	 *
+	 * Service Name - friend
+	 * Service Operation - FIND_USERS_BY_NAME_STARTING_WITH
+	 *
+	 * @param searchText Collection of profile IDs.
+	 * @param maxResults how many names you want to return.
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.findUsersByNameStartingWith  = function(searchText, maxResults, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USERS_BY_NAME_STARTING_WITH,
+			data: {
+				searchText: searchText,
+				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Retrieves profile information for users whose universal ID starts with search text. 
+	 * Optional parameter maxResults lets you search for a number of Universal IDs. 
+	 *
+	 * Service Name - friend
+	 * Service Operation - FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH
+	 *
+	 * @param searchText Collection of profile IDs.
+	 * @param maxResults how many names you want to return.
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.findUsersByUniversalIdStartingWith  = function(searchText, maxResults, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_FIND_USERS_BY_UNIVERSAL_ID_STARTING_WITH,
+			data: {
+				searchText: searchText,
+				maxResults: maxResults
+			},
+			callback: callback
+		});
+	};
 }
 
 BCFriend.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -5446,6 +5584,16 @@ function BCGroup() {
 }
 
 BCGroup.apply(window.brainCloudClient = window.brainCloudClient || {});
+// User language
+if (typeof window === "undefined" || window === null) {
+    window = {}
+}
+if (!window.navigator) {
+    window.navigator = {}
+}
+if (!window.navigator.userLanguage && !window.navigator.language) {
+    window.navigator.userLanguage = require('get-user-locale').getUserLocale();
+}
 
 function BCIdentity() {
     var bc = this;
@@ -7081,19 +7229,36 @@ function BCMessaging() {
         });
     };
 
+    ///**
+    // * DEPRECATED - USE GETMESSAGES WITH MARKMESSAGEREAD... JS doesn't allow overload
+    // * Retrieves list of specified messages.
+    // *
+    // * Service Name - Messaging
+    // * Service Operation - GET_MESSAGES
+    // *
+    // * @param msgIds Arrays of message ids to get.
+    // * @param callback The method to be invoked when the server response is received
+    // */
+    // bc.messaging.getMessages = function(msgbox, msgIds, callback) {
+    //    getMessages(msgbox, msgIds, false, callback);
+    //};
+    
     /**
      * Retrieves list of specified messages.
      *
      * Service Name - Messaging
      * Service Operation - GET_MESSAGES
      *
+     * @param msgbox where the msg comes from ex. inbox
      * @param msgIds Arrays of message ids to get.
+     * @param markMessageRead mark the messagesyou get as read
      * @param callback The method to be invoked when the server response is received
      */
-    bc.messaging.getMessages = function(msgbox, msgIds, callback) {
+    bc.messaging.getMessages = function(msgbox, msgIds, markMessageRead, callback) {
         var message = {
             msgbox: msgbox,
-            msgIds: msgIds
+            msgIds: msgIds,
+            markMessageRead: markMessageRead 
         };
 
         bc.brainCloudManager.sendRequest({
@@ -7161,13 +7326,10 @@ function BCMessaging() {
      * @param messageSubject
      * @param callback The method to be invoked when the server response is received
      */
-    bc.messaging.sendMessage = function(toProfileIds, messageText, messageSubject, callback) {
+    bc.messaging.sendMessage = function(toProfileIds, content, callback) {
         var message = {
             toProfileIds: toProfileIds,
-            contentJson: {
-                subject: messageSubject,
-                text: messageText
-            }
+            contentJson: content
         };
 
         bc.brainCloudManager.sendRequest({
@@ -9834,6 +9996,7 @@ function BCReasonCodes() {
     bc.reasonCodes.LEADERBOARD_ROTATION_ERROR = 40642;
     bc.reasonCodes.INVALID_STORE_ID = 40700;
     bc.reasonCodes.METHOD_DEPRECATED = 40701;
+    bc.reasonCodes.INVALID_BILLING_PROVIDER_ID = 40702;
     bc.reasonCodes.NO_TWITTER_CONSUMER_KEY = 500001;
     bc.reasonCodes.NO_TWITTER_CONSUMER_SECRET = 500002;
     bc.reasonCodes.INVALID_CONFIGURATION = 500003;
@@ -9862,6 +10025,15 @@ function BCReasonCodes() {
     bc.reasonCodes.BASIC_AUTH_FAILURE = 550013;
     bc.reasonCodes.MONGO_DB_EXCEPTION = 600001;
     bc.reasonCodes.CONCURRENT_LOCK_ERROR = 600002;
+    bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
+    bc.reasonCodes.RTT_EVICTED = 80001;
+    bc.reasonCodes.RTT_LOST_CONNECTION = 80002;
+    bc.reasonCodes.RTT_TIMEOUT = 80100;
+    bc.reasonCodes.RTT_ROOM_READY = 80101;
+    bc.reasonCodes.RTT_ROOM_CANCELLED = 80102;
+    bc.reasonCodes.RTT_ERROR_ASSIGNING_ROOM = 80103;
+    bc.reasonCodes.RTT_ERROR_LAUNCHING_ROOM = 80104;
+    bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
     bc.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT = 90001;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_CANCELLED = 90100;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_TIMED_OUT = 90101;
@@ -11539,7 +11711,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "3.9.1";
+    bcc.version = "3.11.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -11738,17 +11910,6 @@ function BrainCloudClient() {
     };
 
     /**
-     * Set this flag to use (or not use) jquery as the underlying
-     * mechanism to execute http calls. By default, this is true.
-     *
-     * @param useJQuery
-     * {boolean} - True to use JQuery, false otherwise.
-     */
-    bcc.useJQuery = function(value) {
-        bcc.brainCloudManager.useJQuery(value);
-    };
-
-    /**
      * Returns whether the client is initialized.
      * @return True if initialized, false otherwise.
      */
@@ -11854,6 +12015,13 @@ function BrainCloudClient() {
     }
 
     /**
+     * Returns true if RTT is enabled
+     */
+    bcc.getRTTEnabled = function() {
+        return bcc.brainCloudRttComms.isRTTEnabled();
+    }
+
+    /**
      * Listen to real time events.
      * 
      * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
@@ -11931,7 +12099,7 @@ function BrainCloudClient() {
  */
 BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
 if (typeof WebSocket === 'undefined') {
-    var WebSocket = require('isomorphic-ws');
+    WebSocket = require('ws');
 }
 
 var DEFAULT_RTT_HEARTBEAT = 10; // Seconds
@@ -12190,6 +12358,14 @@ function BrainCloudRttComms () {
         }
     }
 
+    /**
+     * Returns true is RTT is enabled.
+     */
+    bcrtt.isRTTEnabled = function()
+    {
+        return bcrtt.isEnabled;
+    }
+
     bcrtt.registerRTTCallback = function(serviceName, callback) {
         bcrtt.callbacks[serviceName] = callback;
     }
@@ -12212,6 +12388,15 @@ BrainCloudRttComms.apply(window.brainCloudRttComms = window.brainCloudRttComms |
  * persisted upon successful authentication. When authenticating, any stored anonymous/profile ids will
  * be sent to the server. This strategy is useful when using anonymous authentication.
  */
+
+// Local storage
+if (typeof localStorage === "undefined" || localStorage === null) {
+    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
+    os = require('os');
+    var configDir = os.homedir() + "/.bciot";
+    localStorage = new LocalStorage(configDir);
+}
+
 function BrainCloudWrapper(wrapperName) {
 
     var bcw = this;
@@ -12932,6 +13117,43 @@ function BrainCloudWrapper(wrapperName) {
         };
 
         return identitiesCallback;
+    };
+
+	/**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPassword = function(email, responseHandler) {
+		bcw.brainCloudClient.authentication.resetEmailPassword(email, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPasswordAdvanced = function(emailAddress, serviceParams, responseHandler) {
+        bcw.brainCloudClient.authentication.resetEmailPasswordAdvanced(emailAddress, serviceParams, responseHandler);
     };
 
     /** Method authenticates the user using universal credentials

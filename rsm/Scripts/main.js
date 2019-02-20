@@ -80,7 +80,7 @@ function start()
         res.end();
     });
 
-    app.post('/bcrsm/assign-room', (request, res) => readPOSTData(request, data =>
+    app.post('/bcrsm/requestRoomServer', (request, res) => readPOSTData(request, data =>
     {
         let room = JSON.parse(data);
     
@@ -92,56 +92,29 @@ function start()
             res.end();
             return;
         }
-    
+
+        let connectionInfo = {
+            roomId: room.id,
+            url: myPublicIp,
+            port: TCP_PORT,
+            wsPort: WS_PORT
+        }
+
         res.writeHead(200, {'Content-Type': 'text/plain'});
-        res.write(`{}`);
+        res.write(JSON.stringify({
+            lobbyId: room.id,
+            connectInfo: connectionInfo
+        }));
         res.end();
 
         brainclouds2s.request(S2S.context, {
             service: "lobby",
-            operation: "SYS_ROOM_ASSIGNED",
+            operation: "SYS_ROOM_READY",
             data: {
                 lobbyId: room.id,
-                connectInfo: {
-                    roomId: room.id,
-                    url: myPublicIp,
-                    port: TCP_PORT,
-                    wsPort: WS_PORT
-                }
+                connectInfo: connectionInfo
             }
         });
-    }));
-    
-    app.post('/bcrsm/launch-room', (request, res) => readPOSTData(request, data =>
-    {
-        let room = JSON.parse(data);
-
-        res.writeHead(200, {'Content-Type': 'text/plain'});
-        res.write('{}');
-        res.end();
-
-        let roomServer = RoomServerManager.getRoomServer(room.id);
-
-        if (roomServer)
-        {
-            brainclouds2s.request(S2S.context, {
-                service: "lobby",
-                operation: "SYS_ROOM_READY",
-                data: {
-                    lobbyId: room.id,
-                    connectInfo: {
-                        roomId: room.id,
-                        url: myPublicIp,
-                        port: TCP_PORT,
-                        wsPort: WS_PORT
-                    }
-                }
-            });
-        }
-        else
-        {
-            cancelRoom(room.id, "No roomServer found for roomId: " + room.id);
-        }
     }));
     
     app.listen(HTTP_PORT);

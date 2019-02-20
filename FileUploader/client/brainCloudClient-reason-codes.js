@@ -367,6 +367,7 @@ function BCReasonCodes() {
     bc.reasonCodes.LEADERBOARD_ROTATION_ERROR = 40642;
     bc.reasonCodes.INVALID_STORE_ID = 40700;
     bc.reasonCodes.METHOD_DEPRECATED = 40701;
+    bc.reasonCodes.INVALID_BILLING_PROVIDER_ID = 40702;
     bc.reasonCodes.NO_TWITTER_CONSUMER_KEY = 500001;
     bc.reasonCodes.NO_TWITTER_CONSUMER_SECRET = 500002;
     bc.reasonCodes.INVALID_CONFIGURATION = 500003;
@@ -395,6 +396,15 @@ function BCReasonCodes() {
     bc.reasonCodes.BASIC_AUTH_FAILURE = 550013;
     bc.reasonCodes.MONGO_DB_EXCEPTION = 600001;
     bc.reasonCodes.CONCURRENT_LOCK_ERROR = 600002;
+    bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
+    bc.reasonCodes.RTT_EVICTED = 80001;
+    bc.reasonCodes.RTT_LOST_CONNECTION = 80002;
+    bc.reasonCodes.RTT_TIMEOUT = 80100;
+    bc.reasonCodes.RTT_ROOM_READY = 80101;
+    bc.reasonCodes.RTT_ROOM_CANCELLED = 80102;
+    bc.reasonCodes.RTT_ERROR_ASSIGNING_ROOM = 80103;
+    bc.reasonCodes.RTT_ERROR_LAUNCHING_ROOM = 80104;
+    bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
     bc.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT = 90001;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_CANCELLED = 90100;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_TIMED_OUT = 90101;
