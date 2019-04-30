@@ -1,6 +1,7 @@
 var Connection = require('./Connection.js');
 var WSConnection = require('./WSConnection.js');
 
+const TIMEOUT_TIME = 30 * 1000 // 30sec
 var connections = [];
 
 function death()
@@ -9,7 +10,7 @@ function death()
     process.exit(2)
 }
 
-let deathTimeout = setTimeout(death, 30000)
+let deathTimeout = setTimeout(death, TIMEOUT_TIME)
 
 exports.getConnection = function(id)
 {
@@ -66,5 +67,5 @@ exports.removeConnection = function(connectionToRemove)
         }
     }
 
-    if (connections.length == 0) deathTimeout = setTimeout(death, 30000)
+    if (connections.length == 0) deathTimeout = setTimeout(death, TIMEOUT_TIME)
 }

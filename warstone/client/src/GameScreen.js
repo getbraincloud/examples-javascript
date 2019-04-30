@@ -70,7 +70,7 @@ class GameScreen extends Component
 
     componentDidMount()
     {
-        this._service = new TurnBasedService(this.props.user.id, this.props.lobby, this.props.server, this.props.passcode,
+        this._service = new TurnBasedService(this.props.user.id, this.props.lobby, this.props.server,
             this.onNextTurn.bind(this),
             this.onDraw.bind(this),
             this.onVictory.bind(this),
