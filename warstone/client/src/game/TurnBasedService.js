@@ -6,7 +6,7 @@ if (typeof WebSocket === 'undefined')
 
 module.exports = class TurnBasedService
 {
-    constructor(profileId, lobby, server, 
+    constructor(profileId, lobby, server, passcode,
                 onNextTurnCallback,
                 onDrawCallback,
                 onVictoryCallback,
@@ -17,6 +17,7 @@ module.exports = class TurnBasedService
         this._lobby = lobby
         this._socket = null
         this._server = server
+        this._passcode = passcode
         this._onNextTurnCallback = onNextTurnCallback
         this._onDrawCallback = onDrawCallback
         this._onVictoryCallback = onVictoryCallback
@@ -48,7 +49,7 @@ module.exports = class TurnBasedService
     {
         // Yay!
         console.log("WebSocket connection established");
-        this.send("CONNECT", null)
+        this.send("CONNECT", {passcode: this._passcode})
     }
 
     send(op, data)

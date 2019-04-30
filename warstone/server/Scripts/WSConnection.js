@@ -62,6 +62,14 @@ module.exports = class WSConnection
                 return;
             }
 
+            // Match his passcode
+            if (message.data.passcode != member.passcode)
+            {
+                console.log("ERROR " + "bad passcode");
+                ConnectionManager.removeConnection(this);
+                return;
+            }
+
             // Connected!
             member.connection = this;
             this.roomServer = roomServer;
