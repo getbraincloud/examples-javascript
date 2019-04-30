@@ -131,11 +131,11 @@ class App extends Component
     {
         if (result.data.lobby)
         {
-            this.setState({lobby: result.data.lobby, joiningState: result.data.lobby.state})
+            this.setState({lobby: {...result.data.lobby, lobbyId: result.data.lobbyId}, joiningState: result.data.lobby.state})
         }
         if (result.data.connectData)
         {
-            this.setState({server: result.data.connectData, passcode: result.data.passcode})
+            this.setState({server: result.data})
         }
 
         if (result.operation === "DISBANDED")
@@ -224,7 +224,6 @@ class App extends Component
                         <GameScreen user={this.state.user} 
                                     lobby={this.state.lobby} 
                                     server={this.state.server}
-                                    passcode={this.state.passcode}
                                     onClose={this.onGameScreenClose.bind(this)} />
                     </div>
                 )

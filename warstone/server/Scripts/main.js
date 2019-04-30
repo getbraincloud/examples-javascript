@@ -29,7 +29,7 @@ function makeS2SURL(host, port)
         }
         else
         {
-            return "sharedprod.braincloudservers.com:" + port
+            return "sharedprod.braincloudservers.com"//:" + port
         }
     }
     else
@@ -40,7 +40,7 @@ function makeS2SURL(host, port)
         }
         else
         {
-            return host + ":" + port
+            return host// + ":" + port
         }
     }
 }
