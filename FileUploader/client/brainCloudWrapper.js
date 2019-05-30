@@ -7,14 +7,6 @@
  * be sent to the server. This strategy is useful when using anonymous authentication.
  */
 
-// Local storage
-if (typeof localStorage === "undefined" || localStorage === null) {
-    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
-    os = require('os');
-    var configDir = os.homedir() + "/.bciot";
-    localStorage = new LocalStorage(configDir);
-}
-
 function BrainCloudWrapper(wrapperName) {
 
     var bcw = this;
@@ -56,7 +48,7 @@ function BrainCloudWrapper(wrapperName) {
         bcw.pushNotification = bcw.brainCloudClient.pushNotification;
         bcw.reasonCodes = bcw.brainCloudClient.reasonCodes;
         bcw.redemptionCode = bcw.brainCloudClient.redemptionCode;
-        bcw.rttRegistration = bcw.brainCloudClient.rttRegistration;
+        bcw.rttService = bcw.brainCloudClient.rttService;
         bcw.s3Handling = bcw.brainCloudClient.s3Handling;
         bcw.script = bcw.brainCloudClient.script;
         bcw.socialLeaderboard = bcw.brainCloudClient.socialLeaderboard;
@@ -129,7 +121,7 @@ function BrainCloudWrapper(wrapperName) {
     };
 
     bcw.initializeWithApps = function(defaultAppId, secretMap, appVersion) {
-        bcw.brainCloudClient.initialize(defaultAppId, secretMap, appVersion);
+        bcw.brainCloudClient.initializeWithApps(defaultAppId, secretMap, appVersion);
     };
 
     bcw.getStoredAnonymousId = function() {
