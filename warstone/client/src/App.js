@@ -37,7 +37,7 @@ class App extends Component
     dieWithMessage(message)
     {
         // Close RTT connection
-        this.bc.brainCloudClient.deregisterAllRTTCallbacks()
+        this.bc.rttService.deregisterAllRTTCallbacks()
         this.bc.brainCloudClient.resetCommunication()
 
         // Pop alert message
@@ -102,12 +102,12 @@ class App extends Component
         this.setState({screen: "lookingForOpponent"})
 
         // Enable RTT service
-        this.bc.brainCloudClient.enableRTT(() =>
+        this.bc.rttService.enableRTT(() =>
         {
             console.log("RTT Enabled");
 
             // Register lobby callback
-            this.bc.brainCloudClient.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
+            this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
             // Find an opponent
             this.bc.lobby.findOrCreateLobby("unranked", 0, 1, {strategy:"ranged-absolute",alignment:"center",ranges:[1000]}, {}, null, {}, true, {}, "", result =>
@@ -154,8 +154,8 @@ class App extends Component
 
     onGameScreenClose()
     {
-        this.bc.brainCloudClient.deregisterAllRTTCallbacks()
-        this.bc.brainCloudClient.disableRTT()
+        this.bc.rttService.deregisterAllRTTCallbacks()
+        this.bc.rttService.disableRTT()
 
         this.setState({
             screen: "mainMenu",
