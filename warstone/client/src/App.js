@@ -4,6 +4,7 @@ import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
 import GameScreen from './GameScreen';
+import InventoryScreen from './InventoryScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 
 let brainCloud = require("braincloud")
@@ -75,11 +76,26 @@ class App extends Component
         this.bc.authenticateUniversal(user, pass, true, this.onLoggedIn.bind(this))
     }
 
+    onAutoLogin()
+    {
+        if (true)
+        {
+            console.log("BC: authenticateAnonymous")
+            this.setState({screen: "loginIn"})
+            this.bc.authenticateAnonymous(this.onLoggedIn.bind(this))
+        }
+    }
+
     onLoggedIn(result)
     {
         console.log(result)
         if (result.status === 200)
         {
+            if (this.username !== "" && this.username !== undefined)
+                this.bc.playerState.updateUserName(this.username, result => {})
+            else 
+                this.username = result.data.playerName
+
             this.setState({})
             this.setState({
                 screen: "mainMenu",
@@ -89,7 +105,6 @@ class App extends Component
                     pic: result.data.pictureUrl
                 }
             })
-            this.bc.playerState.updateUserName(this.username, result => {})
         }
         else
         {
@@ -125,6 +140,16 @@ class App extends Component
                 this.dieWithMessage("Failed to enable RTT")
             }
         })
+    }
+
+    onInventoryClicked()
+    {
+        this.setState({screen: "inventory"})
+    }
+
+    onMainMenu()
+    {
+        this.setState({screen: "mainMenu"})
     }
 
     onLobbyEvent(result)
@@ -174,7 +199,8 @@ class App extends Component
                 return (
                     <div className="App">
                         {this.renderTitle()}
-                        <LoginScreen onLogin={this.onLoginClicked.bind(this)} />
+                        <LoginScreen onLogin={this.onLoginClicked.bind(this)}
+                                     onLoad={this.onAutoLogin.bind(this)} />
                     </div>
                 )
             }
@@ -183,7 +209,7 @@ class App extends Component
                 return (
                     <div className="App">
                         {this.renderTitle()}
-                        <LoadingScreen text="Login in..."/>
+                        <LoadingScreen text="Logging in..."/>
                     </div>
                 )
             }
@@ -193,7 +219,8 @@ class App extends Component
                     <div className="App">
                         {this.renderTitle()}
                         <MainMenuScreen user={this.state.user}
-                                        onPlay={this.onPlayClicked.bind(this)}/>
+                                        onPlay={this.onPlayClicked.bind(this)}
+                                        onInventory={this.onInventoryClicked.bind(this)}/>
                     </div>
                 )
             }
@@ -225,6 +252,16 @@ class App extends Component
                                     lobby={this.state.lobby} 
                                     server={this.state.server}
                                     onClose={this.onGameScreenClose.bind(this)} />
+                    </div>
+                )
+            }
+            case "inventory":
+            {
+                return (
+                    <div className="App">
+                        {this.renderTitle()}
+                        <InventoryScreen text="INVENTORY"
+                                         onBack={this.onMainMenu.bind(this)}/>
                     </div>
                 )
             }

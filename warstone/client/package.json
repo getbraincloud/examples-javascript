@@ -3,9 +3,9 @@
   "version": "4.0.1000",
   "private": true,
   "dependencies": {
-    "braincloud": "^3.11.0",
+    "braincloud": "^4.0.0",
     "isomorphic-ws": "^4.0.1",
-    "react": "^16.4.2",
+    "react": "^16.8.6",
     "react-dom": "^16.4.2",
     "react-scripts": "1.1.4"
   },

@@ -12,12 +12,22 @@ class MainMenuScreen extends Component
         this.props.onPlay()
     }
 
+    onInventory()
+    {
+        this.props.onInventory()
+    }
+
     render()
     {
         return (
             <div className="MainMenuScreen">
                 <p>Player: {this.props.user.name}</p>
-                <button type="button" onClick={this.onPlay.bind(this)}>Play</button>
+                
+                <div id="MainMenuScreen-Help" style={{ maxWidth:"600px", margin:"auto" }}>
+                    <button type="button" onClick={this.onPlay.bind(this)}>Play</button>
+                    <button type="button" onClick={this.onInventory.bind(this)}>Inventory</button>
+                </div>
+
                 <div style={{backgroundColor:"#ead4aa"}}>
                     <div id="MainMenuScreen-Help" style={{textAlign:"left", maxWidth:"600px", margin:"auto", color:"#181425"}}>
                         <h2>Goal of the game:</h2>
@@ -37,7 +47,7 @@ class MainMenuScreen extends Component
                         <ul>
                             <li>ROCK deals double damage to SCISSORS</li>
                             <li>SCISSORS deals double damage to PAPER</li>
-                            <li>PAPER deals double damage to SCISSORS</li>
+                            <li>PAPER deals double damage to ROCK</li>
                         </ul></p>
 
                         <p>If a card runs out of HP <GameIcon name="HEART"/>, it is discarded from the table. 
