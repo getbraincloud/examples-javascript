@@ -132,15 +132,17 @@ module.exports = class Card extends SpriteNode
 
         // Probably could use a matrix here like we do on the server
         if ((attacker._type.Suit === "ROCK" && this._type.Suit === "SCISSORS") ||
-            (attacker._type.Suit === "PAPER" && this._type.Suit === "ROCK") ||
-            (attacker._type.Suit === "SCISSORS" && this._type.Suit === "PAPER"))
+            (attacker._type.Suit === "SCISSORS" && this._type.Suit === "PAPER") ||
+            (attacker._type.Suit === "PAPER" && this._type.Suit === "ROCK")
+            )
         {
             attackerDamage *= 2
             defenderDamage /= 2
         }
         else if ((this._type.Suit === "ROCK" && attacker._type.Suit === "SCISSORS") ||
-            (this._type.Suit === "PAPER" && attacker._type.Suit === "ROCK") ||
-            (this._type.Suit === "SCISSORS" && attacker._type.Suit === "PAPER"))
+                 (this._type.Suit === "SCISSORS" && attacker._type.Suit === "PAPER") ||
+                 (this._type.Suit === "PAPER" && attacker._type.Suit === "ROCK")
+                )
         {
             attackerDamage /= 2
             defenderDamage *= 2

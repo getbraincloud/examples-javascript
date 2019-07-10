@@ -152,6 +152,20 @@ class App extends Component
         this.setState({screen: "mainMenu"})
     }
 
+    onCancelFindToMainMenu()
+    {
+        // cancel the find request
+        this.bc.lobby.cancelFindRequest(this.bc.rttService.connectionId, "unranked", result =>
+        {
+            // go back to main menu
+            this.setState({screen: "mainMenu"})
+        }, () =>
+        {
+            // go back to main menu
+            this.setState({screen: "mainMenu"})
+        })
+    }
+    
     onLobbyEvent(result)
     {
         if (result.data.lobby)
@@ -229,7 +243,8 @@ class App extends Component
                 return (
                     <div className="App">
                         {this.renderTitle()}
-                        <LoadingScreen text={`Looking for Opponent... ${this.state.joiningState}`}/>
+                        <LoadingScreen text={`Looking for Opponent... ${this.state.joiningState}`}
+                                       onBack={this.onCancelFindToMainMenu.bind(this)}/>
                         {
                             this.state.lobby ? (
                                 <div style={{margin: "0 auto"}}>
