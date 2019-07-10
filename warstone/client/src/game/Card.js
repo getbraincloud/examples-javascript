@@ -15,16 +15,7 @@ module.exports = class Card extends SpriteNode
     {
         super()
 
-        this._id = null
-        this._type = null
-        this._hp = 0
-
         this._isTopPlayer = false // This card is owned by the top player. The opponent
-        this._gameView = null
-        this._game = null
-        this._hand = null // The player's hand. We keep a refence on it so we can insert ourself in it. Probably a bad design
-        this._board = null // The player's board. We keep a refence on it so we can insert ourself in it. Probably a bad design
-        this._cardArt = null
         this._showNoSleepBuff = false
 
         // State stuff
@@ -56,6 +47,8 @@ module.exports = class Card extends SpriteNode
         {
             this._cardArt = Resources._sprite_cardArtMap[type.Art]
         }
+
+        this._hp = this._type.HP
 
         // Just for dimension, we actually override the sprite's render function bellow.
         this.setSprite(Resources._sprite_blueCardBack)
@@ -323,12 +316,17 @@ module.exports = class Card extends SpriteNode
         }
     }
 
+    isDrawAll()
+    {
+        return this._state === Constants.CardState.IN_HAND || this._state === Constants.CardState.MOVING_TO_HAND || this._state === Constants.CardState.IDLE
+    }
+
     drawBuffs()
     {
         if (this._backFaced) return;
         let pos = {...this.getPosition()}
         pos.x += 2
-        if (this._state === Constants.CardState.IN_HAND || this._state === Constants.CardState.MOVING_TO_HAND)
+        if (this.isDrawAll())
             pos.y += 10
         else
             pos.y += 2
@@ -338,7 +336,7 @@ module.exports = class Card extends SpriteNode
             pos.y += Resources._sprite_taunt.height + 1
         }
         if (this._showNoSleepBuff || 
-           (((this._state === Constants.CardState.IN_HAND || this._state === Constants.CardState.MOVING_TO_HAND)) && this._type.SleepOnStartTurns === 0))
+           (((this.isDrawAll())) && this._type.SleepOnStartTurns === 0))
         {
             Sprite.renderPos(Resources._sprite_nosleep, pos)
             pos.y += Resources._sprite_nosleep.height + 1
@@ -675,7 +673,7 @@ module.exports = class Card extends SpriteNode
                 this._gameView.drawAttackStatColor({x:pos.x + 3, 
                     y:pos.y + Resources._sprite_blueCardBack.height - 10}, this._type.Attack, false, textColor);
             }
-            if (this._state === Constants.CardState.IN_HAND || this._state === Constants.CardState.MOVING_TO_HAND)
+            if (this.isDrawAll())
             {
                 this._gameView.drawEnergyStatColor({x:pos.x + 3, y:pos.y + 3}, this._type.Cost, false, textColor,
                     !this._isTopPlayer && this._game.isMyTurn() && this._game.hasEnoughEnergy(this._type.Cost))
