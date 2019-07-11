@@ -24,6 +24,11 @@ class LoginScreen extends Component
         e.preventDefault();
     }
 
+    componentDidMount()
+    {
+        this.props.onLoad();
+    }
+    
     render()
     {
         let versionSuffix = (ids.url) ? " - dev" : " - prod"

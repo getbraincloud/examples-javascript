@@ -28,8 +28,7 @@ exports._sprite_numbers = [
     Sprite.makeSprite(35, 240, 3, 5)  // 9
 ];
 exports._sprite_font = [];
-for (let i = 0; i <= 'Z'.charCodeAt(0) - '!'.charCodeAt(0); ++i)
-{
+for (let i = 0; i <= 'Z'.charCodeAt(0) - '!'.charCodeAt(0); ++i) {
     exports._sprite_font.push(Sprite.makeSprite(1 + i * 4, 252, 3, 5));
 }
 exports._sprite_HP = Sprite.makeSprite(1, 246, 7, 5);
@@ -42,6 +41,7 @@ exports._sprite_redCardBack = Sprite.makeSprite(48, 1, Constants.CARD_DIM.width,
 exports._sprite_rockCard = Sprite.makeSprite(95, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 exports._sprite_paperCard = Sprite.makeSprite(142, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 exports._sprite_scissorsCard = Sprite.makeSprite(189, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
+exports._sprite_spellCard = Sprite.makeSprite(95, 371, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 
 // Card hover states
 exports._sprite_hoverCard = Sprite.makeSprite(48, 64, Constants.CARD_DIM.width, Constants.CARD_DIM.height);

@@ -5,12 +5,11 @@ let SpriteNode = require('./SpriteNode')
 let Sprite = require('./Sprite')
 let Input = require('./Input')
 
-module.exports = class GameView extends SpriteNode {
+module.exports = class InventoryView extends SpriteNode {
     constructor() {
         super()
 
         this._spriteNodes = []
-        this._isInverted = false // Player1 will view the board inverted as it is represented by data
         this._hoverSpriteNode = null // Sprite currently being mouse hover
         this._downSpriteNode = null // Sprite currently holding mouse down
         this._ribbonSprite = null
@@ -18,29 +17,10 @@ module.exports = class GameView extends SpriteNode {
 
         this._spriteNodes = []
 
-        this.setDrawOrder(Constants.DRAW_ORDER_BACKGROUND);
-        this.setDimension({ x: Constants.WIDTH, y: Constants.HEIGHT });
-        this.setEnabled(true);
-        this.addSpriteNode(this);
-
-        // Add the sprite for the ribbon at the middle
-        this._ribbonSprite = new SpriteNode(Resources._sprite_ribbon, { x: 42, y: 119 }, Constants.DRAW_ORDER_BACKGROUND + 1, { x: 237, y: 3 }, { x: 4, y: 3, z: 4, w: 0 });
-        this._ribbonSprite.setClickThrough(true);
-        this.addSpriteNode(this._ribbonSprite);
-
-        // BG Deco on each sides
-        let deco = new SpriteNode(Resources._sprite_decoBg, { x: 39, y: 47 }, Constants.DRAW_ORDER_BACKGROUND + 1, { x: 240, y: 71 }, { x: 7, y: 7, z: 7, w: 7 });
-        deco.setClickThrough(true);
-        this.addSpriteNode(deco);
-        deco = new SpriteNode(Resources._sprite_decoBg, { x: 39, y: Constants.HEIGHT - 47 - 70 }, Constants.DRAW_ORDER_BACKGROUND + 1, { x: 240, y: 71 }, { x: 7, y: 7, z: 7, w: 7 });
-        deco.setClickThrough(true);
-        this.addSpriteNode(deco);
-    }
-
-    updateRibbon(percent) {
-        let w = Math.floor(Math.max(6, 237.0 * percent))
-        this._ribbonSprite.setPosition({ x: 42 + 237 - w, y: this._ribbonSprite.getPosition().y })
-        this._ribbonSprite.setDimension({ x: w, y: 3 })
+        this.setDrawOrder(Constants.DRAW_ORDER_BACKGROUND)
+        this.setDimension({ x: Constants.WIDTH, y: Constants.HEIGHT })
+        this.setEnabled(true)
+        this.addSpriteNode(this)
     }
 
     drawNumbers(position, number, color) {
@@ -173,16 +153,6 @@ module.exports = class GameView extends SpriteNode {
     // Get the sprite currently hovered by the mouse
     getHovered() {
         return this._hoverSpriteNode
-    }
-
-    // Player1 will see the board inverted from its represented data
-    isInverted() {
-        return this._isInverted
-    }
-
-    // Set wether that player views the board inverted or not
-    setInverted(isInverted) {
-        this._isInverted = isInverted
     }
 
     // Add a sprite to the renderer
