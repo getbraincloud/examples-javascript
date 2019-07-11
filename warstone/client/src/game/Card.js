@@ -274,7 +274,7 @@ module.exports = class Card extends SpriteNode {
 
     drawAttackArrow() {
         if (!this._isTopPlayer) return;
-        if (this.isEnabled()) {
+        if (this.isEnabled() && this._state !== Constants.CardState.INVENTORY_DISPLAY) {
             let pos = this.getPosition()
             Sprite.renderPos(Resources._sprite_attackArrow, {
                 x: pos.x + Resources._sprite_blueCardBack.width / 2 - Resources._sprite_attackArrow.width / 2,

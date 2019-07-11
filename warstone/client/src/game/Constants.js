@@ -37,33 +37,34 @@ exports.HURT_COLOR = [254 / 231, 155 / 255, 97 / 255, 1]
 exports.DANGER_COLOR = [1, 0, 68 / 255, 1]
 
 // Positionning and dimensions
-exports.SPRITE_SHEET_DIMENSION = {width:512.0, height:512.0}
-exports.CARD_DIM = {width:46, height:62}
-exports.TOP_DECK_POS = {x:37 - exports.CARD_DIM.width, y:106 - exports.CARD_DIM.height}
-exports.TOP_HAND_POS = {x:exports.WIDTH / 2, y:-exports.CARD_DIM.height + 40}
-exports.TOP_BOARD_POS = {x:exports.WIDTH / 2 - 1, y:exports.HEIGHT / 2 - exports.CARD_DIM.height - 6}
-exports.TOP_PLACE_POS = {x:272, y:47}
-exports.TOP_DISCARDED_POS = {x:exports.WIDTH + 50, y:exports.HEIGHT / 2 - exports.CARD_DIM.height - 10}
-exports.BOTTOM_DECK_POS = {x:37 - exports.CARD_DIM.width, y:196 - exports.CARD_DIM.height}
-exports.BOTTOM_HAND_POS = {x:exports.WIDTH / 2, y:exports.HEIGHT - 40}
-exports.BOTTOM_BOARD_POS = {x:exports.WIDTH / 2 - 1, y:exports.HEIGHT / 2 + 7}
-exports.BOTTOM_PLACE_POS = {x:272, y:131}
-exports.BOTTOM_DISCARDED_POS = {x:exports.WIDTH + 50, y:exports.HEIGHT / 2 + 10}
-exports.ADVANCE_BUTTON_POS = {x:280, y:111}
+exports.SPRITE_SHEET_DIMENSION = { width: 512.0, height: 512.0 }
+exports.CARD_DIM = { width: 46, height: 62 }
+exports.TOP_DECK_POS = { x: 37 - exports.CARD_DIM.width, y: 106 - exports.CARD_DIM.height }
+exports.TOP_HAND_POS = { x: exports.WIDTH / 2, y: -exports.CARD_DIM.height + 40 }
+exports.TOP_BOARD_POS = { x: exports.WIDTH / 2 - 1, y: exports.HEIGHT / 2 - exports.CARD_DIM.height - 6 }
+exports.TOP_PLACE_POS = { x: 272, y: 47 }
+exports.TOP_DISCARDED_POS = { x: exports.WIDTH + 50, y: exports.HEIGHT / 2 - exports.CARD_DIM.height - 10 }
+exports.BOTTOM_DECK_POS = { x: 37 - exports.CARD_DIM.width, y: 196 - exports.CARD_DIM.height }
+exports.BOTTOM_HAND_POS = { x: exports.WIDTH / 2, y: exports.HEIGHT - 40 }
+exports.BOTTOM_BOARD_POS = { x: exports.WIDTH / 2 - 1, y: exports.HEIGHT / 2 + 7 }
+exports.BOTTOM_PLACE_POS = { x: 272, y: 131 }
+exports.BOTTOM_DISCARDED_POS = { x: exports.WIDTH + 50, y: exports.HEIGHT / 2 + 10 }
+exports.ADVANCE_BUTTON_POS = { x: 280, y: 111 }
 exports.HAND_SPACING = exports.CARD_DIM.width - 10
 exports.BOARD_SPACING = exports.CARD_DIM.width + 1
-exports.OK_BTN_POS = {x:exports.WIDTH / 2 - 9, y:exports.HEIGHT / 2 - 2}
-exports.DIALOG_SIZE = {x:330 / 3, y:42}
-exports.DIALOG_POS = {x:exports.WIDTH / 2 - 330 / 3 / 2, y:exports.HEIGHT / 2 - 108 / 3 / 2}
-exports.DIALOG_PADDING = {x:7, y:9, z:9, w:8}
+exports.OK_BTN_POS = { x: exports.WIDTH / 2 - 9, y: exports.HEIGHT / 2 - 2 }
+exports.DIALOG_SIZE = { x: 330 / 3, y: 42 }
+exports.DIALOG_POS = { x: exports.WIDTH / 2 - 330 / 3 / 2, y: exports.HEIGHT / 2 - 108 / 3 / 2 }
+exports.DIALOG_PADDING = { x: 7, y: 9, z: 9, w: 8 }
 
 // Inventory
-exports.NUM_ITEMS_PER_COL = 3
-exports.NUM_ITEMS_PER_ROW = 4
+exports.NUM_ITEMS_PER_COL = 4
+exports.NUM_ITEMS_PER_ROW = 2
 exports.NUM_ITEMS_PER_INVENTORY_PAGE = exports.NUM_ITEMS_PER_COL * exports.NUM_ITEMS_PER_ROW
 exports.INVENTORY_BUTTON_Y = 230
-exports.INVENTORY_X_OFFSET = 10 + exports.CARD_DIM.width + exports.TOP_DECK_POS.x
-exports.INVENTORY_Y_OFFSET = (exports.CARD_DIM.height / 2) + exports.TOP_DECK_POS.y
+exports.INVENTORY_Y_HUD_OFFSET = 30
+exports.INVENTORY_X_OFFSET = 20 + exports.CARD_DIM.width + exports.TOP_DECK_POS.x
+exports.INVENTORY_Y_OFFSET = 20 + (exports.CARD_DIM.height / 2) + exports.TOP_DECK_POS.y
 
 // States
 exports.CardState = {

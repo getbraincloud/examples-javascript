@@ -9,6 +9,7 @@ let Resources = require('./game/Resources')
 let SpriteNode = require('./game/SpriteNode')
 let Input = require("./game/Input")
 let InventoryView = require("./game/InventoryView")
+let InventoryDeckDisplay = require('./game/InventoryDeckDisplay')
 
 let FRAME_RATE = 60
 
@@ -27,6 +28,7 @@ class InventoryScreen extends Component {
         this._backButton = null
         this._downPage = null
         this._upPage = null
+        this._pagingDisplayStr = "1/1"
     }
 
     componentDidMount() {
@@ -55,20 +57,34 @@ class InventoryScreen extends Component {
 
     maxCatalogPages() {
         return this._itemCatalog != null ?
-            Math.ceil(Object.keys(this._itemCatalog).length / Constants.NUM_ITEMS_PER_INVENTORY_PAGE) - 1:
+            Math.ceil(Object.keys(this._itemCatalog).length / Constants.NUM_ITEMS_PER_INVENTORY_PAGE) - 1 :
             0
     }
 
     onPageDown() {
         // do we want this to cycle ?
-        if (this._pageIndex > 0) --this._pageIndex
+        if (this._pageIndex > 0)--this._pageIndex
         this.refreshUserCardDisplay()
+        this.refreshPageIndexDisplay()
     }
 
     onPageUp() {
         // do we want this to cycle ?
-        if (this._pageIndex < this.maxCatalogPages()) ++this._pageIndex
+        if (this._pageIndex < this.maxCatalogPages())++this._pageIndex
         this.refreshUserCardDisplay()
+        this.refreshPageIndexDisplay()
+    }
+
+    onCardClicked(clickedCard) {
+        if (clickedCard._quantity > 0 && this._deckDisplay.addItem(clickedCard)) {
+            clickedCard._quantity -= 1
+        }
+    }
+
+    onSmallCardClicked(smallCard, associatedCard) {
+        if (this._deckDisplay.removeItem(smallCard)) {
+            associatedCard._quantity += 1
+        }
     }
 
     onBack() {
@@ -87,14 +103,14 @@ class InventoryScreen extends Component {
             i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;) {
             this._inventoryView.addSpriteNode(new SpriteNode(Resources._sprite_redCardBack,
                 {
-                    x: 5 + (xOffset * x),
-                    y: yOffset * y
+                    x: (xOffset * x),
+                    y: Constants.INVENTORY_Y_HUD_OFFSET + yOffset * y
                 },
                 Constants.DRAW_ORDER_BACKGROUND + i))
 
             ++x
             ++i
-            if (i % Constants.NUM_ITEMS_PER_ROW === 0) {
+            if (i % Constants.NUM_ITEMS_PER_COL === 0) {
                 ++y
                 x = 0
             }
@@ -102,14 +118,9 @@ class InventoryScreen extends Component {
     }
 
     refreshUserCardDisplay() {
-        let deckKeys = Object.keys(this._deck.Deck)
-        
-        let deckValues = Object.values(this._deck.Deck)
-        for (let i = 0; i < this._cards.length; ++i)
-        {
+        for (let i = 0; i < this._cards.length; ++i) {
             this._inventoryView.removeSpriteNode(this._cards[i])
         }
-        this._cards = []
 
         let xOffset = Constants.INVENTORY_X_OFFSET
         let yOffset = Constants.INVENTORY_Y_OFFSET
@@ -117,30 +128,31 @@ class InventoryScreen extends Component {
         let x = 0
         let y = 0
 
+        console.log("refreshUserCardDisplay " + this._cards.length)
         for (let i = this._pageIndex * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;
-            i < deckKeys.length &&
-            i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE && 
+            i < this._cards.length &&
+            i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE &&
             i < Object.keys(this._itemCatalog).length - 1;) {
-            
-            let card = new Card(i, this._itemCatalog[deckKeys[i]], true, null, null, this._inventoryView, null, null, null)
-            
+
+            let card = this._cards[i]
+
             card._backFaced = false
             card._state = Constants.CardState.INVENTORY_DISPLAY
-            card._quantity = deckValues[i]
+            card.setEnabled(true)
             card.setDrawOrder(Constants.DRAW_ORDER_BOARD + i)
             card.setPosition({
-                x: 5 + (xOffset * x),
-                y: yOffset * y
+                x: (xOffset * x),
+                y: Constants.INVENTORY_Y_HUD_OFFSET + yOffset * y
             })
 
             ++x
             ++i
-            if (i % Constants.NUM_ITEMS_PER_ROW === 0) {
+            if (i % Constants.NUM_ITEMS_PER_COL === 0) {
                 ++y
                 x = 0
             }
+
             this._inventoryView.addSpriteNode(card)
-            this._cards.push(card)
         }
     }
 
@@ -148,16 +160,30 @@ class InventoryScreen extends Component {
         this.props.app.bc.script.runScript("getItemCatalog", {}, result => {
             this._itemCatalog = result.data.response
             this.refreshPlaceholderDisplay()
+            this.refreshPageIndexDisplay()
         })
     }
 
     onFetchUserInventory() {
         this.props.app.bc.script.runScript("getUserInventory", {}, result => {
-            //
             this._deck = result.data.response
+            this._deckDisplay.setName(this._deck.Name)
+            let deckKeys = Object.keys(this._deck.Deck)
+            let deckValues = Object.values(this._deck.Deck)
+            for (let i = 0; i < deckKeys.length; ++i) {
+
+                let card = new Card(i, this._itemCatalog[deckKeys[i]], true, null, null, this._inventoryView, this, null, null)
+
+                card._quantity = deckValues[i]
+                this._cards.push(card)
+            }
 
             this.refreshUserCardDisplay()
         })
+    }
+
+    refreshPageIndexDisplay() {
+        this._deckDisplay.setPagingStr((this._pageIndex + 1) + "/" + (this.maxCatalogPages() + 1))
     }
 
     onMouseMove(e) {
@@ -186,6 +212,9 @@ class InventoryScreen extends Component {
         this._pageIndex = 0
         this._cards = []
         this._inventoryView = new InventoryView()
+        this._deckDisplay = new InventoryDeckDisplay(this._inventoryView, this, 30, 0)
+
+        this._deckDisplay.setPosition({ x: 250, y: 5 })
         //this._inventoryView.onClicked = this.onBack.bind(this)
 
         this.onFetchItemCatalog()

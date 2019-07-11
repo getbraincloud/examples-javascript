@@ -28,8 +28,7 @@ exports._sprite_numbers = [
     Sprite.makeSprite(35, 240, 3, 5)  // 9
 ];
 exports._sprite_font = [];
-for (let i = 0; i <= 'Z'.charCodeAt(0) - '!'.charCodeAt(0); ++i)
-{
+for (let i = 0; i <= 'Z'.charCodeAt(0) - '!'.charCodeAt(0); ++i) {
     exports._sprite_font.push(Sprite.makeSprite(1 + i * 4, 252, 3, 5));
 }
 exports._sprite_HP = Sprite.makeSprite(1, 246, 7, 5);
