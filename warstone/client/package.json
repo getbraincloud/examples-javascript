@@ -1,6 +1,6 @@
 {
   "name": "warstone",
-  "version": "4.0.2000",
+  "version": "4.0.3000",
   "private": true,
   "dependencies": {
     "braincloud": "^4.1.0",
