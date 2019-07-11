@@ -57,6 +57,11 @@ exports.DIALOG_SIZE = {x:330 / 3, y:42}
 exports.DIALOG_POS = {x:exports.WIDTH / 2 - 330 / 3 / 2, y:exports.HEIGHT / 2 - 108 / 3 / 2}
 exports.DIALOG_PADDING = {x:7, y:9, z:9, w:8}
 
+// Inventory
+exports.NUM_ITEMS_PER_COL = 3
+exports.NUM_ITEMS_PER_ROW = 4
+exports.NUM_ITEMS_PER_INVENTORY_PAGE = exports.NUM_ITEMS_PER_COL * exports.NUM_ITEMS_PER_ROW
+
 // States
 exports.CardState = {
     IDLE: 0,
@@ -71,7 +76,8 @@ exports.CardState = {
     MOVING_TO_BOARD: 9,
     MOVING_TO_ATTACK_CARD: 10,
     MOVING_TO_ATTACK_PLAYER: 11,
-    MOVING_BACK_FROM_ATTACK: 12
+    MOVING_BACK_FROM_ATTACK: 12,
+    INVENTORY_DISPLAY: 13
 }
 
 exports.GameState = {

@@ -42,6 +42,7 @@ exports._sprite_redCardBack = Sprite.makeSprite(48, 1, Constants.CARD_DIM.width,
 exports._sprite_rockCard = Sprite.makeSprite(95, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 exports._sprite_paperCard = Sprite.makeSprite(142, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 exports._sprite_scissorsCard = Sprite.makeSprite(189, 1, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
+exports._sprite_spellCard = Sprite.makeSprite(95, 371, Constants.CARD_DIM.width, Constants.CARD_DIM.height);
 
 // Card hover states
 exports._sprite_hoverCard = Sprite.makeSprite(48, 64, Constants.CARD_DIM.width, Constants.CARD_DIM.height);

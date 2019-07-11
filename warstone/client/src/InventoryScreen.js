@@ -22,18 +22,19 @@ class InventoryScreen extends Component {
 
         this._intervaleId = null    // Update/Render main loop logic
         this._inventoryView = null
+
         // Extra UI stuff
         this._backButton = null
+        this._downPage = null
+        this._upPage = null
     }
 
     componentDidMount() {
         this.initialize()
     }
 
-    componentWillUnmount()
-    {
-        if (this._intervaleId)
-        {
+    componentWillUnmount() {
+        if (this._intervaleId) {
             clearInterval(this._intervaleId)
         }
     }
@@ -52,77 +53,105 @@ class InventoryScreen extends Component {
         }
     }
 
+    maxCatalogPages() {
+        return this._itemCatalog != null ?
+            Math.ceil(Object.keys(this._itemCatalog).length / Constants.NUM_ITEMS_PER_INVENTORY_PAGE) - 1:
+            0
+    }
+
+    onPageDown() {
+        // do we want this to cycle ?
+        if (this._pageIndex > 0) --this._pageIndex
+        this.refreshUserCardDisplay()
+    }
+
+    onPageUp() {
+        // do we want this to cycle ?
+        if (this._pageIndex < this.maxCatalogPages()) ++this._pageIndex
+        this.refreshUserCardDisplay()
+    }
+
     onBack() {
         this.props.onBack()
     }
 
+    refreshPlaceholderDisplay() {
+        // all the catalog items
+        let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
+        let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
+
+        // placeholder for the catalog missing cards
+        let x = 0
+        let y = 0
+        for (let i = this._pageIndex * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;
+            i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;) {
+            this._inventoryView.addSpriteNode(new SpriteNode(Resources._sprite_redCardBack,
+                {
+                    x: 5 + (xOffset * x),
+                    y: yOffset * y
+                },
+                Constants.DRAW_ORDER_BACKGROUND + i))
+
+            ++x
+            ++i
+            if (i % Constants.NUM_ITEMS_PER_ROW === 0) {
+                ++y
+                x = 0
+            }
+        }
+    }
+
+    refreshUserCardDisplay() {
+        let values = Object.keys(this._deck)
+        for (let i = 0; i < this._cards.length; ++i)
+        {
+            this._inventoryView.removeSpriteNode(this._cards[i])
+        }
+        this._cards = []
+
+        let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
+        let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
+
+        let x = 0
+        let y = 0
+
+        for (let i = this._pageIndex * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;
+            i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE && 
+            i < Object.keys(this._itemCatalog).length - 1;) {
+            
+            let card = new Card(i, this._itemCatalog[values[i]], true, null, null, this._inventoryView, null, null, null)
+            card.setDrawOrder(Constants.DRAW_ORDER_BOARD + i)
+            card.setPosition({
+                x: 5 + (xOffset * x),
+                y: yOffset * y
+            })
+
+            ++x
+            ++i
+            if (i % Constants.NUM_ITEMS_PER_ROW === 0) {
+                ++y
+                x = 0
+            }
+            card._backFaced = false
+            card._state = Constants.CardState.INVENTORY_DISPLAY
+            this._inventoryView.addSpriteNode(card)
+            this._cards.push(card)
+        }
+    }
 
     onFetchItemCatalog() {
         this.props.app.bc.script.runScript("getItemCatalog", {}, result => {
             this._itemCatalog = result.data.response
-
-            // all the catalog items
-            let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
-            let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
-
-            // placeholder for the catalog missing cards
-            let numItems = 0
-            let x = 0
-            let y = 0
-            while (numItems <= Object.keys(this._itemCatalog).length && numItems < 18)
-            {
-                this._inventoryView.addSpriteNode(new SpriteNode(Resources._sprite_redCardBack,
-                    {
-                        x: 20 + (xOffset * x),
-                        y: yOffset * y
-                    },
-                    Constants.DRAW_ORDER_BACKGROUND + numItems))
-                    
-                ++x
-                ++numItems
-                if (numItems % 6 === 0)
-                {
-                    ++y
-                    x = 0
-                }
-            }
+            this.refreshPlaceholderDisplay()
         })
     }
 
-    onFetchUserInventory(){
+    onFetchUserInventory() {
         this.props.app.bc.script.runScript("getItemCatalog", {}, result => {
             //
-            let deck = result.data.response
+            this._deck = result.data.response
 
-            let values = Object.keys(deck)
-            
-            let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
-            let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
-
-            let numItems = 0
-            let x = 0
-            let y = 0
-            
-            for (let i = 0; i < values.length && numItems < 18; ++i)
-            {
-                let card = new Card(i, this._itemCatalog[values[i]], true, null, null, this._inventoryView, null, null, null)
-                card.setDrawOrder(Constants.DRAW_ORDER_BOARD + i)
-                card.setPosition({
-                    x: 20 + (xOffset * x),
-                    y: yOffset * y
-                })
-
-                ++x
-                ++numItems
-                if (numItems % 6 === 0)
-                {
-                    ++y
-                    x = 0
-                }
-                card._backFaced = false
-                this._inventoryView.addSpriteNode(card)
-                this._cards.push(card)
-            }
+            this.refreshUserCardDisplay()
         })
     }
 
@@ -139,9 +168,17 @@ class InventoryScreen extends Component {
         Input.mouseDown = false
     }
 
+    makeButton(text, pos) {
+        let button = new AdvanceButton(this._inventoryView, text, 200, pos)
+        button.setEnabled(true)
+        this._inventoryView.addSpriteNode(button)
+        return button
+    }
+
     initialize() {
         Renderer.initialize(this.refs.glCanvas)
         this._itemCatalog = null
+        this._pageIndex = 0
         this._cards = []
         this._inventoryView = new InventoryView()
         //this._inventoryView.onClicked = this.onBack.bind(this)
@@ -150,10 +187,16 @@ class InventoryScreen extends Component {
         this.onFetchUserInventory()
 
         // Back Button
-        this._backButton = new AdvanceButton(this._inventoryView, "BACK", 200, { x: 0, y: 200 })
+        this._backButton = this.makeButton("BACK", { x: 0, y: 200 })
         this._backButton.onClicked = this.onBack.bind(this)
-        this._backButton.setEnabled(true)
-        this._inventoryView.addSpriteNode(this._backButton)
+
+        // _downPage
+        this._downPage = this.makeButton("DOWN", { x: 75, y: 200 })
+        this._downPage.onClicked = this.onPageUp.bind(this)
+
+        // _upPage
+        this._upPage = this.makeButton("UP", { x: 135, y: 200 })
+        this._upPage.onClicked = this.onPageDown.bind(this)
 
         // Start the main loop
         this._intervaleId = setInterval(this.mainLoop.bind(this), 1000 / FRAME_RATE)
