@@ -14,6 +14,7 @@ module.exports = class Card extends SpriteNode {
 
         this._isTopPlayer = false // This card is owned by the top player. The opponent
         this._showNoSleepBuff = false
+        this._quantity = 1
 
         // State stuff
         this._state = Constants.CardState.IDLE
@@ -334,6 +335,7 @@ module.exports = class Card extends SpriteNode {
         this.drawBuffs()
         this.drawScore()
         this.drawName()
+        this.drawCardQuantity()
         this.drawAttackArrow()
     }
 
@@ -346,6 +348,7 @@ module.exports = class Card extends SpriteNode {
         this.drawBuffs()
         this.drawScore()
         this.drawName()
+        this.drawCardQuantity()
         this.drawAttackArrow()
     }
 
@@ -357,6 +360,7 @@ module.exports = class Card extends SpriteNode {
         this.drawBuffs()
         this.drawScore()
         this.drawName()
+        this.drawCardQuantity()
         this.drawAttackArrow()
     }
 
@@ -598,6 +602,19 @@ module.exports = class Card extends SpriteNode {
                 this._gameView.drawEnergyStatColor({ x: pos.x + 3, y: pos.y + 3 }, this._type.Cost, false, textColor,
                     !this._isTopPlayer && this._game.isMyTurn() && this._game.hasEnoughEnergy(this._type.Cost))
             }
+        }
+    }
+
+    // draw quantity under card
+    drawCardQuantity() {
+        if (this._state === Constants.CardState.INVENTORY_DISPLAY) {
+            let quantStr = "x" + this._quantity
+            let pos = { ...this.getPosition() }
+            pos.x += Resources._sprite_blueCardBack.width / 2
+            pos.y += Resources._sprite_blueCardBack.height + 2.5
+            this._gameView.drawText(
+                { x: pos.x - quantStr.length * 2, y: pos.y },
+                quantStr, Constants.ROCK_CARD_NUMBER_COLOR)
         }
     }
 

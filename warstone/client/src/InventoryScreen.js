@@ -77,8 +77,8 @@ class InventoryScreen extends Component {
 
     refreshPlaceholderDisplay() {
         // all the catalog items
-        let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
-        let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
+        let xOffset = Constants.INVENTORY_X_OFFSET
+        let yOffset = Constants.INVENTORY_Y_OFFSET
 
         // placeholder for the catalog missing cards
         let x = 0
@@ -102,24 +102,31 @@ class InventoryScreen extends Component {
     }
 
     refreshUserCardDisplay() {
-        let values = Object.keys(this._deck)
+        let deckKeys = Object.keys(this._deck.Deck)
+        
+        let deckValues = Object.values(this._deck.Deck)
         for (let i = 0; i < this._cards.length; ++i)
         {
             this._inventoryView.removeSpriteNode(this._cards[i])
         }
         this._cards = []
 
-        let xOffset = Resources._sprite_redCardBack.width + 10 + Constants.TOP_DECK_POS.x
-        let yOffset = (Resources._sprite_redCardBack.height / 2) - 12.5 + Constants.TOP_DECK_POS.y
+        let xOffset = Constants.INVENTORY_X_OFFSET
+        let yOffset = Constants.INVENTORY_Y_OFFSET
 
         let x = 0
         let y = 0
 
         for (let i = this._pageIndex * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;
+            i < deckKeys.length &&
             i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE && 
             i < Object.keys(this._itemCatalog).length - 1;) {
             
-            let card = new Card(i, this._itemCatalog[values[i]], true, null, null, this._inventoryView, null, null, null)
+            let card = new Card(i, this._itemCatalog[deckKeys[i]], true, null, null, this._inventoryView, null, null, null)
+            
+            card._backFaced = false
+            card._state = Constants.CardState.INVENTORY_DISPLAY
+            card._quantity = deckValues[i]
             card.setDrawOrder(Constants.DRAW_ORDER_BOARD + i)
             card.setPosition({
                 x: 5 + (xOffset * x),
@@ -132,8 +139,6 @@ class InventoryScreen extends Component {
                 ++y
                 x = 0
             }
-            card._backFaced = false
-            card._state = Constants.CardState.INVENTORY_DISPLAY
             this._inventoryView.addSpriteNode(card)
             this._cards.push(card)
         }
@@ -147,7 +152,7 @@ class InventoryScreen extends Component {
     }
 
     onFetchUserInventory() {
-        this.props.app.bc.script.runScript("getItemCatalog", {}, result => {
+        this.props.app.bc.script.runScript("getUserInventory", {}, result => {
             //
             this._deck = result.data.response
 
@@ -187,15 +192,15 @@ class InventoryScreen extends Component {
         this.onFetchUserInventory()
 
         // Back Button
-        this._backButton = this.makeButton("BACK", { x: 0, y: 200 })
+        this._backButton = this.makeButton("BACK", { x: 0, y: Constants.INVENTORY_BUTTON_Y })
         this._backButton.onClicked = this.onBack.bind(this)
 
         // _downPage
-        this._downPage = this.makeButton("DOWN", { x: 75, y: 200 })
+        this._downPage = this.makeButton("DOWN", { x: 85, y: Constants.INVENTORY_BUTTON_Y })
         this._downPage.onClicked = this.onPageUp.bind(this)
 
         // _upPage
-        this._upPage = this.makeButton("UP", { x: 135, y: 200 })
+        this._upPage = this.makeButton("UP", { x: 140, y: Constants.INVENTORY_BUTTON_Y })
         this._upPage.onClicked = this.onPageDown.bind(this)
 
         // Start the main loop

@@ -46,7 +46,7 @@ module.exports =  class AdvanceButton extends SpriteNode
         let pos = {...this.getPosition()}
         pos.x += Resources._sprite_playerUp.width / 2
         pos.y += Resources._sprite_playerUp.height / 2
-        pos.y -= 1
+        pos.y -= 14
         this._gameView.drawText(
             {x:pos.x - this._title.length * 2, y:pos.y},
             this._title, color)

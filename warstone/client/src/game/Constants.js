@@ -61,6 +61,9 @@ exports.DIALOG_PADDING = {x:7, y:9, z:9, w:8}
 exports.NUM_ITEMS_PER_COL = 3
 exports.NUM_ITEMS_PER_ROW = 4
 exports.NUM_ITEMS_PER_INVENTORY_PAGE = exports.NUM_ITEMS_PER_COL * exports.NUM_ITEMS_PER_ROW
+exports.INVENTORY_BUTTON_Y = 230
+exports.INVENTORY_X_OFFSET = 10 + exports.CARD_DIM.width + exports.TOP_DECK_POS.x
+exports.INVENTORY_Y_OFFSET = (exports.CARD_DIM.height / 2) + exports.TOP_DECK_POS.y
 
 // States
 exports.CardState = {
