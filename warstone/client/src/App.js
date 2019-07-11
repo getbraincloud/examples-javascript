@@ -15,7 +15,7 @@ let url = ids.url
 
 class App extends Component {
     constructor() {
-        super();
+        super()
 
         this.initBC()
         this.state = this.makeDefaultState()
@@ -69,7 +69,7 @@ class App extends Component {
     }
 
     onAutoLogin() {
-        if (true) {
+        if (false) {
             console.log("BC: authenticateAnonymous")
             this.setState({ screen: "loginIn" })
             this.bc.authenticateAnonymous(this.onLoggedIn.bind(this))
