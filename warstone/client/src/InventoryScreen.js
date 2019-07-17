@@ -128,11 +128,10 @@ class InventoryScreen extends Component {
         let x = 0
         let y = 0
 
-        console.log("refreshUserCardDisplay " + this._cards.length)
         for (let i = this._pageIndex * Constants.NUM_ITEMS_PER_INVENTORY_PAGE;
             i < this._cards.length &&
             i < (this._pageIndex + 1) * Constants.NUM_ITEMS_PER_INVENTORY_PAGE &&
-            i < Object.keys(this._itemCatalog).length - 1;) {
+            i < Object.keys(this._itemCatalog).length;) {
 
             let card = this._cards[i]
 
@@ -157,23 +156,36 @@ class InventoryScreen extends Component {
     }
 
     onFetchItemCatalog() {
-        this.props.app.bc.script.runScript("getItemCatalog", {}, result => {
-            this._itemCatalog = result.data.response
+        this.props.app.bc.script.runScript("getItemCatalog_test", {
+            "context": {
+                "pagination": {
+                    "rowsPerPage": 50,
+                    "pageNumber": 1
+                },
+                "searchCriteria": {
+                },
+                "sortCriteria": {
+                    "createdAt": 1,
+                    "updatedAt": -1
+                }
+            }
+        }, result => {
+            this._itemCatalog = result.data.response.items
             this.refreshPlaceholderDisplay()
             this.refreshPageIndexDisplay()
         })
     }
 
     onFetchUserInventory() {
-        this.props.app.bc.script.runScript("getUserInventory", {}, result => {
+        this.props.app.bc.script.runScript("getUserInventory",{}, result => {
             this._deck = result.data.response
             this._deckDisplay.setName(this._deck.Name)
             let deckKeys = Object.keys(this._deck.Deck)
             let deckValues = Object.values(this._deck.Deck)
-            for (let i = 0; i < deckKeys.length; ++i) {
-
+            let catalogKeys = Object.keys(this._itemCatalog)
+            
+            for (let i = 0; i < deckKeys.length && i < catalogKeys.length; ++i) {
                 let card = new Card(i, this._itemCatalog[deckKeys[i]], true, null, null, this._inventoryView, this, null, null)
-
                 card._quantity = deckValues[i]
                 this._cards.push(card)
             }
