@@ -6,6 +6,7 @@ import MainMenuScreen from './MainMenuScreen';
 import GameScreen from './GameScreen';
 import InventoryScreen from './InventoryScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
+import HowToScreen from './HowToScreen';
 
 let brainCloud = require("braincloud")
 
@@ -69,7 +70,7 @@ class App extends Component {
     }
 
     onAutoLogin() {
-        if (false) {
+        if (true) {
             console.log("BC: authenticateAnonymous")
             this.setState({ screen: "loginIn" })
             this.bc.authenticateAnonymous(this.onLoggedIn.bind(this))
@@ -125,6 +126,10 @@ class App extends Component {
 
     onInventoryClicked() {
         this.setState({ screen: "inventory" })
+    }
+
+    onHowToClicked() {
+        this.setState({ screen: "howToPlay" })
     }
 
     onMainMenu() {
@@ -205,7 +210,8 @@ class App extends Component {
                             {this.renderTitle()}
                             <MainMenuScreen user={this.state.user}
                                 onPlay={this.onPlayClicked.bind(this)}
-                                onInventory={this.onInventoryClicked.bind(this)} />
+                                onInventory={this.onInventoryClicked.bind(this)}
+                                onHowTo={this.onHowToClicked.bind(this)} />
                         </div>
                     )
                 }
@@ -249,6 +255,15 @@ class App extends Component {
                             <InventoryScreen text="INVENTORY"
                                 app={this}
                                 onBack={this.onMainMenu.bind(this)} />
+                        </div>
+                    )
+                }
+            case "howToPlay":
+                {
+                    return (
+                        <div className="App">
+                            {this.renderTitle()}
+                            <HowToScreen onBack={this.onMainMenu.bind(this)} />
                         </div>
                     )
                 }
