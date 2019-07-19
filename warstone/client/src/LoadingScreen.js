@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import './LoadingScreen.css'
+import './style.css'
 
 // Props:
 //  text
@@ -12,12 +12,24 @@ class LoadingScreen extends Component
 
     render()
     {
-        return (
-            <div className="LoadingScreen">
-                <p>{this.props.text}</p>
-                <button type="button" onClick={this.onBack.bind(this)}>Cancel</button>
-            </div>
-        )
+        if (this.props.text !== "Logging in...")
+        {
+            return (
+                <div className="LoadingScreen">
+                    <p>{this.props.text}</p>
+                    <button id="btn-blue" onClick={this.onBack.bind(this)}>Cancel</button>
+                </div>
+            )
+        }
+        else
+        {
+            return (
+                <div className="LoadingScreen">
+                    <p>{this.props.text}</p>
+                </div>
+            )
+        }
+        
     }
 }
 

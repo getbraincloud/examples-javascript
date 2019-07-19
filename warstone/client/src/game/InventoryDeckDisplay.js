@@ -33,6 +33,22 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
         this._maxCardstr = this._quantity + "/" + this._maxCards
     }
 
+    serializeCards()
+    {
+          var items = this._cardsInDisplay.reduce((obj, item) => {
+            obj[item._name] = item._quantity
+            return obj
+          }, {})
+
+          var result = {}
+          result.Name = "Created"
+          result.Description = ""
+          result.PlayerHPBonus = 0
+          result.id = "deck0"
+          
+          result.Deck = items;
+          return result
+    }
     addItem(card) {
         let addedItem = false
         if (this._quantity < this._maxCards) {
@@ -92,7 +108,7 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
             this._name, Constants.ROCK_CARD_NUMBER_COLOR)
 
         this._gameView.drawText(
-            { x: pos.x - this._maxCardstr.length * 2, y: pos.y + 230 },
+            { x: pos.x - this._maxCardstr.length * 2, y: pos.y + 220 },
             this._maxCardstr, Constants.ROCK_CARD_NUMBER_COLOR)
 
         this._gameView.drawText(

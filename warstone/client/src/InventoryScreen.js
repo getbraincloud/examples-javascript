@@ -28,6 +28,7 @@ class InventoryScreen extends Component {
         this._backButton = null
         this._downPage = null
         this._upPage = null
+        this._saveDeck = null
         this._pagingDisplayStr = "1/1"
     }
 
@@ -89,6 +90,16 @@ class InventoryScreen extends Component {
 
     onBack() {
         this.props.onBack()
+    }
+
+    onSaveDeck() {
+        //if (this._deckDisplay._quantity === this._deckDisplay._maxCards)
+        {
+            let data = this._deckDisplay.serializeCards()
+            this.props.app.bc.script.runScript("safeUpdateDeckInto", data, result => { })
+            
+            this.props.onBack()
+        }
     }
 
     refreshPlaceholderDisplay() {
@@ -177,13 +188,13 @@ class InventoryScreen extends Component {
     }
 
     onFetchUserInventory() {
-        this.props.app.bc.script.runScript("getUserInventory",{}, result => {
+        this.props.app.bc.script.runScript("getUserInventory", {}, result => {
             this._deck = result.data.response
             this._deckDisplay.setName(this._deck.Name)
             let deckKeys = Object.keys(this._deck.Deck)
             let deckValues = Object.values(this._deck.Deck)
             let catalogKeys = Object.keys(this._itemCatalog)
-            
+
             for (let i = 0; i < deckKeys.length && i < catalogKeys.length; ++i) {
                 let card = new Card(i, this._itemCatalog[deckKeys[i]], true, null, null, this._inventoryView, this, null, null)
                 card._quantity = deckValues[i]
@@ -243,6 +254,10 @@ class InventoryScreen extends Component {
         // _upPage
         this._upPage = this.makeButton("UP", { x: 140, y: Constants.INVENTORY_BUTTON_Y })
         this._upPage.onClicked = this.onPageDown.bind(this)
+
+        // _saveDeck
+        this._saveDeck = this.makeButton("DONE", { x: 230, y: Constants.INVENTORY_BUTTON_Y })
+        this._saveDeck.onClicked = this.onSaveDeck.bind(this)
 
         // Start the main loop
         this._intervaleId = setInterval(this.mainLoop.bind(this), 1000 / FRAME_RATE)

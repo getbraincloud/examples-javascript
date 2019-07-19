@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import './MainMenuScreen.css'
+import './style.css'
 import packageJson from '../package.json'
 import ids from './ids'
 
@@ -8,37 +8,38 @@ import ids from './ids'
 //  onPlay
 //  onInventory
 //  onHowTo
-class MainMenuScreen extends Component
-{
-    onPlay()
-    {
+class MainMenuScreen extends Component {
+    onPlay() {
         this.props.onPlay()
     }
 
-    onInventory()
-    {
+    onInventory() {
         this.props.onInventory()
     }
 
-    onHowTo()
-    {
+    onHowTo() {
         this.props.onHowTo()
     }
 
-    render()
-    {
+    render() {
         let versionSuffix = (ids.url) ? " - dev" : " - prod"
         return (
-            <div className="MainMenuScreen">
-                <p>Logged in as {this.props.user.name}</p>
-                
-                <div class="btn-group" align="center">
-                    <button class="btn" onClick={this.onPlay.bind(this)}>PLAY GAME</button>
-                    <button class="btn" onClick={this.onInventory.bind(this)}>INVENTORY</button>
-                    <button class="btn" onClick={this.onHowTo.bind(this)}>HOW TO PLAY</button>
-                    </div>
+            <div id="main-wrapper">
+                <div className="btn-frame">
+                    <button className="btn-green-long" onClick={this.onPlay.bind(this)}>PLAY GAME</button>
+                </div>
 
-                <small>Version: {packageJson.version}{versionSuffix}</small>
+                <div className="btn-frame">
+                    <button className="btn-green-long" onClick={this.onInventory.bind(this)}>CRAFTING</button>
+                </div>
+
+                <div className="btn-frame">
+                    <button className="btn-green-long" onClick={this.onHowTo.bind(this)}>HOW TO PLAY</button>
+                </div>
+
+                <div className="bottomText">
+                    <p className="ver-text">Version: {packageJson.version}{versionSuffix}</p>
+                </div>
             </div>
         )
     }

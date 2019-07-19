@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import './App.css'
+import ChooseDeckScreen from './ChooseDeckScreen';
 import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
@@ -70,7 +71,7 @@ class App extends Component {
     }
 
     onAutoLogin() {
-        if (true) {
+        if (false) {
             console.log("BC: authenticateAnonymous")
             this.setState({ screen: "loginIn" })
             this.bc.authenticateAnonymous(this.onLoggedIn.bind(this))
@@ -118,10 +119,14 @@ class App extends Component {
                 // Success of lobby found will be in the event onLobbyEvent
             })
         }, () => {
-                if (this.state.screen === "lookingForOpponent") {
-                    this.dieWithMessage("Failed to enable RTT")
-                }
-            })
+            if (this.state.screen === "lookingForOpponent") {
+                this.dieWithMessage("Failed to enable RTT")
+            }
+        })
+    }
+
+    onChooseDeck() {
+        this.setState({ screen: "chooseDeck" })
     }
 
     onInventoryClicked() {
@@ -138,17 +143,15 @@ class App extends Component {
 
     onCancelFindToMainMenu() {
         // cancel the find request
-        this.bc.lobby.cancelFindRequest("unranked", this.bc.rttService.getConnectionId, result =>
-        {
+        this.bc.lobby.cancelFindRequest("unranked", this.bc.rttService.getConnectionId, result => {
             // go back to main menu
-            this.setState({screen: "mainMenu"})
-        }, () =>
-        {
-            // go back to main menu
-            this.setState({screen: "mainMenu"})
-        })
-        
-        this.setState({screen: "mainMenu"})
+            this.setState({ screen: "mainMenu" })
+        }, () => {
+                // go back to main menu
+                this.setState({ screen: "mainMenu" })
+            })
+
+        this.setState({ screen: "mainMenu" })
     }
 
     onLobbyEvent(result) {
@@ -209,7 +212,7 @@ class App extends Component {
                         <div className="App">
                             {this.renderTitle()}
                             <MainMenuScreen user={this.state.user}
-                                onPlay={this.onPlayClicked.bind(this)}
+                                onPlay={this.onChooseDeck.bind(this)}//{this.onPlayClicked.bind(this)}
                                 onInventory={this.onInventoryClicked.bind(this)}
                                 onHowTo={this.onHowToClicked.bind(this)} />
                         </div>
@@ -262,8 +265,21 @@ class App extends Component {
                 {
                     return (
                         <div className="App">
-                            {this.renderTitle()}
                             <HowToScreen onBack={this.onMainMenu.bind(this)} />
+                        </div>
+                    )
+                }
+            case "chooseDeck":
+                {
+                    return (
+                        <div className="App">
+                            {this.renderTitle()}
+                            <ChooseDeckScreen app={this}
+                                onBack={this.onMainMenu.bind(this)}
+                                onPlayGame={this.onPlayClicked.bind(this)}
+                                onDeleteDeck={this.onInventoryClicked.bind(this)}
+                                onEditDeck={this.onInventoryClicked.bind(this)}
+                                onNewDeck={this.onInventoryClicked.bind(this)} />
                         </div>
                     )
                 }
@@ -273,7 +289,7 @@ class App extends Component {
                         <div className="App">
                             {this.renderTitle()}
                             Invalid state
-                    </div>
+                        </div>
                     )
                 }
         }
