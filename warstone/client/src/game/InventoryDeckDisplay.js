@@ -49,6 +49,7 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
           result.Deck = items;
           return result
     }
+
     addItem(card) {
         let addedItem = false
         if (this._quantity < this._maxCards) {
@@ -64,7 +65,6 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
                 let pos = this.getPosition()
                 pos.y = 12.5 + (this._cardsInDisplay.length * 12.5)
                 smallCard = new InventorySmallCardDisplay(this._gameView, this._game, card, card._type.Cost, card._type.Name, 1);
-                smallCard.setDrawOrder(Constants.DRAW_ORDER_MOVING_CARD + this._quantity);
                 smallCard.setEnabled(true)
                 smallCard.setPosition(pos)
                 pos.y = 5
@@ -77,7 +77,42 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
             this.setQuantity(this._quantity + 1)
             addedItem = true
         }
+        
+
+        this.refreshCardDisplay();
         return addedItem
+    }
+
+    compare(a, b){
+        if (a._energyCost > b._energyCost) return 1;
+        if (b._energyCost > a._energyCost) return -1;
+      
+        return 0;
+      }
+      
+
+    refreshCardDisplay()
+    {
+        this._cardsInDisplay.sort((a, b) => {
+            if (a._energyCost > b._energyCost) return 1;
+            if (b._energyCost > a._energyCost) return -1;
+            return a._energyCost - b._energyCost
+        })
+
+        // remove them all
+        let pos = this.getPosition()
+        var smallCard = null
+        for(var i = 0; i < this._cardsInDisplay.length; ++i)
+        {
+            smallCard = this._cardsInDisplay[i]
+            this._gameView.removeSpriteNode(smallCard)
+            
+            smallCard.setDrawOrder(Constants.DRAW_ORDER_MOVING_CARD + i);
+            pos = smallCard.getPosition()
+            pos.y = 12.5 + (i * 12.5)
+            smallCard.setPosition(pos)
+            this._gameView.addSpriteNode(smallCard)
+        }
     }
 
     removeItem(smallCard) {
@@ -96,7 +131,8 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
             this.setQuantity(this._quantity - 1)
             removedItem = true
         }
-
+        
+        this.refreshCardDisplay();
         return removedItem
     }
 
@@ -104,15 +140,15 @@ module.exports = class InventoryDeckDisplay extends SpriteNode {
         let pos = this.getPosition()
 
         this._gameView.drawText(
-            { x: pos.x - this._name.length * 2, y: pos.y - 5 },
+            { x: pos.x + 15 - this._name.length * 2, y: pos.y - 5 },
             this._name, Constants.ROCK_CARD_NUMBER_COLOR)
 
         this._gameView.drawText(
-            { x: pos.x - this._maxCardstr.length * 2, y: pos.y + 220 },
+            { x: pos.x + 15 - this._name.length * 2, y: pos.y },
             this._maxCardstr, Constants.ROCK_CARD_NUMBER_COLOR)
 
         this._gameView.drawText(
-            { x: pos.x - 180.5 - this._pagingStr.length * 2, y: pos.y + 230 },
+            { x: pos.x - 155.5 - this._pagingStr.length * 2, y: pos.y + 230 },
             this._pagingStr, Constants.ROCK_CARD_NUMBER_COLOR)
     }
 }

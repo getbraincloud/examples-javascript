@@ -15,8 +15,8 @@ module.exports = class InventorySmallCardDisplay extends SpriteNode {
         this._card = card
 
         this.setSprite(Resources._sprite_energyBg)
+        this.set9Slice(Constants.DIALOG_SIZE, Constants.DIALOG_PADDING)
         this.setQuantity(quantity)
-        this._gameView.addSpriteNode(this)
         this.setEnabled(true)
     }
 
@@ -35,34 +35,34 @@ module.exports = class InventorySmallCardDisplay extends SpriteNode {
 
     render() {
         let pos = this.getPosition()
-        Sprite.renderPos(Resources._sprite_energyBg, pos)
-        this.drawText()
+        Sprite.render9Slice(Resources._sprite_energyBg, pos, Constants.SMALL_CARD_SIZE, Constants.SMALL_CARD_PADDING)
+        this.drawText(false)
     }
 
     renderHover() {
         let pos = this.getPosition()
-        Sprite.renderPos(Resources._sprite_energyBg, pos)
-        this.drawText()
+        Sprite.render9Slice(Resources._sprite_energyBg, pos, Constants.SMALL_CARD_SIZE, Constants.SMALL_CARD_PADDING)
+        this.drawText(true)
     }
 
     renderDown() {
         let pos = this.getPosition()
-        Sprite.renderPos(Resources._sprite_energyBg, pos)
-        this.drawText()
+        Sprite.render9Slice(Resources._sprite_energyBg, pos, Constants.SMALL_CARD_SIZE, Constants.SMALL_CARD_PADDING)
+        this.drawText(false)
     }
 
-    drawText() {
+    drawText(isHover) {
         let pos = this.getPosition()
         this._gameView.drawText(
             { x: pos.x + 7.5 - this._energyCostStr.length * 2, y: pos.y + 5 },
             this._energyCostStr, Constants.CARD_NUMBER_COLOR)
 
         this._gameView.drawText(
-            { x: pos.x + 25 - this._name.length * 2, y: pos.y + 5 },
-            this._name, Constants.ROCK_CARD_NUMBER_COLOR)
+            { x: pos.x + 40 - this._name.length * 2, y: pos.y + 5 },
+            this._name, isHover ? Constants.CARD_NUMBER_COLOR : Constants.ROCK_CARD_NUMBER_COLOR)
 
         this._gameView.drawText(
-            { x: pos.x + 50 - this._quantityStr.length * 2, y: pos.y + 5 },
-            this._quantityStr, Constants.ROCK_CARD_NUMBER_COLOR)
+            { x: pos.x + 80 - this._quantityStr.length * 2, y: pos.y + 5 },
+            this._quantityStr, isHover ? Constants.CARD_NUMBER_COLOR : Constants.ROCK_CARD_NUMBER_COLOR)
     }
 }

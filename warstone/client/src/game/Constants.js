@@ -16,6 +16,7 @@ exports.DRAW_ORDER_BOTTOM_PLACE = 800
 exports.DRAW_ORDER_MOVING_CARD = 1000
 exports.DRAW_ORDER_CARD_DESCRIPTION = 1100
 exports.DRAW_ORDER_DIALOG = 1200
+exports.DRAW_ORDER_BUTTONS = 1300
 
 // Colors
 exports.WHITE = [1, 1, 1, 1]
@@ -65,6 +66,9 @@ exports.INVENTORY_BUTTON_Y = 230
 exports.INVENTORY_Y_HUD_OFFSET = 30
 exports.INVENTORY_X_OFFSET = 20 + exports.CARD_DIM.width + exports.TOP_DECK_POS.x
 exports.INVENTORY_Y_OFFSET = 20 + (exports.CARD_DIM.height / 2) + exports.TOP_DECK_POS.y
+
+exports.SMALL_CARD_SIZE = { x: 220 / 3, y: 15 }
+exports.SMALL_CARD_PADDING = { x: 12, y: 6, z: 6, w: 2 }
 
 // States
 exports.CardState = {

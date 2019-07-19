@@ -223,7 +223,7 @@ class InventoryScreen extends Component {
     }
 
     makeButton(text, pos) {
-        let button = new AdvanceButton(this._inventoryView, text, 200, pos)
+        let button = new AdvanceButton(this._inventoryView, text, Constants.DRAW_ORDER_BUTTONS, pos)
         button.setEnabled(true)
         this._inventoryView.addSpriteNode(button)
         return button
@@ -237,7 +237,7 @@ class InventoryScreen extends Component {
         this._inventoryView = new InventoryView()
         this._deckDisplay = new InventoryDeckDisplay(this._inventoryView, this, 30, 0)
 
-        this._deckDisplay.setPosition({ x: 250, y: 5 })
+        this._deckDisplay.setPosition({ x: 225, y: 5 })
         //this._inventoryView.onClicked = this.onBack.bind(this)
 
         this.onFetchItemCatalog()
