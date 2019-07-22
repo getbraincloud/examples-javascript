@@ -25,6 +25,7 @@ class MainMenuScreen extends Component {
         let versionSuffix = (ids.url) ? " - dev" : " - prod"
         return (
             <div id="main-wrapper">
+                <p className="text-small">Logged in as {this.props.user.name}</p>
                 <div className="btn-frame">
                     <button className="btn-green-long" onClick={this.onPlay.bind(this)}>PLAY GAME</button>
                 </div>
