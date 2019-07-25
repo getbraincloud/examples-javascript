@@ -143,6 +143,8 @@ class App extends Component {
 
     onCancelFindToMainMenu() {
         // cancel the find request
+        var cxId = String(this.bc.rttService.getRTTConnectionId());
+        console.log(cxId);
         this.bc.lobby.cancelFindRequest("unranked", result => {
             // go back to main menu
             this.setState({ screen: "mainMenu" })
