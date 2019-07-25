@@ -3,7 +3,7 @@
   "version": "4.0.4000",
   "private": true,
   "dependencies": {
-    "braincloud": "^4.1.0",
+    "braincloud": "^4.1.2",
     "isomorphic-ws": "^4.0.1",
     "react": "^16.8.6",
     "react-dom": "^16.4.2",
