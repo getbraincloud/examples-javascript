@@ -1,0 +1,10 @@
+DePixel v1.0
+January 13 2017
+
+files included:
+DePixel Illegible v1.0
+DePixel Schmal v1.0
+DePixel Klein v1.0
+DePixel Breit v1.0
+DePixel Bold v1.0
+DePixel Breit Fett v1.0
