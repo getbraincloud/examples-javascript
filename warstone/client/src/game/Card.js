@@ -108,16 +108,16 @@ module.exports = class Card extends SpriteNode {
         let defenderDamage = this._hp
 
         // Probably could use a matrix here like we do on the server
-        if ((attacker._type.Suit === "ROCK" && this._type.Suit === "SCISSORS") ||
-            (attacker._type.Suit === "SCISSORS" && this._type.Suit === "PAPER") ||
-            (attacker._type.Suit === "PAPER" && this._type.Suit === "ROCK")
+        if ((attacker._type.Suit === "FABLES" && this._type.Suit === "HUNTERS") ||
+            (attacker._type.Suit === "HUNTERS" && this._type.Suit === "GHOULS") ||
+            (attacker._type.Suit === "GHOULS" && this._type.Suit === "FABLES")
         ) {
             attackerDamage *= 2
             defenderDamage /= 2
         }
-        else if ((this._type.Suit === "ROCK" && attacker._type.Suit === "SCISSORS") ||
-            (this._type.Suit === "SCISSORS" && attacker._type.Suit === "PAPER") ||
-            (this._type.Suit === "PAPER" && attacker._type.Suit === "ROCK")
+        else if ((this._type.Suit === "FABLES" && attacker._type.Suit === "HUNTERS") ||
+            (this._type.Suit === "HUNTERS" && attacker._type.Suit === "GHOULS") ||
+            (this._type.Suit === "GHOULS" && attacker._type.Suit === "FABLES")
         ) {
             attackerDamage /= 2
             defenderDamage *= 2
@@ -534,11 +534,11 @@ module.exports = class Card extends SpriteNode {
         }
         else {
             switch (this._type.Suit) {
-                case "ROCK":
+                case "FABLES":
                     return Resources._sprite_rockCard
-                case "PAPER":
+                case "GHOULS":
                     return Resources._sprite_paperCard
-                case "SCISSORS":
+                case "HUNTERS":
                     return Resources._sprite_scissorsCard
                 case "Spell":
                     return Resources._sprite_spellCard
@@ -560,11 +560,11 @@ module.exports = class Card extends SpriteNode {
     // Get the proper sprite for the card.
     getCardHoverSprite() {
         switch (this._type.Suit) {
-            case "ROCK":
+            case "FABLES":
                 return Resources._sprite_rockHoverCard
-            case "PAPER":
+            case "GHOULS":
                 return Resources._sprite_paperHoverCard
-            case "SCISSORS":
+            case "HUNTERS":
                 return Resources._sprite_scissorsHoverCard
             default:
                 return Resources._sprite_hoverCard
@@ -572,7 +572,7 @@ module.exports = class Card extends SpriteNode {
     }
 
     getTextColor() {
-        if (this._type.Suit === "ROCK") {
+        if (this._type.Suit === "FABLES") {
             return Constants.ROCK_CARD_NUMBER_COLOR
         }
         return Constants.CARD_NUMBER_COLOR
@@ -583,7 +583,7 @@ module.exports = class Card extends SpriteNode {
         if (!this._backFaced) {
             let pos = this.getPosition()
             let textColor = this.getTextColor()
-            if (this._type.Suit === "ROCK") {
+            if (this._type.Suit === "FABLES") {
                 textColor = Constants.ROCK_CARD_NUMBER_COLOR
             }
             if (this._type.HP > 0) {
