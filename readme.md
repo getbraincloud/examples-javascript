@@ -16,7 +16,7 @@ Turned Based card game, built as an example for brainCloud real-time Room Server
 
 ### Play the game
 To play the game now, follow this link:
-http://ec2-18-219-26-183.us-east-2.compute.amazonaws.com:3000/
+http://ec2-18-219-26-183.us-east-2.compute.amazonaws.com:3001/
 
 
 > Play against yourself to get into a game fast: Run two browser tabs of the game with separate logins (username/pw). Matchmaking will most likely place you together in the same game.

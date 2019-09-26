@@ -1,33 +1,3 @@
-// MD5
-if (typeof CryptoJS === "undefined" || CryptoJS === null) {
-    CryptoJS = {};
-}
-if (!CryptoJS.MD5) {
-    CryptoJS.MD5 = require('md5');
-}
-
-// XMLHttpRequest
-if (typeof window === "undefined" || window === null) {
-    window = {}
-}
-if (!window.XMLHttpRequest) {
-    window.XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-    XMLHttpRequest = window.XMLHttpRequest;
-
-    XMLHttpRequest.UNSENT = 0;
-    XMLHttpRequest.OPENED = 1;
-    XMLHttpRequest.HEADERS_RECEIVED = 2;
-    XMLHttpRequest.LOADING = 3;
-    XMLHttpRequest.DONE = 4;
-}
-
-// Local storage
-if (typeof localStorage === "undefined" || localStorage === null) {
-    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
-    os = require('os');
-    var configDir = os.homedir() + "/.bciot";
-    localStorage = new LocalStorage(configDir);
-}
 
 function BrainCloudManager ()
 {
@@ -407,7 +377,8 @@ function BrainCloudManager ()
                 var data = messages[c].data;
 
                 // A session id or a profile id could potentially come back in any messages
-                if (data)
+                //only save cached session and profile id when its an authentication or identity service being used. 
+                if (data && (bcm._inProgressQueue[c].service == "authenticationV2" || bcm._inProgressQueue[c].service == "identity"))
                 {
                     if (data.sessionId)
                     {
@@ -1416,6 +1387,8 @@ function BCAuthentication() {
 	bc.authentication.OPERATION_AUTHENTICATE = "AUTHENTICATE";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD = "RESET_EMAIL_PASSWORD";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED = "RESET_EMAIL_PASSWORD_ADVANCED";
+	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD = "RESET_UNIVERSAL_ID_PASSWORD";
+	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED = "RESET_UNIVERSAL_ID_PASSWORD_ADVANCED";
 
 	bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS = "Anonymous";
 	bc.authentication.AUTHENTICATION_TYPE_EMAIL = "Email";
@@ -1781,6 +1754,78 @@ function BCAuthentication() {
 			data: {
                 gameId: appId,
                 emailAddress: emailAddress,
+				serviceParams: serviceParams
+            },
+            callback: responseHandler
+		};
+		bc.brainCloudManager.sendRequest(request);
+	};
+	
+		/**
+	 * Reset Universal Id password
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetUniversalIdPassord
+	 *
+	 * @param universalId {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetUniversalIdPassword = function(universalId, responseHandler) {
+		var callerCallback = responseHandler;
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD,
+			data: {
+				gameId: appId,
+				universalId: universalId
+			},
+			callerCallback: responseHandler,
+			callback: function(result) {
+				if (result && result.status == 200) {
+
+				}
+				if (callerCallback) {
+					callerCallback(result);
+				}
+				//console.log("CallerCallback: " + callerCallback);
+			}
+
+		};
+		//console.log("Request: " + JSON.stringify(request));
+		bc.brainCloudManager.sendRequest(request);
+    };
+
+	/**
+	 * Reset Universal Id password wth template options
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetUniversalIdPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param universalId {string} - the universalId
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetUniversalIdPasswordAdvanced = function(universalId, serviceParams, responseHandler) {
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED,
+			data: {
+                gameId: appId,
+                universalId: universalId,
 				serviceParams: serviceParams
             },
             callback: responseHandler
@@ -4277,6 +4322,7 @@ function BCGlobalEntity() {
 	bc.globalEntity.OPERATION_GET_PAGE_BY_OFFSET = "GET_PAGE_BY_OFFSET";
 	bc.globalEntity.OPERATION_INCREMENT_GLOBAL_ENTITY_DATA = "INCREMENT_GLOBAL_ENTITY_DATA";
 	bc.globalEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING = "GET_RANDOM_ENTITIES_MATCHING";
+	bc.globalEntity.OPERATION_UPDATE_ENTITY_INDEXED_ID = "UPDATE_INDEXED_ID";
 	bc.globalEntity.OPERATION_UPDATE_ENTITY_OWNER_AND_ACL = "UPDATE_ENTITY_OWNER_AND_ACL";
 	bc.globalEntity.OPERATION_MAKE_SYSTEM_ENTITY = "MAKE_SYSTEM_ENTITY";
 
@@ -4665,6 +4711,33 @@ function BCGlobalEntity() {
 		bc.brainCloudManager.sendRequest({
 			service : bc.SERVICE_GLOBAL_ENTITY,
 			operation : bc.globalEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Method updates an existing entity's Owner and ACL on the server.
+	 *
+	 * Service Name - globalEntity
+	 * Service Operation - UPDATE_ENTITY_OWNER_AND_ACL
+	 *
+	 * @param entityId The entity ID
+	 * @param version The version of the entity to update
+	 * @param entityIndexedId the id index of the entity
+	 * @param callback The callback object
+	 */
+	bc.globalEntity.updateEntityIndexedId = function(entityId, version, entityIndexedId, callback)
+	{
+		var message = {
+			entityId : entityId,
+			version : version,
+			entityIndexedId: entityIndexedId
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GLOBAL_ENTITY,
+			operation : bc.globalEntity.OPERATION_UPDATE_ENTITY_INDEXED_ID,
 			data : message,
 			callback : callback
 		});
@@ -5617,6 +5690,8 @@ function BCIdentity() {
 	bc.identity.OPERATION_ATTACH_PEER_PROFILE = "ATTACH_PEER_PROFILE";
 	bc.identity.OPERATION_DETACH_PEER = "DETACH_PEER";
 	bc.identity.OPERATION_GET_PEER_PROFILES = "GET_PEER_PROFILES";
+	bc.identity.OPERATION_ATTACH_NONLOGIN_UNIVERSAL = "ATTACH_NONLOGIN_UNIVERSAL";
+	bc.identity.OPERATION_UPDATE_UNIVERSAL_LOGIN = "UPDATE_UNIVERSAL_LOGIN";
 
 	bc.identity.authenticationType = Object.freeze({
 		anonymous : "Anonymous",
@@ -6101,6 +6176,46 @@ function BCIdentity() {
 	};
 
 	/**
+	 * Updates univeral id of the current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - UPDATE_UNIVERSAL_LOGIN
+	 *
+	 * @param externalId user id
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.identity.updateUniversalIdLogin = function(externalId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_IDENTITY,
+			operation: bc.identity.OPERATION_UPDATE_UNIVERSAL_LOGIN,
+			data: {
+				externalId : externalId
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Attaches a univeral id to the current profile with no login capability.
+	 * 
+	 * Service Name - Identity
+	 * Service Operation - ATTACH_NONLOGIN_UNIVERSAL
+	 *
+	 * @param externalId user id
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.identity.attachNonLoginUniversalId = function(externalId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_IDENTITY,
+			operation: bc.identity.OPERATION_ATTACH_NONLOGIN_UNIVERSAL,
+			data: {
+				externalId : externalId
+			},
+			callback: callback
+		});
+	};
+
+	/**
 	 * Switch to a Parent Profile
 	 *
 	 * Service Name - Identity
@@ -6426,11 +6541,13 @@ function BCLobby() {
     bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY = "FIND_OR_CREATE_LOBBY";
     bc.lobby.OPERATION_GET_LOBBY_DATA = "GET_LOBBY_DATA";
     bc.lobby.OPERATION_LEAVE_LOBBY = "LEAVE_LOBBY";
+    bc.lobby.OPERATION_JOIN_LOBBY = "JOIN_LOBBY";
     bc.lobby.OPERATION_REMOVE_MEMBER = "REMOVE_MEMBER";
     bc.lobby.OPERATION_SEND_SIGNAL = "SEND_SIGNAL";
     bc.lobby.OPERATION_SWITCH_TEAM = "SWITCH_TEAM";
     bc.lobby.OPERATION_UPDATE_READY = "UPDATE_READY";
     bc.lobby.OPERATION_UPDATE_SETTINGS = "UPDATE_SETTINGS";
+    bc.lobby.OPERATION_CANCEL_FIND_REQUEST = "CANCEL_FIND_REQUEST";
 
     /**
      * Creates a new lobby.
@@ -6586,6 +6703,35 @@ function BCLobby() {
     };
 
     /**
+     * Causes the caller to join the specified lobby.
+     *
+     * Service Name - Lobby
+     * Service Operation - JOIN_LOBBY
+     *
+     * @param lobbyId Id of chosen lobby.
+     * @param isReady initial ready status of this user
+     * @param extraJson Initial extra-data about this user
+     * @param teamCode specified team code
+     * @param otherUserCxIds Array fo other users (ie party members) to add to the lobby as well. Constrains things so only lobbies with room for all players will be considered. 
+     */
+    bc.lobby.joinLobby = function(lobbyId, isReady, extraJson, teamCode, otherUserCxIds, callback) {
+        var data = {
+            lobbyId: lobbyId,
+            isReady: isReady,
+            extraJson: extraJson, 
+            teamCode: teamCode,
+            otherUserCxIds: otherUserCxIds
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LOBBY,
+            operation: bc.lobby.OPERATION_JOIN_LOBBY,
+            data: data,
+            callback: callback
+        });
+    };
+
+    /**
      * Evicts the specified user from the specified lobby. The caller must be the owner of the lobby.
      *
      * Service Name - Lobby
@@ -6699,6 +6845,23 @@ function BCLobby() {
         bc.brainCloudManager.sendRequest({
             service: bc.SERVICE_LOBBY,
             operation: bc.lobby.OPERATION_UPDATE_SETTINGS,
+            data: data,
+            callback: callback
+        });
+    };
+
+    /// <summary>
+    /// Cancel this members Find, Join and Searching of Lobbies
+    /// </summary>
+    bc.lobby.cancelFindRequest = function(lobbyType, cxId, callback) {
+        var data = {
+            lobbyType: lobbyType,
+            cxId: cxId
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LOBBY,
+            operation: bc.lobby.OPERATION_CANCEL_FIND_REQUEST,
             data: data,
             callback: callback
         });
@@ -9197,6 +9360,16 @@ function BCPushNotifications() {
 		});
 	};
 
+	
+
+
+	/**
+     * @deprecated Use registerPushNotificationDeviceToken() instead - Removal after September 1 2020
+     */
+	bc.pushNotification.registerPushNotificationToken = function(deviceType, deviceToken, callback) {
+		registerPushNotificationDeviceToken(deviceType, deviceToken, callback);
+	};
+
 	/**
 	 * Registers the given device token with the server to enable this device
 	 * to receive push notifications.
@@ -9206,7 +9379,7 @@ function BCPushNotifications() {
 	 *   On IOS, this is obtained using the application:didRegisterForRemoteNotificationsWithDeviceToken callback
 	 * @param callback The method to be invoked when the server response is received
 	 */
-	bc.pushNotification.registerPushNotificationToken = function(deviceType, deviceToken, callback) {
+	bc.pushNotification.registerPushNotificationDeviceToken = function(deviceType, deviceToken, callback) {
 		bc.brainCloudManager.sendRequest({
 			service: bc.SERVICE_PUSH_NOTIFICATION,
 			operation: bc.pushNotification.OPERATION_REGISTER,
@@ -10112,36 +10285,137 @@ function BCRedemptionCodes() {
 
 BCRedemptionCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
 
-function BCRTTRegistration() {
+function BCRTT() {
     var bc = this;
 
-    bc.rttRegistration = {};
+    bc.rttService = {};
 
-    bc.SERVICE_RTT_REGISTRATION = "rttRegistration";
+    bc.SERVICE_RTT= "rttRegistration";
 
-    bc.rttRegistration.OPERATION_REQUEST_CLIENT_CONNECTION = "REQUEST_CLIENT_CONNECTION";
+    bc.rttService.OPERATION_REQUEST_CLIENT_CONNECTION = "REQUEST_CLIENT_CONNECTION";
+
+        /**
+     * Enables Real Time event for this session.
+     * Real Time events are disabled by default. Usually events
+     * need to be polled using GET_EVENTS. By enabling this, events will
+     * be received instantly when they happen through a WebSocket connection to an Event Server.
+     *
+     * This function will first call requestClientConnection, then connect to the address
+     * 
+     * @param success Called on success to establish an RTT connection.
+     * @param failure Called on failure to establish an RTT connection or got disconnected.
+     */
+    bc.rttService.enableRTT = function(success, failure) {
+        bc.brainCloudRttComms.enableRTT(success, failure);
+    }
+    
+    /** 
+     * Disables Real Time event for this session.
+     */
+    bc.rttService.disableRTT = function() {
+        bc.brainCloudRttComms.disableRTT();
+    }
+
+    /**
+     * Returns true if RTT is enabled
+     */
+    bc.rttService.getRTTEnabled = function() {
+        return bc.brainCloudRttComms.isRTTEnabled();
+    }
+
+    /**
+     * Listen to real time events.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one event callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTEventCallback = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_EVENT, callback);
+    }
+    bc.rttService.deregisterRTTEventCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_EVENT);
+    }
+
+    /**
+     * Listen to real time chat messages.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one chat callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTChatCallback = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_CHAT, callback);
+    }
+    bc.rttService.deregisterRTTChatCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_CHAT);
+    }
+
+    /**
+     * Listen to real time messaging.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one messaging callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTMessagingCallback = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_MESSAGING, callback);
+    }
+    bc.rttService.deregisterRTTMessagingCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_MESSAGING);
+    }
+
+    /**
+     * Listen to real time lobby events.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one lobby callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTLobbyCallback = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_LOBBY, callback);
+    }
+    bc.rttService.deregisterRTTLobbyCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_LOBBY);
+    }
+
+    /**
+     * Listen to real time presence events.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one presence callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTPresenceCallback = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_PRESENCE, callback);
+    }
+    bc.rttService.deregisterRTTPresenceCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_PRESENCE);
+    }
+
+    /**
+     * Clear all set RTT callbacks
+     */
+    bc.rttService.deregisterAllRTTCallbacks = function() {
+        bc.brainCloudRttComms.deregisterAllRTTCallbacks();
+    }
 
     /**
      * Request an RTT client connection from an event server
      *
-     * Service Name - RTTRegistration
+     * Service Name - RTT
      * Service Operation - RequestClientConnection
      *
      * @param channelId The id of the chat channel to return history from.
      * @param maxReturn Maximum number of messages to return.
      * @param callback The method to be invoked when the server response is received
      */
-    bc.rttRegistration.requestClientConnection = function(callback) {
+    bc.rttService.requestClientConnection = function(callback) {
         bc.brainCloudManager.sendRequest({
-            service: bc.SERVICE_RTT_REGISTRATION,
-            operation: bc.rttRegistration.OPERATION_REQUEST_CLIENT_CONNECTION,
+            service: bc.SERVICE_RTT,
+            operation: bc.rttService.OPERATION_REQUEST_CLIENT_CONNECTION,
             data: {},
             callback: callback
         });
     };
 }
 
-BCRTTRegistration.apply(window.brainCloudClient = window.brainCloudClient || {});
+BCRTT.apply(window.brainCloudClient = window.brainCloudClient || {});
 
 function BCS3Handler() {
     var bc = this;
@@ -11432,6 +11706,7 @@ function BCVirtualCurrency() {
     bc.virtualCurrency.OPERATION_GET_CURRENCY = "GET_PLAYER_VC";
     bc.virtualCurrency.OPERATION_GET_PARENT_CURRENCY = "GET_PARENT_VC";
     bc.virtualCurrency.OPERATION_GET_PEER_CURRENCY = "GET_PEER_VC";
+    bc.virtualCurrency.OPERATION_RESET_PLAYER_VC = "RESET_PLAYER_VC";
 
     bc.virtualCurrency.OPERATION_AWARD_VC = "AWARD_VC";
     bc.virtualCurrency.OPERATION_CONSUME_PLAYER_VC = "CONSUME_VC";
@@ -11559,6 +11834,22 @@ function BCVirtualCurrency() {
         });
     };
 
+    /**
+     * Resets the current player's currency
+     *
+     * Service Name - VirtualCurrency
+     * Service Operation - ResetCurrency
+     *      
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.virtualCurrency.resetCurrency = function(callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_VIRTUAL_CURRENCY,
+            operation: bc.virtualCurrency.OPERATION_RESET_PLAYER_VC,
+            callback: callback
+        });
+    };
+
 }
 
 BCVirtualCurrency.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -11606,7 +11897,7 @@ function BrainCloudClient() {
         BCPushNotifications.apply(bcc);
         BCReasonCodes.apply(bcc);
         BCRedemptionCodes.apply(bcc);
-        BCRTTRegistration.apply(bcc);
+        BCRTT.apply(bcc);
         BCS3Handler.apply(bcc);
         BCScript.apply(bcc);
         BCSocialLeaderboard.apply(bcc);
@@ -11615,7 +11906,7 @@ function BrainCloudClient() {
         BCTournament.apply(bcc);
 
         bcc.brainCloudManager = new BrainCloudManager();
-        bcc.brainCloudRttComms = new BrainCloudRttComms();
+        bcc.brainCloudRttComms = new BrainCloudRttComms(this);
 
         bcc.brainCloudManager.abtests = bcc.abtests;
         bcc.brainCloudManager.asyncMatch = bcc.asyncMatch;
@@ -11649,7 +11940,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.pushNotification = bcc.pushNotification;
         bcc.brainCloudManager.reasonCodes = bcc.reasonCodes;
         bcc.brainCloudManager.redemptionCode = bcc.redemptionCode;
-        bcc.brainCloudManager.rttRegistration = bcc.rttRegistration;
+        bcc.brainCloudManager.rttService = bcc.rttService;
         bcc.brainCloudManager.s3Handling = bcc.s3Handling;
         bcc.brainCloudManager.script = bcc.script;
         bcc.brainCloudManager.socialLeaderboard = bcc.socialLeaderboard;
@@ -11657,7 +11948,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.time = bcc.time;
         bcc.brainCloudManager.tournament = bcc.tournament;
 
-        bcc.brainCloudRttComms.rttRegistration = bcc.rttRegistration;
+        bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
 
     } else {
@@ -11698,7 +11989,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.pushNotification = bcc.brainCloudClient.pushNotification = bcc.brainCloudClient.pushNotification || {};
         bcc.brainCloudManager.reasonCodes = bcc.brainCloudClient.reasonCodes = bcc.brainCloudClient.reasonCodes || {};
         bcc.brainCloudManager.redemptionCode = bcc.brainCloudClient.redemptionCode = bcc.brainCloudClient.redemptionCode || {};
-        bcc.brainCloudManager.rttRegistration = bcc.brainCloudClient.rttRegistration = bcc.brainCloudClient.rttRegistration || {};
+        bcc.brainCloudManager.rttService = bcc.brainCloudClient.rttService = bcc.brainCloudClient.rttService || {};
         bcc.brainCloudManager.s3Handling = bcc.brainCloudClient.s3Handling = bcc.brainCloudClient.s3Handling || {};
         bcc.brainCloudManager.script = bcc.brainCloudClient.script = bcc.brainCloudClient.script || {};
         bcc.brainCloudManager.socialLeaderboard = bcc.brainCloudClient.socialLeaderboard = bcc.brainCloudClient.socialLeaderboard || {};
@@ -11706,12 +11997,12 @@ function BrainCloudClient() {
         bcc.brainCloudManager.time = bcc.brainCloudClient.time = bcc.brainCloudClient.time || {};
         bcc.brainCloudManager.tournament = bcc.brainCloudClient.tournament = bcc.brainCloudClient.tournament || {};
 
-        bcc.brainCloudRttComms.rttRegistration = bcc.brainCloudClient.rttRegistration = bcc.brainCloudClient.rttRegistration || {};
+        bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
     }
 
 
-    bcc.version = "3.11.0";
+    bcc.version = "4.0.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -11991,107 +12282,6 @@ function BrainCloudClient() {
     bcc.startHeartBeat = function() {
         bcc.brainCloudManager.startHeartBeat();
     }
-    
-    /**
-     * Enables Real Time event for this session.
-     * Real Time events are disabled by default. Usually events
-     * need to be polled using GET_EVENTS. By enabling this, events will
-     * be received instantly when they happen through a WebSocket connection to an Event Server.
-     *
-     * This function will first call requestClientConnection, then connect to the address
-     * 
-     * @param success Called on success to establish an RTT connection.
-     * @param failure Called on failure to establish an RTT connection or got disconnected.
-     */
-    bcc.enableRTT = function(success, failure) {
-        bcc.brainCloudRttComms.enableRTT(success, failure);
-    }
-    
-    /** 
-     * Disables Real Time event for this session.
-     */
-    bcc.disableRTT = function() {
-        bcc.brainCloudRttComms.disableRTT();
-    }
-
-    /**
-     * Returns true if RTT is enabled
-     */
-    bcc.getRTTEnabled = function() {
-        return bcc.brainCloudRttComms.isRTTEnabled();
-    }
-
-    /**
-     * Listen to real time events.
-     * 
-     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
-     * Only one event callback can be registered at a time. Calling this a second time will override the previous callback.
-     */
-    bcc.registerRTTEventCallback = function(callback) {
-        bcc.brainCloudRttComms.registerRTTCallback(bcc.SERVICE_EVENT, callback);
-    }
-    bcc.deregisterRTTEventCallback = function() {
-        bcc.brainCloudRttComms.deregisterRTTCallback(bcc.SERVICE_EVENT);
-    }
-
-    /**
-     * Listen to real time chat messages.
-     * 
-     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
-     * Only one chat callback can be registered at a time. Calling this a second time will override the previous callback.
-     */
-    bcc.registerRTTChatCallback = function(callback) {
-        bcc.brainCloudRttComms.registerRTTCallback(bcc.SERVICE_CHAT, callback);
-    }
-    bcc.deregisterRTTChatCallback = function() {
-        bcc.brainCloudRttComms.deregisterRTTCallback(bcc.SERVICE_CHAT);
-    }
-
-    /**
-     * Listen to real time messaging.
-     * 
-     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
-     * Only one messaging callback can be registered at a time. Calling this a second time will override the previous callback.
-     */
-    bcc.registerRTTMessagingCallback = function(callback) {
-        bcc.brainCloudRttComms.registerRTTCallback(bcc.SERVICE_MESSAGING, callback);
-    }
-    bcc.deregisterRTTMessagingCallback = function() {
-        bcc.brainCloudRttComms.deregisterRTTCallback(bcc.SERVICE_MESSAGING);
-    }
-
-    /**
-     * Listen to real time lobby events.
-     * 
-     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
-     * Only one lobby callback can be registered at a time. Calling this a second time will override the previous callback.
-     */
-    bcc.registerRTTLobbyCallback = function(callback) {
-        bcc.brainCloudRttComms.registerRTTCallback(bcc.SERVICE_LOBBY, callback);
-    }
-    bcc.deregisterRTTLobbyCallback = function() {
-        bcc.brainCloudRttComms.deregisterRTTCallback(bcc.SERVICE_LOBBY);
-    }
-
-    /**
-     * Listen to real time presence events.
-     * 
-     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
-     * Only one presence callback can be registered at a time. Calling this a second time will override the previous callback.
-     */
-    bcc.registerRTTPresenceCallback = function(callback) {
-        bcc.brainCloudRttComms.registerRTTCallback(bcc.SERVICE_PRESENCE, callback);
-    }
-    bcc.deregisterRTTPresenceCallback = function() {
-        bcc.brainCloudRttComms.deregisterRTTCallback(bcc.SERVICE_PRESENCE);
-    }
-
-    /**
-     * Clear all set RTT callbacks
-     */
-    bcc.deregisterAllRTTCallbacks = function() {
-        bcc.brainCloudRttComms.deregisterAllRTTCallbacks();
-    }
 }
 
 /**
@@ -12102,7 +12292,7 @@ if (typeof WebSocket === 'undefined') {
     WebSocket = require('ws');
 }
 
-var DEFAULT_RTT_HEARTBEAT = 10; // Seconds
+var DEFAULT_RTT_HEARTBEAT; // Seconds
 
 function getBrowserName() {
     // Opera 8.0+
@@ -12137,9 +12327,10 @@ function getBrowserName() {
     return null;
 }
 
-function BrainCloudRttComms () {
+function BrainCloudRttComms (m_client) {
     var bcrtt = this;
 
+    bcrtt.m_client = m_client;
     bcrtt.name = "BrainCloudRttComms";
     bcrtt.socket = null;
     bcrtt.heartbeatId = null;
@@ -12239,6 +12430,7 @@ function BrainCloudRttComms () {
             var processResult = function(result) {
                 if (result.operation == "CONNECT" && result.service == "rtt") {
                     bcrtt.connectionId = result.cxId;
+                    DEFAULT_RTT_HEARTBEAT = result.data.heartbeatSeconds; //make default heartbeat match the heartbeat the server gives us
                     bcrtt.startHeartbeat();
                     bcrtt.connectCallback.success(result);
                 }
@@ -12278,7 +12470,7 @@ function BrainCloudRttComms () {
                 }
 
                 bcrtt.socket.send(JSON.stringify(request));
-            }, DEFAULT_RTT_HEARTBEAT * 1000);
+            }, 1000 * DEFAULT_RTT_HEARTBEAT);
         }
     }
 
@@ -12310,7 +12502,7 @@ function BrainCloudRttComms () {
                 failure: failure
             }
             bcrtt.isEnabled = true;
-            bcrtt.rttRegistration.requestClientConnection(function(result) {
+            m_client.rttService.requestClientConnection(function(result) {
                 if (bcrtt._debugEnabled) {
                     console.log(result);
                 }
@@ -12389,14 +12581,6 @@ BrainCloudRttComms.apply(window.brainCloudRttComms = window.brainCloudRttComms |
  * be sent to the server. This strategy is useful when using anonymous authentication.
  */
 
-// Local storage
-if (typeof localStorage === "undefined" || localStorage === null) {
-    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
-    os = require('os');
-    var configDir = os.homedir() + "/.bciot";
-    localStorage = new LocalStorage(configDir);
-}
-
 function BrainCloudWrapper(wrapperName) {
 
     var bcw = this;
@@ -12438,7 +12622,7 @@ function BrainCloudWrapper(wrapperName) {
         bcw.pushNotification = bcw.brainCloudClient.pushNotification;
         bcw.reasonCodes = bcw.brainCloudClient.reasonCodes;
         bcw.redemptionCode = bcw.brainCloudClient.redemptionCode;
-        bcw.rttRegistration = bcw.brainCloudClient.rttRegistration;
+        bcw.rttService = bcw.brainCloudClient.rttService;
         bcw.s3Handling = bcw.brainCloudClient.s3Handling;
         bcw.script = bcw.brainCloudClient.script;
         bcw.socialLeaderboard = bcw.brainCloudClient.socialLeaderboard;
@@ -12511,7 +12695,7 @@ function BrainCloudWrapper(wrapperName) {
     };
 
     bcw.initializeWithApps = function(defaultAppId, secretMap, appVersion) {
-        bcw.brainCloudClient.initialize(defaultAppId, secretMap, appVersion);
+        bcw.brainCloudClient.initializeWithApps(defaultAppId, secretMap, appVersion);
     };
 
     bcw.getStoredAnonymousId = function() {

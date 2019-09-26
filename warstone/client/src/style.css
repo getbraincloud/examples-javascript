@@ -1,0 +1,263 @@
+@font-face{
+    font-family: 'zektonregular';
+    src: url('fonts/zekton-webfont.woff2') format('woff2'),
+         url('fonts/zekton-webfont.ttf') format('truetype'),
+         url('fonts/zekton-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+html{
+  font-size: 16px;
+  font-family:'zektonregular', sans-serif;
+  color: #fff;
+  margin: 0px;
+  padding: 0px;
+}
+
+body{
+  background-color: #262b44;
+  margin: 0px;
+  padding: 0px;
+}
+
+/*Login Page------------------------------------------*/
+
+.title{
+  text-align: center;
+}
+
+#login-area{
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin-top: 24px;
+}
+
+form{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 360px;
+  font-size: 14px;
+  padding: 28px;
+}
+
+#formFrame{
+  align-self: center;
+}
+
+#field-area{
+  background-image: url('img/frame-login.png');
+  background-repeat: no-repeat;
+  width: 398px;
+  height: 134px;
+  align-self: center;
+}
+
+#user-wrapper{
+  margin-bottom: 22px;
+}
+
+.input-field{
+  width: 174px;
+  height: 22px;
+  margin-left: 32px;
+}
+
+#btn-login{
+  background-image: url('img/btn-green.png');
+  background-repeat: no-repeat;
+  align-self: center;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 24px;
+}
+
+.bottomText{
+  text-align: center;
+}
+
+.text-small{
+  font-size: 12px;
+  color: #fff;
+}
+
+.ver-text{
+  font-size: 12px;
+  color: #858db4;
+}
+
+/*Main Menu Page------------------------------------------*/
+
+#main-wrapper{
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin-top: 24px;
+}
+
+.btn-frame{
+  display: flex;
+  justify-content: center;
+  background-image: url('img/frame-menu.png');
+  background-repeat: no-repeat;
+  width: 398px;
+  height: 100px;
+  align-self: center;
+  margin: 8px 0px;
+}
+
+.btn-green-long{
+  background-image: url('img/btn-green-long.png');
+  background-repeat: no-repeat;
+  align-self: center;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 136px;
+  height: 54px;
+  margin: 24px;
+}
+
+
+/*How to Play Page------------------------------------------*/
+
+#htp-wrapper{
+  background-color: #ead4aa;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1% 15%;
+}
+
+#htp-titleBar{
+  display: flex;
+  flex-direction: row;
+  color: #181425;
+}
+
+#htp-title{
+  color: #181425;
+}
+
+#htp-whiteTitleWrapper{
+  margin: 0px auto;
+  transform: translate(-50%, 0%)
+}
+
+#htp-whiteTitle{
+  color: #fff;
+  margin-top: 28px;
+}
+
+#htp-text{
+  color: #181425;
+  line-height: 1.8;
+}
+
+#htp-backWrapper{
+  float: left;
+}
+
+.htp-bullet{
+  color: #181425;
+  line-height: 1.8;
+}
+
+#btn-blue{
+  background-image: url('img/btn-blue.png');
+  background-repeat: no-repeat;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 24px;
+}
+
+#btn-red{
+  background-image: url('img/btn-red.png');
+  background-repeat: no-repeat;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 24px;
+}
+
+#btn-green{
+  background-image: url('img/btn-green.png');
+  background-repeat: no-repeat;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 24px;
+}
+
+#cd-titleBar{
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  color: #181425;
+}
+
+#cd-field-area{
+  background-image: url('img/frame-login.png');
+  background-repeat: no-repeat;
+  width: 398px;
+  height: 134px;
+  align-self: center;
+  justify-content: center;
+}
+
+#btn-blue-card{
+  background-image: url('img/btn-blue.png');
+  background-repeat: no-repeat;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 5px;
+}
+
+#btn-red-card{
+  background-image: url('img/btn-red.png');
+  background-repeat: no-repeat;
+  font-size: 14px;
+  font-weight: bold;
+  font-family:'zektonregular', sans-serif;
+  color: #181425;
+  background-color: #262b44;
+  border-style: none;
+  width: 117px;
+  height: 54px;
+  margin: 5px;
+  
+}
