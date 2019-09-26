@@ -1,7 +1,12 @@
 
+if (typeof CryptoJS === 'undefined' || CryptoJS === null) {
+    var CryptoJS = require('crypto-js');
+}
+
 function BrainCloudManager ()
 {
     var bcm = this;
+    var _setInterval = typeof customSetInterval === 'function' ? customSetInterval : setInterval;
 
     bcm.name = "BrainCloudManager";
 
@@ -102,6 +107,11 @@ function BrainCloudManager ()
 
     bcm.setSessionId = function(sessionId)
     {
+        if(sessionId !== null || sessionId !== "")
+        {
+            bcm._isAuthenticated = true;
+            bcm._packetId = -1; 
+        }
         bcm._sessionId = sessionId;
     };
 
@@ -318,7 +328,7 @@ function BrainCloudManager ()
     bcm.startHeartBeat = function()
     {
         bcm.stopHeartBeat();
-        bcm._heartBeatIntervalId = setInterval(function()
+        bcm._heartBeatIntervalId = _setInterval(function()
         {
             bcm.sendRequest({
                 service : "heartbeat",
@@ -474,7 +484,7 @@ function BrainCloudManager ()
                     bcm._statusMessageCache = messages[c].status_message;
                 }
 
-                console.log("STATUSCodes:" + bcm.statusCodes.CLIENT_NETWORK_ERROR);
+                bcm.debugLog("STATUSCodes:" + bcm.statusCodes.CLIENT_NETWORK_ERROR);
                 bcm.updateKillSwitch(bcm._inProgressQueue[c].service, bcm._inProgressQueue[c].operation, statusCode)
             }
 
@@ -1041,6 +1051,8 @@ function BCAsyncMatch() {
 	bc.asyncMatch.OPERATION_FIND_MATCHES = "FIND_MATCHES";
 	bc.asyncMatch.OPERATION_FIND_MATCHES_COMPLETED = "FIND_MATCHES_COMPLETED";
 	bc.asyncMatch.OPERATION_DELETE_MATCH = "DELETE_MATCH";
+	bc.asyncMatch.OPERATION_ABANDON_MATCH_WITH_SUMMARY_DATA = "ABANDON_MATCH_WITH_SUMMARY_DATA";
+	bc.asyncMatch.OPERATION_COMPLETE_MATCH_WITH_SUMMARY_DATA = "COMPLETE_MATCH_WITH_SUMMARY_DATA";
 
 	/**
 	 * Creates an instance of an asynchronous match.
@@ -1363,6 +1375,59 @@ function BCAsyncMatch() {
 		});
 	};
 
+	/**
+	 * Marks the given match as complete. This call can send a notification message.
+	 *
+	 * Service Name - AsyncMatch
+	 * Service Operation - CompleteMatchWithSummaryData
+	 *
+	 * @param ownerId   Match owner identifier
+	 * @param matchId   Match identifier
+	 * @param pushContent what to push the 
+	 * @param summary json summary
+	 * @param callback  Optional instance of IServerCallback to call when the server response is received.
+	 */
+	bc.asyncMatch.completeMatchWithSummaryData = function(ownerId, matchId, pushContent, summary, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_ASYNC_MATCH,
+			operation: bc.asyncMatch.OPERATION_COMPLETE_MATCH_WITH_SUMMARY_DATA,
+			data: {
+				ownerId: ownerId,
+				matchId: matchId,
+				pushContent: pushContent,
+				summary: summary
+			},
+			callback: callback
+		});
+	};
+
+
+	/**
+	 * Marks the given match as complete. This call can send a notification message.
+	 *
+	 * Service Name - AsyncMatch
+	 * Service Operation - CompleteMatchWithSummaryData
+	 *
+	 * @param ownerId   Match owner identifier
+	 * @param matchId   Match identifier
+	 * @param pushContent what to push the 
+	 * @param summary json summary
+	 * @param callback  Optional instance of IServerCallback to call when the server response is received.
+	 */
+	bc.asyncMatch.abandonMatchWithSummaryData = function(ownerId, matchId, pushContent, summary, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_ASYNC_MATCH,
+			operation: bc.asyncMatch.OPERATION_ABANDON_MATCH_WITH_SUMMARY_DATA,
+			data: {
+				ownerId: ownerId,
+				matchId: matchId,
+				pushContent: pushContent,
+				summary: summary
+			},
+			callback: callback
+		});
+	};
+
 }
 
 BCAsyncMatch.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -1398,6 +1463,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_UNIVERSAL = "Universal";
 	bc.authentication.AUTHENTICATION_TYPE_GAME_CENTER = "GameCenter";
 	bc.authentication.AUTHENTICATION_TYPE_STEAM = "Steam";
+	bc.authentication.AUTHENTICATION_TYPE_BLOCKCHAIN = "Blockchain";
 	bc.authentication.AUTHENTICATION_TYPE_TWITTER = "Twitter";
 	bc.authentication.AUTHENTICATION_TYPE_PARSE = "Parse";
 	bc.authentication.AUTHENTICATION_TYPE_HANDOFF = "Handoff";
@@ -2280,6 +2346,260 @@ function BCChat() {
 
 BCChat.apply(window.brainCloudClient = window.brainCloudClient || {});
 
+function BCCustomEntity() {
+    var bc = this;
+
+	bc.customEntity = {};
+
+	bc.SERVICE_CUSTOM_ENTITY = "customEntity";
+
+	bc.customEntity.OPERATION_CREATE= "CREATE_ENTITY";
+	bc.customEntity.OPERATION_GET_COUNT= "GET_COUNT";
+	bc.customEntity.OPERATION_GET_PAGE= "GET_PAGE";
+	bc.customEntity.OPERATION_GET_PAGE_OFFSET= "GET_PAGE_BY_OFFSET";
+	bc.customEntity.OPERATION_READ_ENTITY= "READ_ENTITY";
+	bc.customEntity.OPERATION_UPDATE_ENTITY= "UPDATE_ENTITY";
+	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS= "UPDATE_ENTITY_FIELDS";
+	bc.customEntity.OPERATION_DELETE_ENTITY = "DELETE_ENTITY";
+
+	/**
+	 * Creates new custom entity.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param data
+	 *            {json} The entity's data as a json string
+	 * @param acl
+	 *            {json} The entity's access control list as json. A null acl
+	 *            implies default permissions which make the entity
+	 *            readable/writeable by only the user.
+	 * @param timeToLive
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.createEntity = function(entityType, data, acl, timeToLive, isOwned, callback) {
+		var message = {
+			entityType : entityType,
+			data : data,
+			timeToLive : timeToLive, 
+			isOwned : isOwned 
+		};
+
+		if (acl) {
+			message["acl"] = acl;
+		}
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_CREATE,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Counts the number of custom entities meeting the specified where clause.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param whereJson
+	 *            {json} The entity data
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.getCount = function(entityType, whereJson, callback) {
+		var message = {
+			entityType : entityType,
+			whereJson : whereJson
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_GET_COUNT,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves first page of custom entities from the server based on the custom entity type and specified query context
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param rowsPerPage
+	 *            {int} 
+	 * @param searchJson
+	 * 			  {json} data to look for
+	 * @param sortJson
+	 * 			  {json} data to sort by
+	 * @param doCount 
+	 * 			  {bool} 
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.getPage = function(entityType, rowsPerPage, searchJson, sortJson, doCount, callback) {
+		var message = {
+			entityType : entityType,
+			rowsPerPage : rowsPerPage,
+			doCount : doCount
+		};
+
+		if(searchJson) message.searchJson = searchJson;
+		if(sortJson) message.sortJson = sortJson;
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_GET_PAGE,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Creates new custom entity.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param context
+	 * 			  {string} context
+	 * @param pageOffset
+	 *            {int} 
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.getPageOffset = function(entityType, context, pageOffset, callback) {
+		var message = {
+			entityType : entityType,
+			context : context,
+			pageOffset : pageOffset
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_GET_PAGE_OFFSET,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Reads a custom entity.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param entityId
+	 * 			  {string}
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.readEntity = function(entityType, entityId, callback) {
+		var message = {
+			entityType : entityType,
+			entityId : entityId
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_READ_ENTITY,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Replaces the specified custom entity's data, and optionally updates the acl and expiry, on the server.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param entityId
+	 * 			  {string}
+	 * @param version
+	 * @param dataJson
+	 * 			  {json} data of entity
+	 * @param acl 
+	 * 			  {json} 
+	 * @param timeToLive
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.updateEntity = function(entityType, entityId, version, dataJson, acl, timeToLive, callback) {
+		var message = {
+			entityType : entityType,
+			entityId : entityId,
+			version : version,
+			timeToLive : timeToLive
+		};
+
+		if(dataJson) message.dataJson = dataJson;
+		if(acl) message.acl = acl;
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_UPDATE_ENTITY,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 *Sets the specified fields within custom entity data on the server.
+	 * 
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param entityId
+	 * 			  {string}
+	 * @param version
+	 * @param fieldsJson
+	 * 			  {json} the fields in the entity
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.updateEntityFields = function(entityType, entityId, version, fieldsJson, callback) {
+		var message = {
+			entityType : entityType,
+			entityId : entityId,
+			version : version
+		};
+
+		if(fieldsJson) message.fieldsJson = fieldsJson;
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 *Deletes the specified custom entity on the server.
+	 * 
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param entityId
+	 * @param version
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.deleteEntity = function(entityType, entityId, version, callback) {
+		var message = {
+			entityType : entityType,
+			entityId : entityId,
+			version : version
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_DELETE_ENTITY,
+			data : message,
+			callback : callback
+		});
+	};
+
+}
+
+BCCustomEntity.apply(window.brainCloudClient = window.brainCloudClient || {});
+
 function BCDataStream() {
     var bc = this;
 
@@ -2290,6 +2610,7 @@ function BCDataStream() {
 	bc.dataStream.OPERATION_CUSTOM_PAGE_EVENT = "CUSTOM_PAGE_EVENT";
 	bc.dataStream.OPERATION_CUSTOM_SCREEN_EVENT = "CUSTOM_SCREEN_EVENT";
 	bc.dataStream.OPERATION_CUSTOM_TRACK_EVENT = "CUSTOM_TRACK_EVENT";
+	bc.dataStream.OPERATION_SUBMIT_CRASH_REPORT = "SEND_CRASH_REPORT";
 
 	/**
 	 * Creates custom data stream page event
@@ -2369,6 +2690,48 @@ function BCDataStream() {
 		bc.brainCloudManager.sendRequest({
 			service : bc.SERVICE_DATA_STREAM,
 			operation : bc.dataStream.OPERATION_CUSTOM_TRACK_EVENT,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Send crash report
+	 *
+	 * @param crashType
+	 *            {string} type of event
+	 * @param errorMsg
+	 *            {string} message
+	 * @param crashJson
+	 *            {json} crash data
+	 * @param crashLog
+	 *            {string} log of message
+	 * @param userName
+	 *            {string} name
+	 * @param userEmail
+	 *            {string} email
+	 * @param userNotes
+	 *            {string} extra notes
+	 * @param userSubmitted
+	 *            {bool} is it from the user
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.dataStream.submitCrashReport = function(crashType, errorMsg, crashJson, crashLog, userName, userEmail, userNotes, userSubmitted, callback) {
+		var message = {
+			crashType: crashType,
+			errorMsg: errorMsg,
+			crashJson: crashJson,
+			crashLog: crashLog,
+			userName: userName,
+			userEmail: userEmail,
+			userNotes: userNotes,
+			userSubmitted: userSubmitted
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_DATA_STREAM,
+			operation : bc.dataStream.OPERATION_SUBMIT_CRASH_REPORT,
 			data : message,
 			callback : callback
 		});
@@ -4844,6 +5207,8 @@ function BCGroup() {
 	bc.group.OPERATION_UPDATE_GROUP_ENTITY = "UPDATE_GROUP_ENTITY_DATA";
 	bc.group.OPERATION_UPDATE_GROUP_MEMBER = "UPDATE_GROUP_MEMBER";
 	bc.group.OPERATION_UPDATE_GROUP_NAME = "UPDATE_GROUP_NAME";
+	bc.group.OPERATION_UPDATE_GROUP_SUMMARY_DATA = "UPDATE_GROUP_SUMMARY_DATA";
+	bc.group.OPERATION_GET_RANDOM_GROUPS_MATCHING = "GET_RANDOM_GROUPS_MATCHING";
 
 // Constant helper values
 	bc.group.role = Object.freeze({ owner : "OWNER", admin : "ADMIN", member : "MEMBER", other : "OTHER"});
@@ -5014,6 +5379,52 @@ function BCGroup() {
 		if(data) message.data = data;
 		if(ownerAttributes) message.ownerAttributes = ownerAttributes;
 		if(defaultMemberAttributes) message.defaultMemberAttributes = defaultMemberAttributes;
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GROUP,
+			operation : bc.group.OPERATION_CREATE_GROUP,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Create a group with Summary data.
+	 *
+	 * Service Name - group
+	 * Service Operation - CREATE_GROUP
+	 *
+	 * @param name Name of the group.
+	 * @param groupType Name of the type of group.
+	 * @param isOpenGroup true if group is open; false if closed.
+	 * @param acl The group's access control list. A null ACL implies default.
+	 * @param ownerAttributes Attributes for the group owner (current member).
+	 * @param defaultMemberAttributes Default attributes for group members.
+	 * @param data Custom application data.
+	 * @param summaryData summary
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.group.createGroupWithSummaryData = function(
+		name,
+		groupType,
+		isOpenGroup,
+		acl,
+		data,
+		ownerAttributes,
+		defaultMemberAttributes,
+		summaryData,
+		callback) {
+		var message = {
+			groupType : groupType
+		};
+
+		if(name) message.name = name;
+		if(isOpenGroup) message.isOpenGroup = isOpenGroup;
+		if(acl) message.acl = acl;
+		if(data) message.data = data;
+		if(ownerAttributes) message.ownerAttributes = ownerAttributes;
+		if(defaultMemberAttributes) message.defaultMemberAttributes = defaultMemberAttributes;
+		if(summaryData) message.summaryData = summaryData;
 
 		bc.brainCloudManager.sendRequest({
 			service : bc.SERVICE_GROUP,
@@ -5654,6 +6065,56 @@ function BCGroup() {
 		});
 	};
 
+	/**
+	 * Update a group's summary data
+	 *
+	 * Service Name - group
+	 * Service Operation - UPDATE_GROUP_SUMMARY_DATA
+	 *
+	 * @param groupId ID of the group.
+	 * @param version the version
+	 * @param summaryData Name to apply.
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.group.updateGroupSummaryData = function(groupId, version, summaryData, callback) {
+		var message = {
+			groupId : groupId,
+			version : version,
+			summaryData : summaryData
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GROUP,
+			operation : bc.group.OPERATION_UPDATE_GROUP_SUMMARY_DATA,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Gets a list of up to maxReturn randomly selected groups from the server based on the where condition.
+	 *
+	 * Service Name - group
+	 * Service Operation - UPDATE_GROUP_SUMMARY_DATA
+	 *
+	 * @param where where to get
+	 * @param maxReturn how many groups to return
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.group.getRandomGroupsMatching = function(where, maxReturn, callback) {
+		var message = {
+			where : where,
+			maxReturn : maxReturn
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GROUP,
+			operation : bc.group.OPERATION_GET_RANDOM_GROUPS_MATCHING,
+			data : message,
+			callback : callback
+		});
+	};
+
 }
 
 BCGroup.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -5676,6 +6137,8 @@ function BCIdentity() {
 	bc.SERVICE_IDENTITY = "identity";
 
 	bc.identity.OPERATION_ATTACH = "ATTACH";
+	bc.identity.OPERATION_ATTACH_BLOCKCHAIN_IDENTITY = "ATTACH_BLOCKCHAIN_IDENTITY";
+	bc.identity.OPERATION_DETACH_BLOCKCHAIN_IDENTITY = "DETACH_BLOCKCHAIN_IDENTITY";
 	bc.identity.OPERATION_MERGE = "MERGE";
 	bc.identity.OPERATION_DETACH = "DETACH";
 	bc.identity.OPERATION_SWITCH_TO_CHILD_PROFILE = "SWITCH_TO_CHILD_PROFILE";
@@ -5700,6 +6163,7 @@ function BCIdentity() {
 		facebook : "Facebook",
 		gameCenter : "GameCenter",
 		steam : "Steam",
+		blockChain : "BlockChain",
 		google : "Google",
 		twitter : "Twitter",
 		parse : "Parse",
@@ -6176,6 +6640,48 @@ function BCIdentity() {
 	};
 
 	/**
+	 * Attaches the given block chain public key identity to the current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - OPERATION_ATTACH_BLOCKCHAIN_IDENTITY
+	 *
+	 * @param blockchainConfig user id
+	 * @param publicKey anything you want
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.identity.attachBlockchainIdentity = function(blockchainConfig, publicKey, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_IDENTITY,
+			operation: bc.identity.OPERATION_ATTACH_BLOCKCHAIN_IDENTITY,
+			data: {
+				blockchainConfig : blockchainConfig,
+				publicKey : publicKey
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Updates univeral id of the current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - UPDATE_UNIVERSAL_LOGIN
+	 *
+	 * @param blockchainConfig 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.identity.detachBlockchainIdentity = function(blockchainConfig, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_IDENTITY,
+			operation: bc.identity.OPERATION_DETACH_BLOCKCHAIN_IDENTITY,
+			data: {
+				blockchainConfig : blockchainConfig
+			},
+			callback: callback
+		});
+	};
+
+	/**
 	 * Updates univeral id of the current profile.
 	 *
 	 * Service Name - Identity
@@ -6529,6 +7035,89 @@ function BCIdentity() {
 
 BCIdentity.apply(window.brainCloudClient = window.brainCloudClient || {});
 
+function BCItemCatalog() {
+    var bc = this;
+
+	bc.itemCatalog = {};
+
+	bc.SERVICE_ITEMCATALOG = "itemCatalog";
+
+	bc.itemCatalog.OPERATION_GET_CATALOG_ITEM_DEFINITION = "GET_CATALOG_ITEM_DEFINITION";
+	bc.itemCatalog.OPERATION_GET_CATALOG_ITEMS_PAGE = "GET_CATALOG_ITEMS_PAGE";
+	bc.itemCatalog.OPERATION_GET_CATALOG_ITEMS_PAGE_OFFSET = "GET_CATALOG_ITEMS_PAGE_OFFSET";
+
+
+	/**
+	 * Reads an existing item definition from the server, with language fields
+	 * limited to the current or default language
+	 *
+	 * Service Name - itemCatalog
+	 * Service Operation - GET_CATALOG_ITEM_DEFINITION
+	 *
+	 * @param defId
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.itemCatalog.getCatalogItemDefinition = function(defId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_ITEMCATALOG,
+			operation: bc.itemCatalog.OPERATION_GET_CATALOG_ITEM_DEFINITION,
+			data: {
+				defId : defId
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Retrieve page of catalog items from the server, with language fields limited to the 
+	 * text for the current or default language.
+	 *
+	 * Service Name - itemCatalog
+	 * Service Operation - GET_CATALOG_ITEMS_PAGE
+	 *
+	 * @param context
+	 * @param searchCriteria
+	 * @param sortCriteria
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.itemCatalog.getCatalogItemsPage = function(context, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_ITEMCATALOG,
+			operation: bc.itemCatalog.OPERATION_GET_CATALOG_ITEMS_PAGE,
+			data: {
+				context : context
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Gets the page of catalog items from the server based ont he encoded 
+	 * context and specified page offset, with language fields limited to the 
+	 * text fir the current or default language
+	 *
+	 * Service Name - itemCatalog
+	 * Service Operation - GET_CATALOG_ITEMS_PAGE_OFFSET
+	 *
+	 * @param context
+	 * @param pageOffset
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.itemCatalog.getCatalogItemsPageOffset = function(context, pageOffset, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_ITEMCATALOG,
+			operation: bc.itemCatalog.OPERATION_GET_CATALOG_ITEMS_PAGE_OFFSET,
+			data: {
+				context : context,
+				pageOffset : pageOffset
+			},
+			callback: callback
+		});
+	}
+}
+
+BCItemCatalog.apply(window.brainCloudClient = window.brainCloudClient || {});
+
 function BCLobby() {
     var bc = this;
 
@@ -6537,17 +7126,23 @@ function BCLobby() {
     bc.SERVICE_LOBBY = "lobby";
 
     bc.lobby.OPERATION_CREATE_LOBBY = "CREATE_LOBBY";
+    bc.lobby.OPERATION_CREATE_LOBBY_WITH_PING_DATA = "CREATE_LOBBY_WITH_PING_DATA";
     bc.lobby.OPERATION_FIND_LOBBY = "FIND_LOBBY";
+    bc.lobby.OPERATION_FIND_LOBBY_WITH_PING_DATA = "FIND_LOBBY_WITH_PING_DATA";
     bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY = "FIND_OR_CREATE_LOBBY";
+    bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY_WITH_PING_DATA = "FIND_OR_CREATE_LOBBY_WITH_PING_DATA";
     bc.lobby.OPERATION_GET_LOBBY_DATA = "GET_LOBBY_DATA";
     bc.lobby.OPERATION_LEAVE_LOBBY = "LEAVE_LOBBY";
     bc.lobby.OPERATION_JOIN_LOBBY = "JOIN_LOBBY";
+    bc.lobby.OPERATION_JOIN_LOBBY_WITH_PING_DATA = "JOIN_LOBBY_WITH_PING_DATA";
     bc.lobby.OPERATION_REMOVE_MEMBER = "REMOVE_MEMBER";
     bc.lobby.OPERATION_SEND_SIGNAL = "SEND_SIGNAL";
     bc.lobby.OPERATION_SWITCH_TEAM = "SWITCH_TEAM";
     bc.lobby.OPERATION_UPDATE_READY = "UPDATE_READY";
     bc.lobby.OPERATION_UPDATE_SETTINGS = "UPDATE_SETTINGS";
     bc.lobby.OPERATION_CANCEL_FIND_REQUEST = "CANCEL_FIND_REQUEST";
+    bc.lobby.OPERATION_GET_REGIONS_FOR_LOBBIES = "GET_REGIONS_FOR_LOBBIES";
+    bc.lobby.OPERATION_PING_REGIONS = "PING_REGIONS";
 
     /**
      * Creates a new lobby.
@@ -6582,6 +7177,36 @@ function BCLobby() {
             data: data,
             callback: callback
         });
+    };
+
+    /**
+     * Creates a new lobby.
+     * 
+     * Sends LOBBY_JOIN_SUCCESS message to the user, with full copy of lobby data Sends LOBBY_MEMBER_JOINED to all lobby members, with copy of member data, also provides ping data
+     *
+     * Service Name - Lobby
+     * Service Operation - CREATE_LOBBY_WITH_PING_DATA
+     *
+     * @param lobbyType The type of lobby to look for. Lobby types are defined in the portal.
+     * @param rating The skill rating to use for finding the lobby. Provided as a separate parameter because it may not exactly match the user's rating (especially in cases where parties are involved).
+     * @param otherUserCxIds Array of other users (i.e. party members) to add to the lobby as well. Will constrain things so that only lobbies with room for all players will be considered.
+     * @param isReady Initial ready-status of this user.
+     * @param extraJson Initial extra-data about this user.
+     * @param teamCode Preferred team for this user, if applicable. Send "" or null for automatic assignment.
+     * @param settings Configuration data for the room.
+     */
+    bc.lobby.createLobbyWithPingData = function(lobbyType, rating, otherUserCxIds, isReady, extraJson, teamCode, settings, callback) {
+        var data = {
+            lobbyType: lobbyType,
+            rating: rating,
+            otherUserCxIds: otherUserCxIds,
+            isReady: isReady,
+            extraJson: extraJson,
+            teamCode: teamCode,
+            settings: settings
+        };
+
+        attachPingDataAndSend(data, bc.lobby.OPERATION_CREATE_LOBBY_WITH_PING_DATA, callback);
     };
 
     /**
@@ -6622,6 +7247,38 @@ function BCLobby() {
     };
 
     /**
+     * Finds a lobby matching the specified parameters and provides its ping data. Asynchronous - returns 200 to indicate that matchmaking has started. Also provides ping data
+     *
+     * Service Name - Lobby
+     * Service Operation - FIND_LOBBY_WITH_PING_DATA
+     *
+     * @param lobbyType The type of lobby to look for. Lobby types are defined in the portal.
+     * @param rating The skill rating to use for finding the lobby. Provided as a separate parameter because it may not exactly match the user's rating (especially in cases where parties are involved).
+     * @param maxSteps The maximum number of steps to wait when looking for an applicable lobby. Each step is ~5 seconds.
+     * @param algo The algorithm to use for increasing the search scope.
+     * @param filterJson Used to help filter the list of rooms to consider. Passed to the matchmaking filter, if configured.
+     * @param otherUserCxIds Array of other users (i.e. party members) to add to the lobby as well. Will constrain things so that only lobbies with room for all players will be considered.
+     * @param isReady Initial ready-status of this user.
+     * @param extraJson Initial extra-data about this user.
+     * @param teamCode Preferred team for this user, if applicable. Send "" or null for automatic assignment
+     */
+    bc.lobby.findLobbyWithPingData = function(lobbyType, rating, maxSteps, algo, filterJson, otherUserCxIds, isReady, extraJson, teamCode, callback) {
+        var data = {
+            lobbyType: lobbyType,
+            rating: rating,
+            maxSteps: maxSteps,
+            algo: algo,
+            filterJson: filterJson,
+            otherUserCxIds: otherUserCxIds,
+            isReady: isReady,
+            extraJson: extraJson,
+            teamCode: teamCode
+        };
+
+        attachPingDataAndSend(data, bc.lobby.OPERATION_FIND_LOBBY_WITH_PING_DATA, callback);
+    };
+
+    /**
      * Adds the caller to the lobby entry queue and will create a lobby if none are found.
      *
      * Service Name - Lobby
@@ -6658,6 +7315,40 @@ function BCLobby() {
             data: data,
             callback: callback
         });
+    };
+
+    /**
+     * Adds the caller to the lobby entry queue and will create a lobby if none are found. Also provides ping data
+     *
+     * Service Name - Lobby
+     * Service Operation - FIND_OR_CREATE_LOBBY_WITH_PING_DATA
+     *
+     * @param lobbyType The type of lobby to look for. Lobby types are defined in the portal.
+     * @param rating The skill rating to use for finding the lobby. Provided as a separate parameter because it may not exactly match the user's rating (especially in cases where parties are involved).
+     * @param maxSteps The maximum number of steps to wait when looking for an applicable lobby. Each step is ~5 seconds.
+     * @param algo The algorithm to use for increasing the search scope.
+     * @param filterJson Used to help filter the list of rooms to consider. Passed to the matchmaking filter, if configured.
+     * @param otherUserCxIds Array of other users (i.e. party members) to add to the lobby as well. Will constrain things so that only lobbies with room for all players will be considered.
+     * @param settings Configuration data for the room.
+     * @param isReady Initial ready-status of this user.
+     * @param extraJson Initial extra-data about this user.
+     * @param teamCode Preferred team for this user, if applicable. Send "" or null for automatic assignment.
+     */
+    bc.lobby.findOrCreateLobbyWithPingData = function(lobbyType, rating, maxSteps, algo, filterJson, otherUserCxIds, settings, isReady, extraJson, teamCode, callback) {
+        var data = {
+            lobbyType: lobbyType,
+            rating: rating,
+            maxSteps: maxSteps,
+            algo: algo,
+            filterJson: filterJson,
+            otherUserCxIds: otherUserCxIds,
+            settings: settings,
+            isReady: isReady,
+            extraJson: extraJson,
+            teamCode: teamCode
+        };
+
+        attachPingDataAndSend(data, bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY_WITH_PING_DATA, callback);
     };
 
     /**
@@ -6729,6 +7420,30 @@ function BCLobby() {
             data: data,
             callback: callback
         });
+    };
+
+    /**
+     * Causes the caller to join the specified lobby. Also provides Ping data
+     *
+     * Service Name - Lobby
+     * Service Operation - JOIN_LOBBY_WITH_PING_DATA
+     *
+     * @param lobbyId Id of chosen lobby.
+     * @param isReady initial ready status of this user
+     * @param extraJson Initial extra-data about this user
+     * @param teamCode specified team code
+     * @param otherUserCxIds Array fo other users (ie party members) to add to the lobby as well. Constrains things so only lobbies with room for all players will be considered. 
+     */
+    bc.lobby.joinLobbyWithPingData = function(lobbyId, isReady, extraJson, teamCode, otherUserCxIds, callback) {
+        var data = {
+            lobbyId: lobbyId,
+            isReady: isReady,
+            extraJson: extraJson, 
+            teamCode: teamCode,
+            otherUserCxIds: otherUserCxIds
+        };
+
+        attachPingDataAndSend(data, bc.lobby.operation.OPERATION_JOIN_LOBBY_WITH_PING_DATA, callback);
     };
 
     /**
@@ -6853,10 +7568,10 @@ function BCLobby() {
     /// <summary>
     /// Cancel this members Find, Join and Searching of Lobbies
     /// </summary>
-    bc.lobby.cancelFindRequest = function(lobbyType, cxId, callback) {
+    bc.lobby.cancelFindRequest = function(lobbyType, callback) {
         var data = {
             lobbyType: lobbyType,
-            cxId: cxId
+            cxId: bc.rttService.getRTTConnectionId()
         };
 
         bc.brainCloudManager.sendRequest({
@@ -6866,6 +7581,198 @@ function BCLobby() {
             callback: callback
         });
     };
+
+    ///<summary>
+    ///Retrieves the region settings for each of the given lobby types. Upon succesful callback or
+    ///afterwards, call PingRegions to start retrieving appropriate data. 
+    ///Once that is complete, the associated region Ping Data is retrievable and all associated <>WithPingData Apis are useable
+    ///<summary>
+    bc.lobby.getRegionsForLobbies = function(lobbyTypes, callback)
+    {
+        var data = {
+            lobbyTypes: lobbyTypes
+        };
+
+        bc.brainCloudManager.sendRequest
+        ({
+            service: bc.SERVICE_LOBBY,
+            operation: bc.lobby.OPERATION_GET_REGIONS_FOR_LOBBIES,
+            data: data,
+            callback: function(result) {
+                //upon a successful getRegionsForLobbies call
+                if (result.status == 200) 
+                {
+                    //set the regionPingData that was found
+                    m_regionPingData = result.data.regionPingData;
+                }
+            }
+        })
+    };
+
+    bc.lobby.pingRegions = function(callback)
+    {
+        //now we have the region ping data, we can start pinging each region and its defined target, if its a PING type.
+        m_cachedPingResponses.clear();
+        pingData = {};
+        var regionInner = new Map();
+        var targetStr; 
+
+        //check if client passed in own callback
+        if(callback != null)
+            pingRegionsSuccessCallback = callback;
+
+        //if there is ping data
+        if(Object.keys(m_regionPingData).length > 0)
+        {
+            for(var key in m_regionPingData)
+            {
+                regionInner = m_regionPingData[String(key)];
+
+                //check all the regions and see if the data is of type PING
+                if(regionInner[String("type")] !== null && regionInner[String("type")] === "PING")
+                {
+                    //update our cache with the regions we come across so we can store ping values in individual arrays
+                    var tempArr = new Array();
+                    m_cachedPingResponses[key] = tempArr;
+                    targetStr = regionInner[String("target")];
+
+                    //js is single threaded, so there shouldn't be  need for a mutex
+                    for(var i = 0; i < MAX_PING_CALLS; i++)
+                    { 
+                        //take the regions and targets and prepare them to be tested
+                        var keyvaluepair = new Map();
+                        keyvaluepair.set(key, targetStr);
+                        m_regionTargetsToProcess.push(keyvaluepair);
+                    }
+                }
+            }
+            //start the pinging
+            pingNextItemToProcess();
+        }
+        else
+        {
+            //theres no regions for pinging
+            bc.brainCloudManager.fakeErrorResponse(bc.statusCodes.BAD_REQUEST, bc.reasonCodes.MISSING_REQUIRED_PARAMETER, "No Regions to Ping. Please call GetRegionsForLobbies and await the response before calling PingRegions");
+        }
+    };
+
+    function pingNextItemToProcess()
+    {
+        //check there's regions to process
+        if(m_regionTargetsToProcess.length > 0)
+        {
+            var region; 
+            var target;
+            for(var i = 0; i < NUM_PING_CALLS_IN_PARRALLEL && m_regionTargetsToProcess.length > 0; i++)
+            {
+                var key = m_regionTargetsToProcess[0].keys();
+                region = key.next().value;
+                target = m_regionTargetsToProcess[0].get(String(region));
+                
+                //using tempArr to more easily acquire length of the current region we're identifying in cachedPingResponses
+                m_cachedRegionArr = m_cachedPingResponses[String(region)];
+                
+                //reorganising array and removing the first element
+                m_regionTargetsToProcess.shift();
+                pingHost(region, target, m_cachedRegionArr.length);
+            }
+        }
+        else if (Object.keys(m_regionPingData).length == Object.keys(pingData).length && pingRegionsSuccessCallback != null && pingRegionsSuccessCallback != undefined)
+        {
+            pingRegionsSuccessCallback();
+        }
+    }
+
+    function pingHost(region, target, index)
+    {
+        //setup our target
+        targetURL = "https://" + target;
+        
+        //store a start time for each region to allow parallel
+        m_cachedPingResponses[String(region)].push(new Date().getTime());
+
+        //make our http request
+        var httpRequest = new XMLHttpRequest();
+        httpRequest.open("GET", targetURL, true);
+
+        httpRequest.onreadystatechange = function()
+        {
+            //check state 
+            if (httpRequest.readyState == 4 && httpRequest.status == 200)
+            {
+                handlePingResponse(region, index);
+            }
+        }
+
+        //avoid CORS and other header issues
+        httpRequest.setRequestHeader("Access-Control-Allow-Origin",":*");
+        httpRequest.setRequestHeader("Access-Control-Allow-Headers",":*");
+        httpRequest.setRequestHeader("Content-type", targetURL);
+
+        httpRequest.send();
+    }
+
+    function handlePingResponse(region, index)
+    {
+        //calculate the difference in time between getting here and the time a start time was stored for the region
+        var regionArr = m_cachedPingResponses[String(region)];
+        var time = new Date().getTime() - regionArr[index]; 
+        //Js passes by rference, so m_cachedPingResponses will be updated with this
+        regionArr[index] = time;
+
+        //we've reached our desired number of ping calls, so now we need to do some logic to get the average ping
+        if(regionArr.length == MAX_PING_CALLS && index == MAX_PING_CALLS - 1)
+        {
+            var totalAccumulated = 0;
+            var highestValue = 0;
+            var pingResponse = 0;
+            var numElements = m_cachedRegionArr.length;
+            for(var i = 0; i < numElements; i++)
+            {  
+                pingResponse = regionArr[index];
+                totalAccumulated += pingResponse;
+                if(pingResponse > highestValue)
+                {
+                    highestValue = pingResponse;
+                }
+            }
+            totalAccumulated -= highestValue;
+            pingData[region] = totalAccumulated / (numElements -1);   
+        }
+
+        //move onto the next one
+        pingNextItemToProcess();
+    }
+
+    function attachPingDataAndSend(data, operation, callback)
+    {
+        if(pingData != null && Object.keys(pingData).length > 0)
+        {
+            //make sure to add the ping data tot he data being sent
+            data.pingData = pingData;
+
+            bc.brainCloudManager.sendRequest({
+                service: bc.SERVICE_LOBBY,
+                operation: operation,
+                data: data,
+                callback: callback
+            });
+        }
+        else
+        {
+            bc.brainCloudManager.fakeErrorResponse(bc.statusCodes.BAD_REQUEST, bc.reasonCodes.MISSING_REQUIRED_PARAMETER, "Required Parameter 'pingData' is missing. Please ensure 'pingData' exists by first calling GetRegionsForLobbies and PingRegions, and waiting for response before proceeding.");
+        }
+    }
+
+    //variables for ping data 
+    var pingData = new Map();
+    var m_regionPingData = new Map();
+    var m_cachedPingResponses = new Map();
+    var m_cachedRegionArr = new Array();
+    var m_regionTargetsToProcess = new Array();
+    var MAX_PING_CALLS = 4;
+    var NUM_PING_CALLS_IN_PARRALLEL = 2;
+    var pingRegionsSuccessCallback;
 }
 
 BCLobby.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -7878,6 +8785,11 @@ function BCPlayerState() {
 	bc.playerState.OPERATION_UPDATE_NAME = "UPDATE_NAME";
 	bc.playerState.OPERATION_LOGOUT = "LOGOUT";
 
+	bc.playerState.OPERATION_CLEAR_USER_STATUS = "CLEAR_USER_STATUS";
+	bc.playerState.OPERATION_EXTEND_USER_STATUS = "EXTEND_USER_STATUS";
+	bc.playerState.OPERATION_GET_USER_STATUS = "GET_USER_STATUS";
+	bc.playerState.OPERATION_SET_USER_STATUS = "SET_USER_STATUS";
+
 	/**
 	 * @deprecated Use deleteUser instead - Removal after September 1 2017
 	 */
@@ -8175,6 +9087,94 @@ function BCPlayerState() {
 			operation: bc.playerState.UPDATE_CONTACT_EMAIL,
 			data: {
 				contactEmail: contactEmail
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Delete's the specified status
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - CLEAR_USER_STATUS
+	 *
+	 * @param statusName the player status
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.clearUserStatus = function(statusName, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_PLAYERSTATE,
+			operation: bc.playerState.OPERATION_CLEAR_USER_STATUS,
+			data: {
+				statusName: statusName
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Stack user's statuses
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - EXTEND_USER_STATUS
+	 *
+	 * @param statusName the player status
+	 * @param additionalSecs extra time
+	 * @param details json string of details
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.extendUserStatus = function(statusName, additionalSecs, details, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_PLAYERSTATE,
+			operation: bc.playerState.OPERATION_EXTEND_USER_STATUS,
+			data: {
+				statusName: statusName,
+				additionalSecs: additionalSecs,
+				details: details
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Get user status
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - GET_USER_STATUS
+	 *
+	 * @param statusName the player status
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.getUserStatus = function(statusName, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_PLAYERSTATE,
+			operation: bc.playerState.OPERATION_GET_USER_STATUS,
+			data: {
+				statusName: statusName
+			},
+			callback: callback
+		});
+	}
+
+	/**
+	 * Get user status
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - SET_USER_STATUS
+	 *
+	 * @param statusName the player status
+	 * @param durationSecs how long
+	 * @param details json string of details
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.setUserStatus = function(statusName, durationSecs, details, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_PLAYERSTATE,
+			operation: bc.playerState.OPERATION_SET_USER_STATUS,
+			data: {
+				statusName: statusName,
+				durationSecs: durationSecs,
+				details: details
 			},
 			callback: callback
 		});
@@ -10293,6 +11293,12 @@ function BCRTT() {
     bc.SERVICE_RTT= "rttRegistration";
 
     bc.rttService.OPERATION_REQUEST_CLIENT_CONNECTION = "REQUEST_CLIENT_CONNECTION";
+    bc.rttService.SERVICE_EVENT = "event";
+    bc.rttService.SERVICE_CHAT = "chat";
+    bc.rttService.SERVICE_LOBBY = "lobby";
+    bc.rttService.SERVICE_MESSAGING = "messaging";
+    bc.rttService.SERVICE_PRESENCE = "presence";
+    bc.rttService.SERVICE_USER_ITEMS = "userItems";
 
         /**
      * Enables Real Time event for this session.
@@ -10324,16 +11330,23 @@ function BCRTT() {
     }
 
     /**
+     * Returns RTT connectionId
+     */
+    bc.rttService.getRTTConnectionId = function() {
+        return bc.brainCloudRttComms.getRTTConnectionId();
+    }
+
+    /**
      * Listen to real time events.
      * 
      * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
      * Only one event callback can be registered at a time. Calling this a second time will override the previous callback.
      */
     bc.rttService.registerRTTEventCallback = function(callback) {
-        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_EVENT, callback);
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_EVENT, callback);
     }
     bc.rttService.deregisterRTTEventCallback = function() {
-        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_EVENT);
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_EVENT);
     }
 
     /**
@@ -10343,10 +11356,10 @@ function BCRTT() {
      * Only one chat callback can be registered at a time. Calling this a second time will override the previous callback.
      */
     bc.rttService.registerRTTChatCallback = function(callback) {
-        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_CHAT, callback);
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_CHAT, callback);
     }
     bc.rttService.deregisterRTTChatCallback = function() {
-        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_CHAT);
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_CHAT);
     }
 
     /**
@@ -10356,10 +11369,10 @@ function BCRTT() {
      * Only one messaging callback can be registered at a time. Calling this a second time will override the previous callback.
      */
     bc.rttService.registerRTTMessagingCallback = function(callback) {
-        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_MESSAGING, callback);
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_MESSAGING, callback);
     }
     bc.rttService.deregisterRTTMessagingCallback = function() {
-        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_MESSAGING);
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_MESSAGING);
     }
 
     /**
@@ -10369,10 +11382,10 @@ function BCRTT() {
      * Only one lobby callback can be registered at a time. Calling this a second time will override the previous callback.
      */
     bc.rttService.registerRTTLobbyCallback = function(callback) {
-        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_LOBBY, callback);
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_LOBBY, callback);
     }
     bc.rttService.deregisterRTTLobbyCallback = function() {
-        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_LOBBY);
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_LOBBY);
     }
 
     /**
@@ -10382,10 +11395,23 @@ function BCRTT() {
      * Only one presence callback can be registered at a time. Calling this a second time will override the previous callback.
      */
     bc.rttService.registerRTTPresenceCallback = function(callback) {
-        bc.brainCloudRttComms.registerRTTCallback(bc.SERVICE_PRESENCE, callback);
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_PRESENCE, callback);
     }
     bc.rttService.deregisterRTTPresenceCallback = function() {
-        bc.brainCloudRttComms.deregisterRTTCallback(bc.SERVICE_PRESENCE);
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_PRESENCE);
+    }
+
+        /**
+     * Listen to real time presence events.
+     * 
+     * Notes: RTT must be enabled for this app, and enableRTT must have been successfully called.
+     * Only one presence callback can be registered at a time. Calling this a second time will override the previous callback.
+     */
+    bc.rttService.registerRTTBlockchainRefresh = function(callback) {
+        bc.brainCloudRttComms.registerRTTCallback(bc.rttService.SERVICE_USER_INVENTORY_MANAGEMENT, callback);
+    }
+    bc.rttService.deregisterRTTBlockchainCallback = function() {
+        bc.brainCloudRttComms.deregisterRTTCallback(bc.rttService.SERVICE_USER_INVENTORY_MANAGEMENT);
     }
 
     /**
@@ -10714,6 +11740,14 @@ function BCSocialLeaderboard() {
 	bc.socialLeaderboard.OPERATION_REMOVE_PLAYER_SCORE = "REMOVE_PLAYER_SCORE";
 	bc.socialLeaderboard.OPERATION_GET_PLAYER_SCORE = "GET_PLAYER_SCORE";
 	bc.socialLeaderboard.OPERATION_GET_PLAYER_SCORES_FROM_LEADERBOARDS = "GET_PLAYER_SCORES_FROM_LEADERBOARDS";
+	bc.socialLeaderboard.OPERATION_POST_GROUP_SCORE = "POST_GROUP_SCORE";
+	bc.socialLeaderboard.OPERATION_REMOVE_GROUP_SCORE = "REMOVE_GROUP_SCORE";
+	bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW = "GET_GROUP_LEADERBOARD_VIEW";
+	bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW_BY_VERSION = "GET_GROUP_LEADERBOARD_VIEW_BY_VERSION";
+
+
+
+
 
 // Constant helper values
 	bc.socialLeaderboard.leaderboardType = Object.freeze({ HIGH_VALUE : "HIGH_VALUE", CUMULATIVE : "CUMULATIVE", LAST_VALUE : "LAST_VALUE", LOW_VALUE : "LOW_VALUE"});
@@ -11301,6 +12335,125 @@ function BCSocialLeaderboard() {
 		});
 	}
 
+	/**
+	 * Posts score to Group's leaderboard - Note the user must be a member of the group
+	 *
+	 * Service Name - leaderboard
+	 * Service Operation - POST_SCORE_TO_GROUP_LEADERBOARD
+	 *
+	 * @param leaderboardId the id of the leaderboard
+	 * @param groupId the group's id
+	 * @param score the score you wish to post
+	 * @param otherData extra json data
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.socialLeaderboard.postScoreToGroupLeaderboard = function(leaderboardId, groupId, score, otherData, callback) {
+		var message = {
+			leaderboardId : leaderboardId,
+			groupId : groupId,
+			score : score
+		};
+		
+		if (otherData)
+		{
+			message["data"] = otherData;
+		}
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_LEADERBOARD,
+			operation : bc.socialLeaderboard.OPERATION_POST_GROUP_SCORE,
+			data : message,
+			callback : callback
+		});
+	}
+
+	/**
+	 * Removes score from group leaderboard
+	 *
+	 * Service Name - leaderboard
+	 * Service Operation - REMOVE_GROUP_SCORE
+	 *
+	 * @param leaderboardId the id of the leaderboard
+	 * @param groupId the group's id
+	 * @param versionId the version
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.socialLeaderboard.removeGroupScore = function(leaderboardId, groupId, versionId, callback) {
+		var message = {
+			leaderboardId : leaderboardId,
+			groupId : groupId,
+			versionId : versionId
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_LEADERBOARD,
+			operation : bc.socialLeaderboard.OPERATION_REMOVE_GROUP_SCORE,
+			data : message,
+			callback : callback
+		});
+	}
+
+	/**
+	 * Retrieve a view of the group leaderboard surrounding the current group.
+	 *
+	 * Service Name - leaderboard
+	 * Service Operation - GET_GROUP_LEADERBOARD_VIEW
+	 *
+	 * @param leaderboardId the id of the leaderboard
+	 * @param groupId the group's id
+	 * @param sort the sort order
+	 * @param beforeCount count of players before current player to include
+	 * @param afterCount count of players after current player to include
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.socialLeaderboard.getGroupLeaderboardView = function(leaderboardId, groupId, sort, beforeCount, afterCount, callback) {
+		var message = {
+			leaderboardId : leaderboardId,
+			groupId : groupId,
+			sort : sort,
+			beforeCount : beforeCount,
+			afterCount : afterCount
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_LEADERBOARD,
+			operation : bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW,
+			data : message,
+			callback : callback
+		});
+	}
+
+	/**
+	 * Retrieve a view of the group leaderboard surrounding the current group by the version
+	 *
+	 * Service Name - leaderboard
+	 * Service Operation - GET_GROUP_LEADERBOARD_VIEW
+	 *
+	 * @param leaderboardId the id of the leaderboard
+	 * @param groupId the group's id
+	 * @param sort the sort order
+	 * @param beforeCount count of players before current player to include
+	 * @param afterCount count of players after current player to include
+	 * @param versionId the version
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.socialLeaderboard.getGroupLeaderboardViewByVersion = function(leaderboardId, groupId, versionId, sort, beforeCount, afterCount, callback) {
+		var message = {
+			leaderboardId : leaderboardId,
+			groupId : groupId,
+			versionId : versionId,
+			sort : sort,
+			beforeCount : beforeCount,
+			afterCount : afterCount
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_LEADERBOARD,
+			operation : bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW,
+			data : message,
+			callback : callback
+		});
+	}
 }
 
 BCSocialLeaderboard.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -11696,6 +12849,417 @@ function BCTournament() {
 
 BCTournament.apply(window.brainCloudClient = window.brainCloudClient || {});
 
+function BCUserItems() {
+    var bc = this;
+
+	bc.userItems = {};
+
+	bc.SERVICE_USER_ITEMS = "userItems";
+
+	bc.userItems.OPERATION_AWARD_USER_ITEM = "AWARD_USER_ITEM";
+	bc.userItems.OPERATION_DROP_USER_ITEM = "DROP_USER_ITEM";
+	bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE = "GET_USER_ITEMS_PAGE";
+	bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE_OFFSET = "GET_USER_ITEMS_PAGE_OFFSET";
+	bc.userItems.OPERATION_GET_USER_ITEM = "GET_USER_ITEM";
+	bc.userItems.OPERATION_GIVE_USER_ITEM_TO = "GIVE_USER_ITEM_TO";
+	bc.userItems.OPERATION_PURCHASE_USER_ITEM = "PURCHASE_USER_ITEM";
+	bc.userItems.OPERATION_RECEIVE_USER_ITEM_FROM = "RECEIVE_USER_ITEM_FROM";
+	bc.userItems.OPERATION_SELL_USER_ITEM = "SELL_USER_ITEM";
+	bc.userItems.OPERATION_UPDATE_USER_ITEM_DATA = "UPDATE_USER_ITEM_DATA";
+	bc.userItems.OPERATION_USE_USER_ITEM = "USE_USER_ITEM";
+	bc.userItems.OPERATION_PUBLISH_USER_ITEM_TO_BLOCKCHAIN = "PUBLISH_USER_ITEM_TO_BLOCKCHAIN";
+	bc.userItems.OPERATION_REFRESH_BLOCKCHAIN_USER_ITEMS = "REFRESH_BLOCKCHAIN_USER_ITEMS";
+	bc.userItems.OPERATION_REMOVE_USER_ITEM_FROM_BLOCKCHAIN = "REMOVE_USER_ITEM_FROM_BLOCKCHAIN";
+
+
+
+	/**
+	 * Allows item(s) to be awarded to a user without collecting
+	 *  the purchase amount. If includeDef is true, response 
+	 * includes associated itemDef with language fields limited
+	 *  to the current or default language.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - AWARD_USER_ITEM
+	 *
+	 * @param defId 
+	 * @param quantity
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.awardUserItem = function(defId, quantity, includeDef, callback) {
+		var message = {
+			defId : defId,
+			quantity : quantity,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_AWARD_USER_ITEM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Allows a quantity of a specified user item to be dropped, 
+	 * without any recovery of the money paid for the item. 
+	 * If any quantity of the user item remains, it will be returned,
+	 * potentially with the associated itemDef (with language fields 
+	 * limited to the current or default language).
+	 *
+	 * Service Name - userItems
+	 * Service Operation - DROP_USER_ITEM
+	 *
+	 * @param defId 
+	 * @param quantity
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.dropUserItem = function(itemId, quantity, includeDef, callback) {
+		var message = {
+			itemId : itemId,
+			quantity : quantity,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_DROP_USER_ITEM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves the page of user's inventory from the server 
+	 * based on the context. If includeDef is true, response
+	 *  includes associated itemDef with each user item, with 
+	 * language fields limited to the current or default language.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - GET_USER_INVENTORY_PAGE
+	 *
+	 * @param context
+	 * @param searchCriteria
+	 * @param sortCriteria 
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.getUserInventoryPage = function(context, includeDef, callback) {
+		var message = {
+			context : context,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves the page of user's inventory from the server
+	 *  based on the encoded context. If includeDef is true, 
+	 * response includes associated itemDef with each user item, 
+	 * with language fields limited to the current or default
+	 * language.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - GET_USER_INVENTORY_PAGE_OFFSET
+	 *
+	 * @param context
+	 * @param pageOffset
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.getUserInventoryPageOffset = function(context, pageOffset, includeDef, callback) {
+		var message = {
+			context : context,
+			pageOffset : pageOffset,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE_OFFSET,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves the identified user item from the server. 
+	 * If includeDef is true, response includes associated
+	 * itemDef with language fields limited to the current 
+	 * or default language.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - GET_USER_ITEM
+	 *
+	 * @param itemId
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.getUserItem = function(itemId, includeDef, callback) {
+		var message = {
+			itemId : itemId,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_GET_USER_ITEM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Gifts item to the specified player.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - GIVE_USER_ITEM_TO
+	 *
+	 * @param profileId
+	 * @param itemId
+	 * @param version
+	 * @param immediate 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.giveUserItemTo = function(profileId, itemId, version, quantity, immediate, callback) {
+		var message = {
+			profileId : profileId,
+			itemId : itemId,
+			version : version,
+			quantity : quantity,
+			immediate : immediate
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_GIVE_USER_ITEM_TO,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves the identified user item from the server. 
+	 * If includeDef is true, response includes associated
+	 * itemDef with language fields limited to the current 
+	 * or default language.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - PURCHASE_USER_ITEM
+	 *
+	 * @param defId
+	 * @param quantity
+	 * @param shopId
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.purchaseUserItem = function(defId, quantity, shopId, includeDef, callback) {
+		var message = {
+			defId : defId,
+			quantity : quantity,
+			shopId : shopId,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_PURCHASE_USER_ITEM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Retrieves and transfers the gift item from 
+	 * the specified player, who must have previously 
+	 * called giveUserItemTo.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - RECEVIE_USER_ITEM_FROM
+	 *
+	 * @param profileId
+	 * @param itemId
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.receiveUserItemFrom = function(profileId, itemId, callback) {
+		var message = {
+			profileId : profileId,
+			itemId : itemId
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_RECEIVE_USER_ITEM_FROM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Allows a quantity of a specified user item to be sold. 
+	 * If any quantity of the user item remains, it will be returned, 
+	 * potentially with the associated itemDef (with language fields 
+	 * limited to the current or default language), along with the 
+	 * currency refunded and currency balances.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - SELL_USER_ITEM
+	 *
+	 * @param itemId
+	 * @param version
+	 * @param quantity
+	 * @param shopId
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.sellUserItem = function(itemId, version, quantity, shopId, includeDef, callback) {
+		var message = {
+			itemId : itemId,
+			version : version,
+			quantity : quantity,
+			shopId : shopId,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_SELL_USER_ITEM,
+			data : message,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Updates the item data on the specified user item.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - UPDATE_USER_ITEM_DATA
+	 *
+	 * @param itemId
+	 * @param version
+	 * @param newItemData
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.updateUserItemData = function(itemId, version, newItemData, callback) {
+		var data = {
+			itemId : itemId,
+			version : version,
+			newItemData: newItemData
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_UPDATE_USER_ITEM_DATA,
+			data : data,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Uses the specified item, potentially consuming it.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - USE_USER_ITEM
+	 *
+	 * @param itemId
+	 * @param version
+	 * @param newItemData
+	 * @param includeDef 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.useUserItem = function(itemId, version, newItemData, includeDef, callback) {
+		var data = {
+			itemId : itemId,
+			version : version,
+			newItemData : newItemData,
+			includeDef : includeDef
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_USE_USER_ITEM,
+			data : data,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Publishes the specified item to the item management attached blockchain. Results are reported asynchronously via an RTT event.
+	 *
+	 * Service Name - userItems
+	 * Service Operation - PUBLISH_USER_ITEM_TO_BLOCKCHAIN
+	 *
+	 * @param itemId
+	 * @param version
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.publishUserItemToBlockchain = function(itemId, version, callback) {
+		var data = {
+			itemId : itemId,
+			version : version
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_PUBLISH_USER_ITEM_TO_BLOCKCHAIN,
+			data : data,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Syncs the caller's user items with the item management attached blockchain. Results are reported asynchronously via an RTT event	 *
+	 * Service Name - userItems
+	 * Service Operation - REFRESH_BLOCKCHAIN_USER_ITMES
+	 *
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.refreshBlockchainUserItems = function(callback) {
+		var data = {
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_REFRESH_BLOCKCHAIN_USER_ITEMS,
+			data : data,
+			callback : callback
+		});
+	};
+
+	/**
+	 * Syncs the caller's user items with the item management attached blockchain. Results are reported asynchronously via an RTT event	 *
+	 * Service Name - userItems
+	 * Service Operation - REMOVE_USER_ITEM_FROM_BLOCKCHAIN
+	 * @param itemId
+	 * @param version
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.userItems.removeUserItemFromBlockchain = function(itemId, version, callback) {
+		var data = {
+			itemId : itemId,
+			version : version
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_USER_ITEMS,
+			operation : bc.userItems.OPERATION_REMOVE_USER_ITEM_FROM_BLOCKCHAIN,
+			data : data,
+			callback : callback
+		});
+	};
+}
+
+BCUserItems.apply(window.brainCloudClient = window.brainCloudClient || {});
+
 function BCVirtualCurrency() {
     var bc = this;
 
@@ -11880,6 +13444,8 @@ function BrainCloudClient() {
         BCGlobalEntity.apply(bcc);
         BCGroup.apply(bcc);
         BCIdentity.apply(bcc);
+        BCItemCatalog.apply(bcc);
+        BCUserItems.apply(bcc);
         BCLobby.apply(bcc);
         BCMail.apply(bcc);
         BCMatchMaking.apply(bcc);
@@ -11904,6 +13470,7 @@ function BrainCloudClient() {
         BCStatusCodes.apply(bcc);
         BCTime.apply(bcc);
         BCTournament.apply(bcc);
+        BCCustomEntity.apply(bcc);
 
         bcc.brainCloudManager = new BrainCloudManager();
         bcc.brainCloudRttComms = new BrainCloudRttComms(this);
@@ -11947,6 +13514,9 @@ function BrainCloudClient() {
         bcc.brainCloudManager.statusCodes = bcc.statusCodes;
         bcc.brainCloudManager.time = bcc.time;
         bcc.brainCloudManager.tournament = bcc.tournament;
+        bcc.brainCloudManager.itemCatalog = bcc.itemCatalog;
+        bcc.brainCloudManager.userItems = bcc.userItems;
+        bcc.brainCloudManager.customEntity = bcc.customEntity;
 
         bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
@@ -11996,13 +13566,16 @@ function BrainCloudClient() {
         bcc.brainCloudManager.statusCodes = bcc.brainCloudClient.statusCodes = bcc.brainCloudClient.statusCodes || {};
         bcc.brainCloudManager.time = bcc.brainCloudClient.time = bcc.brainCloudClient.time || {};
         bcc.brainCloudManager.tournament = bcc.brainCloudClient.tournament = bcc.brainCloudClient.tournament || {};
+        bcc.brainCloudManager.itemCatalog = bcc.brainCloudClient.itemCatalog = bcc.brainCloudClient.itemCatalog || {};
+        bcc.brainCloudManager.userItems = bcc.brainCloudClient.userItems = bcc.brainCloudClient.userItems || {};
+        bcc.brainCloudManager.customEntity = bcc.brainCloudClient.customEntity = bcc.brainCloudClient.customEntity || {};
 
         bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
     }
 
 
-    bcc.version = "4.0.0";
+    bcc.version = "4.1.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -12288,9 +13861,13 @@ function BrainCloudClient() {
  * @deprecated Use of the *singleton* (window.brainCloudClient) has been deprecated. We recommend that you create your own *variable* to hold an instance of the brainCloudWrapper. Explanation here: http://getbraincloud.com/apidocs/release-3-6-5/
  */
 BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
-if (typeof WebSocket === 'undefined') {
-    WebSocket = require('ws');
-}
+// if (typeof WebSocket === 'undefined') {
+// 	try {
+// 		WebSocket = require('ws');
+// 	} catch (err) {
+// 		WebSocket = null;
+// 	}
+// }
 
 var DEFAULT_RTT_HEARTBEAT; // Seconds
 
@@ -12429,7 +14006,7 @@ function BrainCloudRttComms (m_client) {
         if (bcrtt.isEnabled) { // This should always be true, but just in case user called disabled and we end up receiving the even anyway
             var processResult = function(result) {
                 if (result.operation == "CONNECT" && result.service == "rtt") {
-                    bcrtt.connectionId = result.cxId;
+                    bcrtt.connectionId = result.data.cxId;
                     DEFAULT_RTT_HEARTBEAT = result.data.heartbeatSeconds; //make default heartbeat match the heartbeat the server gives us
                     bcrtt.startHeartbeat();
                     bcrtt.connectCallback.success(result);
@@ -12581,6 +14158,8 @@ BrainCloudRttComms.apply(window.brainCloudRttComms = window.brainCloudRttComms |
  * be sent to the server. This strategy is useful when using anonymous authentication.
  */
 
+var getIdentitiesCallback = null;
+
 function BrainCloudWrapper(wrapperName) {
 
     var bcw = this;
@@ -12629,6 +14208,9 @@ function BrainCloudWrapper(wrapperName) {
         bcw.statusCodes = bcw.brainCloudClient.statusCodes;
         bcw.time = bcw.brainCloudClient.time;
         bcw.tournament = bcw.brainCloudClient.tournament;
+        bcw.itemCatalog = bcw.brainCloudClient.itemCatalog;
+        bcw.userItems = bcw.brainCloudClient.userItems;
+        bcw.customEntity = bcw.brainCloudClient.customEntity;
 
         bcw.brainCloudManager = bcw.brainCloudClient.brainCloudManager = bcw.brainCloudClient.brainCloudManager || {};
 
