@@ -1,33 +1,3 @@
-// MD5
-if (typeof CryptoJS === "undefined" || CryptoJS === null) {
-    CryptoJS = {};
-}
-if (!CryptoJS.MD5) {
-    CryptoJS.MD5 = require('md5');
-}
-
-// XMLHttpRequest
-if (typeof window === "undefined" || window === null) {
-    window = {}
-}
-if (!window.XMLHttpRequest) {
-    window.XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-    XMLHttpRequest = window.XMLHttpRequest;
-
-    XMLHttpRequest.UNSENT = 0;
-    XMLHttpRequest.OPENED = 1;
-    XMLHttpRequest.HEADERS_RECEIVED = 2;
-    XMLHttpRequest.LOADING = 3;
-    XMLHttpRequest.DONE = 4;
-}
-
-// Local storage
-if (typeof localStorage === "undefined" || localStorage === null) {
-    var LocalStorage = require('node-localstorage/LocalStorage').LocalStorage;
-    os = require('os');
-    var configDir = os.homedir() + "/.bciot";
-    localStorage = new LocalStorage(configDir);
-}
 
 function BrainCloudManager ()
 {
@@ -407,7 +377,8 @@ function BrainCloudManager ()
                 var data = messages[c].data;
 
                 // A session id or a profile id could potentially come back in any messages
-                if (data)
+                //only save cached session and profile id when its an authentication or identity service being used. 
+                if (data && (bcm._inProgressQueue[c].service == "authenticationV2" || bcm._inProgressQueue[c].service == "identity"))
                 {
                     if (data.sessionId)
                     {
