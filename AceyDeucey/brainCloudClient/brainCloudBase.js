@@ -1,7 +1,12 @@
 
+if (typeof CryptoJS === 'undefined' || CryptoJS === null) {
+    var CryptoJS = require('crypto-js');
+}
+
 function BrainCloudManager ()
 {
     var bcm = this;
+    var _setInterval = typeof customSetInterval === 'function' ? customSetInterval : setInterval;
 
     bcm.name = "BrainCloudManager";
 
@@ -102,6 +107,11 @@ function BrainCloudManager ()
 
     bcm.setSessionId = function(sessionId)
     {
+        if(sessionId !== null || sessionId !== "")
+        {
+            bcm._isAuthenticated = true;
+            bcm._packetId = -1; 
+        }
         bcm._sessionId = sessionId;
     };
 
@@ -318,7 +328,7 @@ function BrainCloudManager ()
     bcm.startHeartBeat = function()
     {
         bcm.stopHeartBeat();
-        bcm._heartBeatIntervalId = setInterval(function()
+        bcm._heartBeatIntervalId = _setInterval(function()
         {
             bcm.sendRequest({
                 service : "heartbeat",
@@ -474,7 +484,7 @@ function BrainCloudManager ()
                     bcm._statusMessageCache = messages[c].status_message;
                 }
 
-                console.log("STATUSCodes:" + bcm.statusCodes.CLIENT_NETWORK_ERROR);
+                bcm.debugLog("STATUSCodes:" + bcm.statusCodes.CLIENT_NETWORK_ERROR);
                 bcm.updateKillSwitch(bcm._inProgressQueue[c].service, bcm._inProgressQueue[c].operation, statusCode)
             }
 
