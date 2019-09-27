@@ -1,6 +1,10 @@
-if (typeof WebSocket === 'undefined') {
-    WebSocket = require('ws');
-}
+// if (typeof WebSocket === 'undefined') {
+// 	try {
+// 		WebSocket = require('ws');
+// 	} catch (err) {
+// 		WebSocket = null;
+// 	}
+// }
 
 var DEFAULT_RTT_HEARTBEAT; // Seconds
 
@@ -139,7 +143,7 @@ function BrainCloudRttComms (m_client) {
         if (bcrtt.isEnabled) { // This should always be true, but just in case user called disabled and we end up receiving the even anyway
             var processResult = function(result) {
                 if (result.operation == "CONNECT" && result.service == "rtt") {
-                    bcrtt.connectionId = result.cxId;
+                    bcrtt.connectionId = result.data.cxId;
                     DEFAULT_RTT_HEARTBEAT = result.data.heartbeatSeconds; //make default heartbeat match the heartbeat the server gives us
                     bcrtt.startHeartbeat();
                     bcrtt.connectCallback.success(result);

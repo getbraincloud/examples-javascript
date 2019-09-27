@@ -81,7 +81,7 @@ class App extends Component
     dieWithMessage(message)
     {
         // Close RTT connection
-        this.bcWrapper.deregisterAllRTTCallbacks();
+        this.bcWrapper.rttService.deregisterAllRTTCallbacks();
         this.bcWrapper.brainCloudClient.resetCommunication();
 
         // Pop alert message
@@ -272,9 +272,10 @@ class App extends Component
     {
         // Turn on RTT
         console.log("BC: enableRTT");
-        this.bcWrapper.registerRTTChatCallback(this.onRttMessage.bind(this));
-        this.bcWrapper.registerRTTPresenceCallback(this.onRttMessage.bind(this));
-        this.bcWrapper.enableRTT(result =>
+        //this.bcWrapper.userItems.awardUserItem();
+        this.bcWrapper.rttService.registerRTTChatCallback(this.onRttMessage.bind(this));
+        this.bcWrapper.rttService.registerRTTPresenceCallback(this.onRttMessage.bind(this));
+        this.bcWrapper.rttService.enableRTT(result =>
         {
             console.log(JSON.stringify(result));
             this.onRTTConnected();
