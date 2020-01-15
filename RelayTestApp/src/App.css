@@ -1,0 +1,104 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 16pt;/* calc(10px + 2vmin);*/
+  color: white;
+}
+
+small {
+    font-size: 10pt
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+.colorBtn {
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+ 
+    /*
+      Introduced in IE 10.
+      See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+    */
+    -ms-user-select: none;
+    user-select: none;
+
+    margin: 2px;
+}
+
+.colorBtn:hover {
+    margin: 0px;
+    border: 2px solid #fff
+}
+
+.colorBtn:active {
+    margin: 0px;
+    border: 2px solid #aa0
+}
+
+.GamePlayArea {
+    width: 800px;
+    height: 600px;
+    background-color: #333;
+    position: relative;
+}
+
+.Entity {
+    position: absolute;
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.Button {
+    margin: 16px;
+    padding: 8px 16px;
+    font-size: 18pt;
+    background-color: #abc;
+    border-radius: 8px;
+}
+
+.Button:hover {
+    background-color: #def;
+}
+
+.Button:active {
+    background-color: #789;
+}
+
+.Shockwave {
+    position: relative;
+    border-radius: 50%;
+    animation-duration: 0.6s;
+    animation-name: shockwaveAnim;
+}
+
+@keyframes shockwaveAnim {
+    from {
+        left: 64px;
+        top: 64px;
+        width: 0px;
+        height: 0px;
+        opacity: 1;
+    }
+  
+    to {
+        left: 0px;
+        top: 0px;
+        width: 128px;
+        height: 128px;
+        opacity: 0;
+    }
+}
