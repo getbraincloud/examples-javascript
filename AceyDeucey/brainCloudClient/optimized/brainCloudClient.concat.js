@@ -20,7 +20,7 @@ function BrainCloudManager ()
     bcm._rewardCallback = null;
     bcm._errorCallback = null;
     bcm._jsonedQueue = "";
-    bcm._idleTimeout = 30;
+    bcm._idleTimeout = 120;
     bcm._heartBeatIntervalId = null;
     bcm._bundlerIntervalId = null;
 
@@ -509,7 +509,7 @@ function BrainCloudManager ()
 
     bcm.fakeErrorResponse = function(statusCode, reasonCode, message)
     {
-        var responses = [bcm._inProgressQueue.length];
+        var responses = [];
 
         var response = {};
         response.status = statusCode;
@@ -519,13 +519,13 @@ function BrainCloudManager ()
 
         for (var i = 0; i < bcm._inProgressQueue.length; i++)
         {
-            responses[i] = response;
+            responses.push(response);
         }
 
         bcm.handleSuccessResponse(
-            {
-                "responses": responses
-            });
+        {
+            "responses": responses
+        });
     }
 
     bcm.setHeader = function(xhr)
@@ -1467,6 +1467,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_TWITTER = "Twitter";
 	bc.authentication.AUTHENTICATION_TYPE_PARSE = "Parse";
 	bc.authentication.AUTHENTICATION_TYPE_HANDOFF = "Handoff";
+	bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF = "SettopHandoff";
 
 	bc.authentication.profileId = "";
 	bc.authentication.anonymousId = "";
@@ -1919,6 +1920,25 @@ function BCAuthentication() {
 			callback);
 	};
 
+	/**
+	 * Authenticate a user with handoffCode
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 */
+	bc.authentication.authenticateSettopHandoff= function(handoffCode, callback) {
+		bc.authentication.authenticate(
+			handoffCode,
+			"",
+			bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF,
+			null,
+			false,
+			callback);
+	};
+
 	/** Method allows a caller to authenticate with bc. Note that
 	 * callers should use the other authenticate methods in this class as
 	 * they incorporate the appropriate authenticationType and use better
@@ -2357,6 +2377,8 @@ function BCCustomEntity() {
 	bc.customEntity.OPERATION_GET_COUNT= "GET_COUNT";
 	bc.customEntity.OPERATION_GET_PAGE= "GET_PAGE";
 	bc.customEntity.OPERATION_GET_PAGE_OFFSET= "GET_PAGE_BY_OFFSET";
+	bc.customEntity.OPERATION_GET_ENTITY_PAGE= "GET_ENTITY_PAGE";
+	bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET= "GET_ENTITY_PAGE_OFFSET";
 	bc.customEntity.OPERATION_READ_ENTITY= "READ_ENTITY";
 	bc.customEntity.OPERATION_UPDATE_ENTITY= "UPDATE_ENTITY";
 	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS= "UPDATE_ENTITY_FIELDS";
@@ -2437,6 +2459,10 @@ function BCCustomEntity() {
 	 * @param callback
 	 *            {function} The callback handler.
 	 */
+
+	/**
+     * @deprecated Use getEntityPage() instead
+     */
 	bc.customEntity.getPage = function(entityType, rowsPerPage, searchJson, sortJson, doCount, callback) {
 		var message = {
 			entityType : entityType,
@@ -2455,6 +2481,26 @@ function BCCustomEntity() {
 		});
 	};
 
+	/** 
+	* @param context The json context for the page request.
+	*                   See the portal appendix documentation for format.
+	* @param entityType
+	* @param callback The callback object
+	*/
+	bc.customEntity.getEntityPage = function(entityType, context, callback) {
+		var message = {
+			entityType : entityType,
+			context : context
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE,
+			data : message,
+			callback : callback
+		});
+	};
+
 	/**
 	 * Creates new custom entity.
 	 *
@@ -2467,6 +2513,10 @@ function BCCustomEntity() {
 	 * @param callback
 	 *            {function} The callback handler.
 	 */
+
+	 /**
+     * @deprecated Use getEntityPageOffset() instead
+     */
 	bc.customEntity.getPageOffset = function(entityType, context, pageOffset, callback) {
 		var message = {
 			entityType : entityType,
@@ -2481,6 +2531,34 @@ function BCCustomEntity() {
 			callback : callback
 		});
 	};
+
+		/**
+	 * Creates new custom entity.
+	 *
+	 * @param entityType
+	 *            {string} The entity type as defined by the user
+	 * @param context
+	 * 			  {string} context
+	 * @param pageOffset
+	 *            {int} 
+	 * @param callback
+	 *            {function} The callback handler.
+	 */
+	bc.customEntity.getEntityPageOffset = function(entityType, context, pageOffset, callback) {
+		var message = {
+			entityType : entityType,
+			context : context,
+			pageOffset : pageOffset
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_CUSTOM_ENTITY,
+			operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET,
+			data : message,
+			callback : callback
+		});
+	};
+
 
 	/**
 	 * Reads a custom entity.
@@ -4279,6 +4357,8 @@ function BCGamification() {
 	};
 
 	/**
+     * @deprecated
+     *
 	 * Resets the specified milestones' statuses to LOCKED.
 	 *
 	 * Service Name - Gamification
@@ -5177,6 +5257,7 @@ function BCGroup() {
 	bc.group.OPERATION_ADD_GROUP_MEMBER = "ADD_GROUP_MEMBER";
 	bc.group.OPERATION_APPROVE_GROUP_JOIN_REQUEST = "APPROVE_GROUP_JOIN_REQUEST";
 	bc.group.OPERATION_AUTO_JOIN_GROUP = "AUTO_JOIN_GROUP";
+	bc.group.OPERATION_AUTO_JOIN_GROUP_MULTI = "AUTO_JOIN_GROUP_MULTI";
 	bc.group.OPERATION_CANCEL_GROUP_INVITATION = "CANCEL_GROUP_INVITATION";
 	bc.group.OPERATION_CREATE_GROUP = "CREATE_GROUP";
 	bc.group.OPERATION_CREATE_GROUP_ENTITY = "CREATE_GROUP_ENTITY";
@@ -5320,6 +5401,34 @@ function BCGroup() {
 			callback : callback
 		});
 	};
+
+	/**
+	 * Find and join an open group in the pool of groups in multiple group types provided as input arguments.
+	 * 
+	 * Service Name - group
+	 * Service Operation - AUTO_JOIN_GROUP
+	 *
+	 * @param groupTypes Name of the associated group type.
+	 * @param autoJoinStrategy Selection strategy to employ when there are multiple matches
+	 * @param where Query parameters (optional)
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.group.autoJoinGroupMulti = function(groupTypes, autoJoinStrategy, where, callback) {
+		var message = {
+			groupTypes : groupTypes,
+			autoJoinStrategy : autoJoinStrategy
+		};
+
+		if(where) message.where = where;
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GROUP,
+			operation : bc.group.OPERATION_AUTO_JOIN_GROUP_MULTI,
+			data : message,
+			callback : callback
+		});
+	};
+
 
 	/**
 	 * Cancel an outstanding invitation to the group.
@@ -7144,6 +7253,14 @@ function BCLobby() {
     bc.lobby.OPERATION_GET_REGIONS_FOR_LOBBIES = "GET_REGIONS_FOR_LOBBIES";
     bc.lobby.OPERATION_PING_REGIONS = "PING_REGIONS";
 
+    // Private variables for ping 
+    var pingData = null;
+    var regionPingData = null;
+    var regionsToPing = [];
+    var targetPingCount = 0;
+    var MAX_PING_CALLS = 4;
+    var NUM_PING_CALLS_IN_PARRALLEL = 2;
+
     /**
      * Creates a new lobby.
      * 
@@ -7443,7 +7560,7 @@ function BCLobby() {
             otherUserCxIds: otherUserCxIds
         };
 
-        attachPingDataAndSend(data, bc.lobby.operation.OPERATION_JOIN_LOBBY_WITH_PING_DATA, callback);
+        attachPingDataAndSend(data, bc.lobby.OPERATION_JOIN_LOBBY_WITH_PING_DATA, callback);
     };
 
     /**
@@ -7598,155 +7715,191 @@ function BCLobby() {
             service: bc.SERVICE_LOBBY,
             operation: bc.lobby.OPERATION_GET_REGIONS_FOR_LOBBIES,
             data: data,
-            callback: function(result) {
-                //upon a successful getRegionsForLobbies call
+            callback: function(result)
+            {
+                // Upon a successful getRegionsForLobbies call
                 if (result.status == 200) 
                 {
-                    //set the regionPingData that was found
-                    m_regionPingData = result.data.regionPingData;
+                    // Set the regionPingData that was found
+                    regionPingData = result.data.regionPingData;
                 }
+
+                // User callback
+                callback(result);
             }
         })
     };
 
     bc.lobby.pingRegions = function(callback)
     {
-        //now we have the region ping data, we can start pinging each region and its defined target, if its a PING type.
-        m_cachedPingResponses.clear();
+        // Now we have the region ping data, we can start pinging each region and its defined target, if its a PING type.
         pingData = {};
-        var regionInner = new Map();
-        var targetStr; 
 
-        //check if client passed in own callback
-        if(callback != null)
-            pingRegionsSuccessCallback = callback;
-
-        //if there is ping data
-        if(Object.keys(m_regionPingData).length > 0)
+        // If there is ping data
+        if (regionPingData)
         {
-            for(var key in m_regionPingData)
+            // Collect regions to ping
+            regionsToPing = [];
+            var regionPingKeys = Object.keys(regionPingData);
+            for (var i = 0; i < regionPingKeys.length; ++i)
             {
-                regionInner = m_regionPingData[String(key)];
+                var regionName = regionPingKeys[i];
+                var region = regionPingData[regionName];
 
-                //check all the regions and see if the data is of type PING
-                if(regionInner[String("type")] !== null && regionInner[String("type")] === "PING")
+                // Check if type PING
+                if (region && region.target && region.type == "PING")
                 {
-                    //update our cache with the regions we come across so we can store ping values in individual arrays
-                    var tempArr = new Array();
-                    m_cachedPingResponses[key] = tempArr;
-                    targetStr = regionInner[String("target")];
-
-                    //js is single threaded, so there shouldn't be  need for a mutex
-                    for(var i = 0; i < MAX_PING_CALLS; i++)
-                    { 
-                        //take the regions and targets and prepare them to be tested
-                        var keyvaluepair = new Map();
-                        keyvaluepair.set(key, targetStr);
-                        m_regionTargetsToProcess.push(keyvaluepair);
-                    }
+                    regionsToPing.push({
+                        name: regionName,
+                        url: region.target
+                    });
                 }
             }
-            //start the pinging
-            pingNextItemToProcess();
+
+            // Start with NUM_PING_CALLS_IN_PARRALLEL count pings
+            targetPingCount = regionsToPing.length;
+            if (targetPingCount == 0)
+            {
+                setTimeout(function() { onPingsCompleted(callback); }, 0);
+            }
+            else for (var i = 0; i < NUM_PING_CALLS_IN_PARRALLEL; ++i)
+            {
+                if (regionsToPing.length > 0) // In case they all fail fast, this needs to be checked
+                {
+                    var region = regionsToPing.splice(0, 1)[0];
+                    handleNextPing(region, [], callback);
+                }
+            }
         }
         else
         {
-            //theres no regions for pinging
-            bc.brainCloudManager.fakeErrorResponse(bc.statusCodes.BAD_REQUEST, bc.reasonCodes.MISSING_REQUIRED_PARAMETER, "No Regions to Ping. Please call GetRegionsForLobbies and await the response before calling PingRegions");
+            // Delay the callback 1 frame so we don't callback before this function returns
+            setTimeout(function()
+            {
+                callback({
+                    status: bc.statusCodes.BAD_REQUEST,
+                    reason_code: bc.reasonCodes.MISSING_REQUIRED_PARAMETER,
+                    status_message: "No Regions to Ping. Please call GetRegionsForLobbies and await the response before calling PingRegions",
+                    severity: "ERROR"
+                });
+            }, 0);
         }
     };
 
-    function pingNextItemToProcess()
+    function onPingsCompleted(callback)
     {
-        //check there's regions to process
-        if(m_regionTargetsToProcess.length > 0)
+        callback({
+            status: 200,
+            data: pingData
+        });
+    }
+
+    function handleNextPing(region, pings, callback)
+    {
+        if (pings.length >= MAX_PING_CALLS)
         {
-            var region; 
-            var target;
-            for(var i = 0; i < NUM_PING_CALLS_IN_PARRALLEL && m_regionTargetsToProcess.length > 0; i++)
+            // We're done
+            pings.sort(function(a, b) { return a - b; });
+            var averagePing = 0;
+            for (var i = 0; i < pings.length - 1; ++i)
             {
-                var key = m_regionTargetsToProcess[0].keys();
-                region = key.next().value;
-                target = m_regionTargetsToProcess[0].get(String(region));
-                
-                //using tempArr to more easily acquire length of the current region we're identifying in cachedPingResponses
-                m_cachedRegionArr = m_cachedPingResponses[String(region)];
-                
-                //reorganising array and removing the first element
-                m_regionTargetsToProcess.shift();
-                pingHost(region, target, m_cachedRegionArr.length);
+                averagePing += pings[i];
+            }
+            averagePing /= pings.length - 1;
+            pingData[region.name] = Math.round(averagePing);
+
+            // Ping the next region in queue, or callback if all completed
+            if (regionsToPing.length > 0)
+            {
+                var region = regionsToPing.splice(0, 1)[0];
+                handleNextPing(region, [], callback);
+            }
+            else if (Object.keys(pingData).length == targetPingCount)
+            {
+                onPingsCompleted(callback);
             }
         }
-        else if (Object.keys(m_regionPingData).length == Object.keys(pingData).length && pingRegionsSuccessCallback != null && pingRegionsSuccessCallback != undefined)
+        else
         {
-            pingRegionsSuccessCallback();
+            pingHost(region, function(ping)
+            {
+                pings.push(ping)
+                handleNextPing(region, pings, callback);
+            });
         }
     }
 
-    function pingHost(region, target, index)
+    function pingHost(region, callback)
     {
-        //setup our target
-        targetURL = "https://" + target;
-        
-        //store a start time for each region to allow parallel
-        m_cachedPingResponses[String(region)].push(new Date().getTime());
+        var success = false;
 
-        //make our http request
-        var httpRequest = new XMLHttpRequest();
-        httpRequest.open("GET", targetURL, true);
+        // Setup our final url
+        var url = "http://" + region.url;
 
-        httpRequest.onreadystatechange = function()
+        // Create request object
+        var xmlhttp;
+        if (window.XMLHttpRequest)
         {
-            //check state 
-            if (httpRequest.readyState == 4 && httpRequest.status == 200)
-            {
-                handlePingResponse(region, index);
-            }
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        }
+        else
+        {
+            // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
         }
 
-        //avoid CORS and other header issues
-        httpRequest.setRequestHeader("Access-Control-Allow-Origin",":*");
-        httpRequest.setRequestHeader("Access-Control-Allow-Headers",":*");
-        httpRequest.setRequestHeader("Content-type", targetURL);
-
-        httpRequest.send();
-    }
-
-    function handlePingResponse(region, index)
-    {
-        //calculate the difference in time between getting here and the time a start time was stored for the region
-        var regionArr = m_cachedPingResponses[String(region)];
-        var time = new Date().getTime() - regionArr[index]; 
-        //Js passes by rference, so m_cachedPingResponses will be updated with this
-        regionArr[index] = time;
-
-        //we've reached our desired number of ping calls, so now we need to do some logic to get the average ping
-        if(regionArr.length == MAX_PING_CALLS && index == MAX_PING_CALLS - 1)
+        // Timeout 2 sec
+        var hasTimedout = false;
+        var timeoutId = setTimeout(function()
         {
-            var totalAccumulated = 0;
-            var highestValue = 0;
-            var pingResponse = 0;
-            var numElements = m_cachedRegionArr.length;
-            for(var i = 0; i < numElements; i++)
-            {  
-                pingResponse = regionArr[index];
-                totalAccumulated += pingResponse;
-                if(pingResponse > highestValue)
+            hasTimedout = true;
+            xmlhttp.abort();
+            callback(999);
+        }, 2000);
+
+        var startTime = 0;
+        xmlhttp.onreadystatechange = function()
+        {
+            if (hasTimedout)
+            {
+                return;
+            }
+
+            if (xmlhttp.readyState == XMLHttpRequest.DONE)
+            {
+                if (!hasTimedout)
                 {
-                    highestValue = pingResponse;
+                    clearTimeout(timeoutId)
                 }
+                if (xmlhttp.status == 200)
+                {
+                    success = true;
+                }
+
+                var endTime = new Date().getTime();
+                var resultPing = Math.min(999, endTime - startTime);
+                if (resultPing < 0 || !success)
+                {
+                    resultPing = 999;
+                }
+        
+                callback(resultPing);
             }
-            totalAccumulated -= highestValue;
-            pingData[region] = totalAccumulated / (numElements -1);   
         }
 
-        //move onto the next one
-        pingNextItemToProcess();
+        xmlhttp.open("GET", url, true);
+        xmlhttp.setRequestHeader("Access-Control-Allow-Origin",":*");
+        xmlhttp.setRequestHeader("Access-Control-Allow-Headers",":*");
+
+        // Do the ping
+        startTime = new Date().getTime();
+        xmlhttp.send();
     }
 
     function attachPingDataAndSend(data, operation, callback)
     {
-        if(pingData != null && Object.keys(pingData).length > 0)
+        if(pingData && Object.keys(pingData).length > 0)
         {
             //make sure to add the ping data tot he data being sent
             data.pingData = pingData;
@@ -7760,19 +7913,18 @@ function BCLobby() {
         }
         else
         {
-            bc.brainCloudManager.fakeErrorResponse(bc.statusCodes.BAD_REQUEST, bc.reasonCodes.MISSING_REQUIRED_PARAMETER, "Required Parameter 'pingData' is missing. Please ensure 'pingData' exists by first calling GetRegionsForLobbies and PingRegions, and waiting for response before proceeding.");
+            // Delay the callback 1 frame so we don't callback before this function returns
+            setTimeout(function()
+            {
+                callback({
+                    status: bc.statusCodes.BAD_REQUEST,
+                    reason_code: bc.reasonCodes.MISSING_REQUIRED_PARAMETER,
+                    status_message: "Required Parameter 'pingData' is missing. Please ensure 'pingData' exists by first calling GetRegionsForLobbies and PingRegions, and waiting for response before proceeding.",
+                    severity: "ERROR"
+                })
+            }, 0);
         }
     }
-
-    //variables for ping data 
-    var pingData = new Map();
-    var m_regionPingData = new Map();
-    var m_cachedPingResponses = new Map();
-    var m_cachedRegionArr = new Array();
-    var m_regionTargetsToProcess = new Array();
-    var MAX_PING_CALLS = 4;
-    var NUM_PING_CALLS_IN_PARRALLEL = 2;
-    var pingRegionsSuccessCallback;
 }
 
 BCLobby.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -11284,6 +11436,173 @@ function BCRedemptionCodes() {
 }
 
 BCRedemptionCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
+function BCRelay() {
+    var bc = this;
+
+    bc.relay = {};
+
+    bc.SERVICE_RELAY = "relay";
+
+    bc.relay.TO_ALL_PLAYERS = 131;
+    bc.relay.CHANNEL_HIGH_PRIORITY_1      = 0;
+    bc.relay.CHANNEL_HIGH_PRIORITY_2      = 1;
+    bc.relay.CHANNEL_NORMAL_PRIORITY      = 2;
+    bc.relay.CHANNEL_LOW_PRIORITY         = 3;
+
+
+    /**
+    * Start a connection, based on connection type to 
+    * brainClouds Relay Servers. Connect options come in
+    * from ROOM_ASSIGNED lobby callback.
+    * 
+    * @param options {
+    *   ssl: false,
+    *   host: "168.0.1.192"
+    *   port: 9000,
+    *   passcode: "somePasscode",
+    *   lobbyId: "55555:v5v:001"
+    * }
+    * @param success Called on success to establish a connection.
+    * @param failure Called on failure to establish a connection or got disconnected.
+    */
+    bc.relay.connect = function(options, success, failure) {
+        bc.brainCloudRelayComms.connect(options, success, failure);
+    };
+
+    /**
+     * Disconnects from the relay server
+     */
+    bc.relay.disconnect = function() {
+        bc.brainCloudRelayComms.disconnect();
+    }
+
+    /**
+     * Returns whether or not we have a successful connection with
+     * the relay server
+     */
+    bc.relay.isConnected = function() {
+        return bc.brainCloudRelayComms.isConnected;
+    }
+
+    /**
+     * Get the current ping for our user.
+     * Note: Pings are not distributed amount other members. Your game will
+     * have to bundle it inside a packet and distribute to other peers.
+     */
+    bc.relay.getPing = function() {
+        return bc.brainCloudRelayComms.ping;
+    }
+
+    /**
+     * Set the ping interval. Ping allows to keep the connection
+     * alive, but also inform the player of his current ping.
+     * The default is 1 seconds interval.
+     * 
+     * @param interval in Seconds
+     */
+    bc.relay.setPingInterval = function(interval) {
+        bc.brainCloudRelayComms.setPingInterval(interval);
+    }
+
+    /**
+     * Get the lobby's owner profile Id
+     */
+    bc.relay.getOwnerProfileId = function() {
+        return bc.brainCloudRelayComms.getOwnerProfileId();
+    }
+
+    /**
+     * Returns the profileId associated with a netId.
+     */
+    bc.relay.getProfileIdForNetId = function(netId) {
+        return bc.brainCloudRelayComms.getProfileIdForNetId(netId);
+    }
+
+    /**
+     * Returns the netId associated with a profileId.
+     */
+    bc.relay.getNetIdForProfileId = function(profileId) {
+        return bc.brainCloudRelayComms.getNetIdForProfileId(profileId);
+    }
+
+    /**
+     * Register callback for relay messages coming from peers.
+     * 
+     * @param callback Calle whenever a relay message was received. function(netId, data[])
+     */
+    bc.relay.registerRelayCallback = function(callback) {
+        bc.brainCloudRelayComms.registerRelayCallback(callback);
+    }
+    bc.relay.deregisterRelayCallback = function() {
+        bc.brainCloudRelayComms.deregisterRelayCallback();
+    }
+
+    /**
+     * Register callback for RelayServer system messages.
+     * 
+     * @param callback Called whenever a system message was received. function(json)
+     * 
+     * # CONNECT
+     * Received when a new member connects to the server.
+     * {
+     *   op: "CONNECT",
+     *   profileId: "...",
+     *   ownerId: "...",
+     *   netId: #
+     * }
+     * 
+     * # NET_ID
+     * Receive the Net Id assossiated with a profile Id. This is
+     * sent for each already connected members once you
+     * successfully connected.
+     * {
+     *   op: "NET_ID",
+     *   profileId: "...",
+     *   netId: #
+     * }
+     * 
+     * # DISCONNECT
+     * Received when a member disconnects from the server.
+     * {
+     *   op: "DISCONNECT",
+     *   profileId: "..."
+     * }
+     * 
+     * # MIGRATE_OWNER
+     * If the owner left or never connected in a timely manner,
+     * the relay-server will migrate the role to the next member
+     * with the best ping. If no one else is currently connected
+     * yet, it will be transferred to the next member in the
+     * lobby members' list. This last scenario can only occur if
+     * the owner connected first, then quickly disconnected.
+     * Leaving only unconnected lobby members.
+     * {
+     *   op: "MIGRATE_OWNER",
+     *   profileId: "..."
+     * }
+     */
+    bc.relay.registerSystemCallback = function(callback) {
+        bc.brainCloudRelayComms.registerSystemCallback(callback);
+    }
+    bc.relay.deregisterSystemCallback = function() {
+        bc.brainCloudRelayComms.deregisterSystemCallback();
+    }
+
+    /**
+     * Send a packet to peer(s)
+     * 
+     * @param data Byte array for the data to send
+     * @param toNetId The net id to send to, bc.relay.TO_ALL_PLAYERS to relay to all.
+     * @param reliable Send this reliable or not.
+     * @param ordered Receive this ordered or not.
+     * @param channel One of: (bc.relay.CHANNEL_HIGH_PRIORITY_1, bc.relay.CHANNEL_HIGH_PRIORITY_2, bc.relay.CHANNEL_NORMAL_PRIORITY, bc.relay.CHANNEL_LOW_PRIORITY)
+     */
+    bc.relay.send = function(data, toNetId, reliable, ordered, channel) {
+        bc.brainCloudRelayComms.sendRelay(data, toNetId, reliable, ordered, channel);
+    }
+}
+
+BCRelay.apply(window.brainCloudClient = window.brainCloudClient || {});
 
 function BCRTT() {
     var bc = this;
@@ -11744,8 +12063,7 @@ function BCSocialLeaderboard() {
 	bc.socialLeaderboard.OPERATION_REMOVE_GROUP_SCORE = "REMOVE_GROUP_SCORE";
 	bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW = "GET_GROUP_LEADERBOARD_VIEW";
 	bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW_BY_VERSION = "GET_GROUP_LEADERBOARD_VIEW_BY_VERSION";
-
-
+	bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD = "POST_GROUP_SCORE_DYNAMIC"
 
 
 
@@ -12454,6 +12772,42 @@ function BCSocialLeaderboard() {
 			callback : callback
 		});
 	}
+
+	/**
+     * Post the group score to the given group leaderboard and dynamically create if necessary. LeaderboardType, rotationType, rotationReset, and retainedCount are required.	 *
+	 * Service Name - leaderboard
+	 * Service Operation - POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD
+	 *
+	 * @param leaderboardId the id of the leaderboard
+	 * @param groupId the group's id
+	 * @param score the sort order
+	 * @param data extra data
+	 * @param leaderboardType the type
+	 * @param rotationType the type of tournamnet rotation
+	 * @param rotationResetTime how often to reset
+	 * @param retainedCount 
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.socialLeaderboard.postScoreToDynamicGroupLeaderboard = function(leaderboardId, groupId, score, data, leaderboardType, rotationType, rotationResetTime, retainedCount, callback) {
+		var message = {
+			leaderboardId : leaderboardId,
+			groupId : groupId,
+			score : score,
+			data : data,
+			leaderboardType : leaderboardType,
+			rotationType : rotationType,
+			rotationResetTime : rotationResetTime,
+			retainedCount : retainedCount
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_LEADERBOARD,
+			operation : bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD,
+			data : message,
+			callback : callback
+		});
+	}
+
 }
 
 BCSocialLeaderboard.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -13463,6 +13817,7 @@ function BrainCloudClient() {
         BCPushNotifications.apply(bcc);
         BCReasonCodes.apply(bcc);
         BCRedemptionCodes.apply(bcc);
+        BCRelay.apply(bcc);
         BCRTT.apply(bcc);
         BCS3Handler.apply(bcc);
         BCScript.apply(bcc);
@@ -13474,6 +13829,7 @@ function BrainCloudClient() {
 
         bcc.brainCloudManager = new BrainCloudManager();
         bcc.brainCloudRttComms = new BrainCloudRttComms(this);
+        bcc.brainCloudRelayComms = new BrainCloudRelayComms(this);
 
         bcc.brainCloudManager.abtests = bcc.abtests;
         bcc.brainCloudManager.asyncMatch = bcc.asyncMatch;
@@ -13507,6 +13863,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.pushNotification = bcc.pushNotification;
         bcc.brainCloudManager.reasonCodes = bcc.reasonCodes;
         bcc.brainCloudManager.redemptionCode = bcc.redemptionCode;
+        bcc.brainCloudManager.relay = bcc.relay;
         bcc.brainCloudManager.rttService = bcc.rttService;
         bcc.brainCloudManager.s3Handling = bcc.s3Handling;
         bcc.brainCloudManager.script = bcc.script;
@@ -13520,10 +13877,12 @@ function BrainCloudClient() {
 
         bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
+        bcc.brainCloudRelayComms.brainCloudClient = bcc;
 
     } else {
         bcc.brainCloudManager = window.brainCloudManager = window.brainCloudManager || {};
         bcc.brainCloudRttComms = window.brainCloudRttComms = window.brainCloudRttComms || {};
+        bcc.brainCloudRelayComms = window.brainCloudRelayComms = window.brainCloudRelayComms || {};
 
         bcc.brainCloudClient = window.brainCloudClient = window.brainCloudClient || {};
 
@@ -13559,6 +13918,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.pushNotification = bcc.brainCloudClient.pushNotification = bcc.brainCloudClient.pushNotification || {};
         bcc.brainCloudManager.reasonCodes = bcc.brainCloudClient.reasonCodes = bcc.brainCloudClient.reasonCodes || {};
         bcc.brainCloudManager.redemptionCode = bcc.brainCloudClient.redemptionCode = bcc.brainCloudClient.redemptionCode || {};
+        bcc.brainCloudManager.relay = bcc.brainCloudClient.relay = bcc.brainCloudClient.relay || {};
         bcc.brainCloudManager.rttService = bcc.brainCloudClient.rttService = bcc.brainCloudClient.rttService || {};
         bcc.brainCloudManager.s3Handling = bcc.brainCloudClient.s3Handling = bcc.brainCloudClient.s3Handling || {};
         bcc.brainCloudManager.script = bcc.brainCloudClient.script = bcc.brainCloudClient.script || {};
@@ -13572,10 +13932,11 @@ function BrainCloudClient() {
 
         bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
+        bcc.brainCloudRelayComms.brainCloudClient = bcc; // Circular reference
     }
 
 
-    bcc.version = "4.1.0";
+    bcc.version = "4.3.6";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -13765,12 +14126,14 @@ function BrainCloudClient() {
     bcc.enableLogging = function(enableLogging) {
         bcc.brainCloudManager.setDebugEnabled(enableLogging);
         bcc.brainCloudRttComms.setDebugEnabled(enableLogging);
+        bcc.brainCloudRelayComms.setDebugEnabled(enableLogging);
     };
 
 // deprecated
     bcc.setDebugEnabled = function(debugEnabled) {
         bcc.brainCloudManager.setDebugEnabled(debugEnabled);
         bcc.brainCloudRttComms.setDebugEnabled(debugEnabled);
+        bcc.brainCloudRelayComms.setDebugEnabled(debugEnabled);
     };
 
     /**
@@ -13794,6 +14157,7 @@ function BrainCloudClient() {
 
         bcc.brainCloudManager.resetCommunication();
         bcc.brainCloudRttComms.disableRTT();
+        bcc.brainCloudRelayComms.disconnect();
     };
 
     /**
@@ -13861,6 +14225,356 @@ function BrainCloudClient() {
  * @deprecated Use of the *singleton* (window.brainCloudClient) has been deprecated. We recommend that you create your own *variable* to hold an instance of the brainCloudWrapper. Explanation here: http://getbraincloud.com/apidocs/release-3-6-5/
  */
 BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
+function BrainCloudRelayComms(_client) {
+    var bcr = this;
+
+
+    bcr.CONTROL_BYTES_SIZE = 1;
+
+    bcr.MAX_PLAYERS     = 128;
+    bcr.INVALID_NET_ID  = bcr.MAX_PLAYERS;
+
+    // Messages send from Client to Relay-Server
+    bcr.CL2RS_CONNECTION       = 129;
+    bcr.CL2RS_DISCONNECT       = 130;
+    bcr.CL2RS_RELAY            = 131;
+    bcr.CL2RS_PING             = 133;
+    bcr.CL2RS_RSMG_ACKNOWLEDGE = 134;
+    bcr.CL2RS_ACKNOWLEDGE      = 135;
+
+    // Messages sent from Relay-Server to Client
+    bcr.RS2CL_RSMG             = 129;
+    bcr.RS2CL_PONG             = bcr.CL2RS_PING;
+    bcr.RS2CL_ACKNOWLEDGE      = bcr.CL2RS_ACKNOWLEDGE;
+    
+    bcr.RELIABLE_BIT    = 0x8000
+    bcr.ORDERED_BIT     = 0x4000
+        
+
+    bcr.m_client = _client;
+    bcr.name = "BrainCloudRelayComms";
+    bcr.isConnected = false;
+
+    bcr._debugEnabled = false;
+    bcr._netId = bcr.INVALID_NET_ID; // My net Id
+    bcr._ownerId = null;
+    bcr._netIdToProfileId = {};
+    bcr._profileIdToNetId = {};
+    bcr._systemCallback = null;
+    bcr._relayCallback = null;
+    bcr._pingIntervalMS = 1000;
+    bcr._pingIntervalId = null;
+    bcr._pingInFlight = false;
+    bcr._pingTime = null;
+    bcr._packetIdPerChannel = [0, 0, 0, 0];
+    bcr.ping = 999;
+
+    bcr.setDebugEnabled = function(debugEnabled) {
+        bcr._debugEnabled = debugEnabled;
+    };
+
+    bcr.getProfileIdForNetId = function(netId) {
+        if (!bcr._netIdToProfileId.hasOwnProperty(netId))
+            return INVALID_PROFILE_ID;
+        return bcr._netIdToProfileId[netId];
+    }
+
+    bcr.getNetIdForProfileId = function(profileId) {
+        if (!bcr._profileIdToNetId.hasOwnProperty(profileId))
+            return bcr.INVALID_NET_ID;
+        return bcr._profileIdToNetId[profileId];
+    }
+
+    bcr.connect = function(options, success, failure) {
+        if (bcr.isConnected) {
+            bcr.disconnect();
+        }
+
+        var ssl = options.ssl ? options.ssl : false;
+        var host = options.host;
+        var port = options.port;
+        var passcode = options.passcode;
+        var lobbyId = options.lobbyId;
+        
+        bcr.isConnected = false;
+        bcr.connectCallback = {
+            success: success,
+            failure: failure
+        }
+        bcr.connectInfo = {
+            passcode: passcode,
+            lobbyId: lobbyId
+        }
+
+        if (!host || !port || !passcode || !lobbyId) {
+            setTimeout(function() {
+                if (bcr.connectCallback.failure) {
+                    bcr.connectCallback.failure("Invalid arguments")
+                }
+            }, 0);
+            return;
+        }
+
+        // build url with auth as arguments
+        var uri = (ssl ? "wss://" : "ws://") + host + ":" + port;
+
+        bcr.socket = new WebSocket(uri);
+        bcr.socket.addEventListener('error', bcr.onSocketError);
+        bcr.socket.addEventListener('close', bcr.onSocketClose);
+        bcr.socket.addEventListener('open', bcr.onSocketOpen);
+        bcr.socket.addEventListener('message', bcr.onSocketMessage);
+    }
+
+    bcr.disconnect = function() {
+        bcr.stopPing();
+        if (bcr.socket) {
+            bcr.socket.removeEventListener('error', bcr.onSocketError);
+            bcr.socket.removeEventListener('close', bcr.onSocketClose);
+            bcr.socket.removeEventListener('open', bcr.onSocketOpen);
+            bcr.socket.removeEventListener('message', bcr.onSocketMessage);
+            bcr.socket.close();
+            bcr.socket = null;
+        }
+        bcr.isConnected = false;
+        bcr._packetIdPerChannel = [0, 0, 0, 0];
+        bcr._netIdToProfileId = {};
+        bcr._profileIdToNetId = {};
+        bcr.ping = 999;    
+    }
+
+    bcr.registerRelayCallback = function(callback) {
+        bcr._relayCallback = callback;
+    }
+    bcr.deregisterRelayCallback = function() {
+        bcr._relayCallback = null;
+    }
+
+    bcr.registerSystemCallback = function(callback) {
+        bcr._systemCallback = callback;
+    }
+    bcr.deregisterSystemCallback = function() {
+        bcr._systemCallback = null;
+    }
+
+    bcr.setPingInterval = function(interval) {
+        bcr._pingIntervalMS = Math.max(1000, interval);
+        if (bcr.isConnected) {
+            bcr.stopPing();
+            bcr.startPing();
+        }
+    }
+
+    bcr.getOwnerProfileId = function() {
+        return bcr._ownerId;
+    }
+
+    bcr.stopPing = function() {
+        if (bcr._pingIntervalId) {
+            clearInterval(bcr._pingIntervalId);
+            bcr._pingIntervalId = null;
+        }
+        bcr._pingInFlight = false;
+    }
+
+    bcr.startPing = function() {
+        bcr.stopPing();
+        bcr._pingIntervalId = setInterval(function() {
+            if (!bcr._pingInFlight) {
+                bcr.sendPing();
+            }
+        }, bcr._pingIntervalMS);
+    }
+
+    bcr.onSocketError = function(e) {
+        bcr.disconnect();
+        if (bcr.connectCallback.failure) {
+            bcr.connectCallback.failure("Relay error: " + e.toString());
+        }
+    }
+
+    bcr.onSocketClose = function(e) {
+        bcr.disconnect();
+        if (bcr.connectCallback.failure) {
+            bcr.connectCallback.failure("Relay Connection closed");
+        }
+    }
+
+    bcr.onSocketOpen = function(e) {
+        // Yay!
+        console.log("Relay WebSocket connection established");
+
+        // Send a connect request
+        var payload = {
+            lobbyId: bcr.connectInfo.lobbyId,
+            profileId: bcr.m_client.getProfileId(),
+            passcode: bcr.connectInfo.passcode
+        };
+
+        bcr.sendJson(bcr.CL2RS_CONNECTION, payload);
+    }
+
+    bcr.onSocketMessage = function(e) {
+        var processResult = function(data) {
+            var buffer = new Buffer(data);
+            if (data.length < 3) {
+                bcr.disconnect();
+                if (bcr.connectCallback.failure) {
+                    bcr.connectCallback.failure("Relay Recv Error: packet cannot be smaller than 3 bytes");
+                }
+                return;
+            }
+            bcr.onRecv(buffer);
+        }
+
+        if (typeof FileReader !== 'undefined') {
+            // Web Browser
+            var reader = new FileReader();
+            reader.onload = function() {
+                processResult(reader.result);
+            }
+            reader.readAsArrayBuffer(e.data);
+        } else {
+            // Node.js
+            processResult(e.data);
+        }
+    }
+
+    bcr.sendJson = function(netId, json) {
+        bcr.sendText(netId, JSON.stringify(json));
+    }
+
+    bcr.sendText = function(netId, text) {
+        var buffer = new Buffer(text.length + 3)
+        buffer.writeUInt16BE(text.length + 3, 0);
+        buffer.writeUInt8(netId, 2);
+        buffer.write(text, 3, text.length);
+        bcr.socket.send(buffer);
+        
+        if (bcr._debugEnabled) {
+            console.log("RELAY SEND: " + text);
+        }
+    }
+
+    bcr.sendRelay = function(data, toNetId, reliable, ordered, channel) {
+        if (!bcr.isConnected) return;
+
+        var buffer = new Buffer(data.length + 5)
+        buffer.writeUInt16BE(data.length + 5, 0)
+        buffer.writeUInt8(toNetId, 2)
+
+        // Relay Header
+        var rh = 0; // 
+        if (reliable) rh |= bcr.RELIABLE_BIT;
+        if (ordered) rh |= bcr.ORDERED_BIT;
+        rh |= channel << 12;
+        rh |= bcr._packetIdPerChannel[channel];
+        bcr._packetIdPerChannel[channel] = (bcr._packetIdPerChannel[channel] + 1) % 0x1000;
+        buffer.writeUInt16BE(rh, 3)
+
+        buffer.set(data, 5)
+        bcr.socket.send(buffer);
+    }
+
+    bcr.sendPing = function() {
+        if (bcr._debugEnabled) {
+            console.log("RELAY SEND PING: " + bcr.ping);
+        }
+        bcr._pingInFlight = true;
+        bcr._pingTime = new Date().getTime();
+
+        var buffer = new Buffer(5)
+        buffer.writeUInt16BE(5, 0);
+        buffer.writeUInt8(bcr.CL2RS_PING, 2);
+        buffer.writeUInt16BE(bcr.ping, 3);
+        bcr.socket.send(buffer);
+    }
+
+    bcr.send = function(netId, data) {
+        var buffer = new Buffer(data.length + 3)
+        buffer.writeUInt16BE(data.length + 3, 0);
+        buffer.writeUInt8(netId, 2);
+        buffer.set(data, 3);
+        bcr.socket.send(buffer);
+    }
+
+    bcr.onRecv = function(buffer) {
+        var size = buffer.readUInt16BE(0);
+        var netId = buffer.readUInt8(2);
+
+        if (netId == bcr.RS2CL_RSMG) {
+            bcr.onRSMG(buffer);
+        }
+        else if (netId == bcr.RS2CL_PONG) {
+            if (bcr._pingInFlight) {
+                bcr._pingInFlight = false;
+                bcr.ping = Math.min(999, new Date().getTime() - bcr._pingTime);
+            }
+            if (bcr._debugEnabled) {
+                console.log("RELAY RECV PONG: " + bcr.ping);
+            }
+        }
+        else if (netId == bcr.RS2CL_ACKNOWLEDGE) {
+            // Not going to happen in JS because we don't use UDP
+            // Ignore, don't throw.
+        }
+        else if (netId < bcr.MAX_PLAYERS) {
+            if (bcr._debugEnabled) {
+                console.log("RELAY RECV from netId: " + netId + " size: " + size);
+            }
+            if (bcr._relayCallback) {
+                bcr._relayCallback(netId, buffer.slice(5));
+            }
+        }
+        else {
+            bcr.disconnect();
+            if (bcr.connectCallback.failure) {
+                bcr.connectCallback.failure("Relay Recv Error: Unknown netId: " + netId);
+            }
+        }
+    }
+
+    bcr.onRSMG = function(buffer) {
+        var str = buffer.slice(5).toString('utf8');
+        if (bcr._debugEnabled) {
+            console.log("RELAY RECV RSMG: " + str);
+        }
+        var json = JSON.parse(str);
+
+        switch (json.op) {
+            case "CONNECT": {
+                bcr._netIdToProfileId[json.netId] = json.profileId;
+                bcr._profileIdToNetId[json.profileId] = json.netId;
+                if (json.profileId == _client.getProfileId()) {
+                    if (!bcr.isConnected) {
+                        bcr._netId = json.netId;
+                        bcr._ownerId = json.ownerId;
+                        bcr.isConnected = true;
+                        bcr.startPing();
+                        if (bcr.connectCallback.success) {
+                            bcr.connectCallback.success(json);
+                        }
+                    }
+                }
+                break;
+            }
+            case "NET_ID": {
+                bcr._netIdToProfileId[json.netId] = json.profileId;
+                bcr._profileIdToNetId[json.profileId] = json.netId;
+                break;
+            }
+            case "MIGRATE_OWNER": {
+                bcr._ownerId = json.profileId;
+                break;
+            }
+        }
+
+        if (bcr._systemCallback) {
+            bcr._systemCallback(json);
+        }
+    }
+}
+
+BrainCloudRelayComms.apply(window.brainCloudRelayComms = window.brainCloudRelayComms || {});
 // if (typeof WebSocket === 'undefined') {
 // 	try {
 // 		WebSocket = require('ws');
@@ -14201,6 +14915,7 @@ function BrainCloudWrapper(wrapperName) {
         bcw.pushNotification = bcw.brainCloudClient.pushNotification;
         bcw.reasonCodes = bcw.brainCloudClient.reasonCodes;
         bcw.redemptionCode = bcw.brainCloudClient.redemptionCode;
+        bcw.relay = bcw.brainCloudClient.relay;
         bcw.rttService = bcw.brainCloudClient.rttService;
         bcw.s3Handling = bcw.brainCloudClient.s3Handling;
         bcw.script = bcw.brainCloudClient.script;
@@ -14259,6 +14974,7 @@ function BrainCloudWrapper(wrapperName) {
     };
 
     bcw._authResponseHandler = function(result) {
+
         if (result.status == 200) {
             var profileId = result.data.profileId;
             bcw.setStoredProfileId(profileId);
@@ -14266,6 +14982,9 @@ function BrainCloudWrapper(wrapperName) {
             var sessionId = result.data.sessionId;
             bcw.setStoredSessionId(sessionId);
         }
+        
+        console.log("PROFILE IDDDDDDDDD");
+        console.log(profileId);
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -14349,7 +15068,8 @@ function BrainCloudWrapper(wrapperName) {
             function(result) {
                 bcw._authResponseHandler(result);
                 responseHandler(result);
-            });
+            }
+            );
     };
 
     /**
@@ -14566,6 +15286,46 @@ function BrainCloudWrapper(wrapperName) {
                 responseHandler(result);
             });
     };
+
+    	/**
+	 * Authenticate the user using a Pase userid and authentication token
+	 *
+	 * Service Name - Authenticate
+	 * Service Operation - Authenticate
+	 *
+	 * @param handoffId braincloud handoff Id generated from cloud script
+	 * @param securityToken The security token entered by the user
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bcw.authenticateHandoff = function(handoffId, securityToken, callback) {
+        bcw.brainCloudClient.authentication.authenticateHandoff(
+			handoffId,
+			securityToken,
+			bc.authentication.AUTHENTICATION_TYPE_HANDOFF,
+			null,
+			false,
+			callback);
+	};
+
+	/**
+	 * Authenticate a user with handoffCode
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+     * @param handoffCode generated via cloudcode
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 */
+	bcw.authenticateSettopHandoff= function(handoffCode, callback) {
+        bcw.brainCloudClient.authentication.authenticateSettopHandoff(
+			handoffCode,
+			"",
+			bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF,
+			null,
+			false,
+			callback);
+	};
 
     /**
      * Smart Switch Authenticate will logout of the current profile, and switch to the new authentication type.
