@@ -534,11 +534,11 @@ module.exports = class Card extends SpriteNode {
         }
         else {
             switch (this._type.Suit) {
-                case "FABLES":
+                case "ROCK":
                     return Resources._sprite_rockCard
-                case "GHOULS":
+                case "PAPER":
                     return Resources._sprite_paperCard
-                case "HUNTERS":
+                case "SCISSOR":
                     return Resources._sprite_scissorsCard
                 case "Spell":
                     return Resources._sprite_spellCard
