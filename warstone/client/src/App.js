@@ -1,11 +1,9 @@
 import React, { Component } from 'react'
 import './App.css'
-import ChooseDeckScreen from './ChooseDeckScreen';
 import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
 import GameScreen from './GameScreen';
-import InventoryScreen from './InventoryScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 import HowToScreen from './HowToScreen';
 
@@ -129,10 +127,6 @@ class App extends Component {
         this.setState({ screen: "chooseDeck" })
     }
 
-    onInventoryClicked() {
-        this.setState({ screen: "inventory" })
-    }
-
     onHowToClicked() {
         this.setState({ screen: "howToPlay" })
     }
@@ -214,8 +208,7 @@ class App extends Component {
                         <div className="App">
                             {this.renderTitle()}
                             <MainMenuScreen user={this.state.user}
-                                onPlay={this.onChooseDeck.bind(this)}//{this.onPlayClicked.bind(this)}
-                                onInventory={this.onInventoryClicked.bind(this)}
+                                onPlay={this.onPlayClicked.bind(this)}
                                 onHowTo={this.onHowToClicked.bind(this)} />
                         </div>
                     )
@@ -252,36 +245,11 @@ class App extends Component {
                         </div>
                     )
                 }
-            case "inventory":
-                {
-                    return (
-                        <div className="App">
-                            {this.renderTitle()}
-                            <InventoryScreen text="INVENTORY"
-                                app={this}
-                                onBack={this.onMainMenu.bind(this)} />
-                        </div>
-                    )
-                }
             case "howToPlay":
                 {
                     return (
                         <div className="App">
                             <HowToScreen onBack={this.onMainMenu.bind(this)} />
-                        </div>
-                    )
-                }
-            case "chooseDeck":
-                {
-                    return (
-                        <div className="App">
-                            {this.renderTitle()}
-                            <ChooseDeckScreen app={this}
-                                onBack={this.onMainMenu.bind(this)}
-                                onPlayGame={this.onPlayClicked.bind(this)}
-                                onDeleteDeck={this.onInventoryClicked.bind(this)}
-                                onEditDeck={this.onInventoryClicked.bind(this)}
-                                onNewDeck={this.onInventoryClicked.bind(this)} />
                         </div>
                     )
                 }
