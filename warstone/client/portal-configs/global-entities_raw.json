@@ -29,7 +29,7 @@
       }
     },
     "entityType" : "abilities",
-    "appId" : "22819",
+    "appId" : "12037",
     "entityId" : "2842cc43-977d-44b7-a292-672b837ef3b3",
     "acl" : {
       "other" : 1
@@ -49,7 +49,7 @@
         "Name" : "Pebble",
         "Art" : "Pebble",
         "Description" : "2x vs Sharp. \nTaunt",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -65,7 +65,7 @@
         "Name" : "Stone",
         "Art" : "Stone",
         "Description" : "2x vs Sharp",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -81,7 +81,7 @@
         "Name" : "Brick",
         "Art" : "Brick",
         "Description" : "2x vs Sharp",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -97,7 +97,7 @@
         "Name" : "Boulder",
         "Art" : "Boulder",
         "Description" : "2x vs Sharp",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -113,7 +113,7 @@
         "Name" : "Mountain",
         "Art" : "Mountain",
         "Description" : "2x vs Sharp",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -129,7 +129,7 @@
         "Name" : "Planet",
         "Art" : "Planet",
         "Description" : "2x vs Sharp",
-        "Suit" : "FABLES",
+        "Suit" : "ROCK",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -145,7 +145,7 @@
         "Name" : "Note",
         "Art" : "Note",
         "Description" : "2x vs Stone. \nAttack on turn played",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 0,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -161,7 +161,7 @@
         "Name" : "Card",
         "Art" : "Card",
         "Description" : "2x vs Stone. \nAttack on turn played",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 0,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -177,7 +177,7 @@
         "Name" : "Letter",
         "Art" : "Letter",
         "Description" : "2x vs Stone. \nAttack on turn played",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 0,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -193,7 +193,7 @@
         "Name" : "Tome",
         "Art" : "Tome",
         "Description" : "2x vs Stone",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -209,7 +209,7 @@
         "Name" : "Bookshelf",
         "Art" : "Bookshelf",
         "Description" : "2x vs Stone",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -225,7 +225,7 @@
         "Name" : "Library",
         "Art" : "Library",
         "Description" : "2x vs Stone",
-        "Suit" : "GHOULS",
+        "Suit" : "PAPER",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -240,8 +240,8 @@
         "isSpell" : false,
         "Name" : "Pin",
         "Art" : "Pin",
-        "Description" : "2x vs GHOULS",
-        "Suit" : "HUNTERS",
+        "Description" : "2x vs Paper",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -254,10 +254,10 @@
       },
       "Scissors7" : {
         "isSpell" : false,
-        "Name" : "HUNTERS",
-        "Art" : "HUNTERS",
-        "Description" : "2x vs GHOULS",
-        "Suit" : "HUNTERS",
+        "Name" : "Scissors",
+        "Art" : "Scissors",
+        "Description" : "2x vs Paper",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -273,7 +273,7 @@
         "Name" : "Razor",
         "Art" : "Razor",
         "Description" : "2x vs Paper. \nTaunt",
-        "Suit" : "HUNTERS",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -288,8 +288,8 @@
         "isSpell" : false,
         "Name" : "Machete",
         "Art" : "Machete",
-        "Description" : "2x vs GHOULS",
-        "Suit" : "HUNTERS",
+        "Description" : "2x vs Paper",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -304,8 +304,8 @@
         "isSpell" : false,
         "Name" : "Zweihander",
         "Art" : "Zweihander",
-        "Description" : "2x vs GHOULS",
-        "Suit" : "HUNTERS",
+        "Description" : "2x vs Paper",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -320,8 +320,8 @@
         "isSpell" : false,
         "Name" : "Guillotine",
         "Art" : "Guillotine",
-        "Description" : "2x vs GHOULS",
-        "Suit" : "HUNTERS",
+        "Description" : "2x vs Paper",
+        "Suit" : "SCISSORS",
         "SleepOnStartTurns" : 1,
         "OnSpawn" : "",
         "DivineShield" : false,
@@ -414,7 +414,7 @@
       }
     },
     "entityType" : "cards",
-    "appId" : "22819",
+    "appId" : "12037",
     "entityId" : "f8f084bb-6dd9-432f-960c-76b2610267cc",
     "acl" : {
       "other" : 1
@@ -485,7 +485,7 @@
       }
     },
     "entityType" : "decks",
-    "appId" : "22819",
+    "appId" : "12037",
     "entityId" : "5c15dd53-d93c-4907-b905-8aa6591ccfc9",
     "acl" : {
       "other" : 1
@@ -502,31 +502,31 @@
     "data" : {
       "PLAIN" : {
         "PLAIN" : 1,
-        "FABLES" : 1,
-        "GHOULS" : 1,
-        "HUNTERS" : 1
+        "ROCK" : 1,
+        "PAPER" : 1,
+        "SCISSORS" : 1
       },
-      "FABLES" : {
+      "ROCK" : {
         "PLAIN" : 1,
-        "FABLES" : 1,
-        "GHOULS" : 1,
-        "HUNTERS" : 2
+        "ROCK" : 1,
+        "PAPER" : 1,
+        "SCISSORS" : 2
       },
-      "GHOULS" : {
+      "PAPER" : {
         "PLAIN" : 1,
-        "FABLES" : 2,
-        "GHOULS" : 1,
-        "HUNTERS" : 1
+        "ROCK" : 2,
+        "PAPER" : 1,
+        "SCISSORS" : 1
       },
-      "HUNTERS" : {
+      "SCISSORS" : {
         "PLAIN" : 1,
-        "FABLES" : 1,
-        "GHOULS" : 2,
-        "HUNTERS" : 1
+        "ROCK" : 1,
+        "PAPER" : 2,
+        "SCISSORS" : 1
       }
     },
     "entityType" : "suits",
-    "appId" : "22819",
+    "appId" : "12037",
     "entityId" : "9db21b9b-55c8-44a9-8bd1-123a61fa36ec",
     "acl" : {
       "other" : 1
