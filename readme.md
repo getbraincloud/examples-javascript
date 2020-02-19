@@ -7,4 +7,5 @@ Examples:
 - [Acey Deucey](AceyDeucey/readme.md) - Simple single player card game example
 - [BCChat](bcchat/readme.md) - RTT chat system example
 - [File Update](FileUploader/readme.md) - Example tool for uploading files to brainCloud
+- [Relay Test App](RelayTestApp/README.md) - Example app using relay server
 - [Warstone](warstone/readme.md) - RTT multiplayer card game example
