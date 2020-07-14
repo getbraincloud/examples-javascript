@@ -20,9 +20,11 @@ function BrainCloudManager ()
     bcm._rewardCallback = null;
     bcm._errorCallback = null;
     bcm._jsonedQueue = "";
-    bcm._idleTimeout = 120;
+    bcm._idleTimeout = 30;
     bcm._heartBeatIntervalId = null;
     bcm._bundlerIntervalId = null;
+    bcm._packetTimeouts = [15, 20, 35, 50];
+    bcm._retry = 0;
 
     bcm._appId = "";
     bcm._secret = "";
@@ -72,6 +74,10 @@ function BrainCloudManager ()
     bcm.setServerUrl = function(serverUrl)
     {
         bcm._serverUrl = serverUrl;
+        if (bcm._serverUrl.endsWith("/dispatcherv2"))
+        {
+            bcm._serverUrl = bcm._serverUrl.substring(0, bcm._serverUrl.length - "/dispatcherv2".length);
+        }
         while (bcm._serverUrl.length > 0 && bcm._serverUrl.charAt(bcm._serverUrl.length - 1) == '/')
         {
             bcm._serverUrl = bcm._serverUrl.substring(0, bcm._serverUrl.length - 1);
@@ -110,6 +116,9 @@ function BrainCloudManager ()
         if(sessionId !== null || sessionId !== "")
         {
             bcm._isAuthenticated = true;
+        }
+        else
+        {
             bcm._packetId = -1; 
         }
         bcm._sessionId = sessionId;
@@ -537,7 +546,7 @@ function BrainCloudManager ()
 
     bcm.retry = function()
     {
-        if (bcm._retry <= 2)
+        if (bcm._retry <= bcm._packetTimeouts.length)
         {
             bcm._retry++;
             bcm.debugLog("Retry # " + bcm._retry.toString(), false);
@@ -548,8 +557,8 @@ function BrainCloudManager ()
             }
             else
             {
-                bcm.debugLog("Waiting for 10 sec...", false);
-                setTimeout(bcm.performQuery, 10000);
+                bcm.debugLog("Waiting for " + bcm._packetTimeouts[bcm._retry - 1] + " sec...", false);
+                setTimeout(bcm.performQuery, bcm._packetTimeouts[bcm._retry - 1] * 1000);
             }
         }
         else
@@ -672,7 +681,7 @@ function BrainCloudManager ()
         }; // end inner function
 
         // Set a timeout. Some implementation doesn't implement the XMLHttpRequest timeout and ontimeout (Including nodejs and chrome!)
-        bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, 15000);
+        bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, bcm._packetTimeouts[0] * 1000);
 
         xmlhttp.open("POST", bcm._dispatcherUrl, true);
         xmlhttp.setRequestHeader("Content-type", "application/json");
@@ -1452,14 +1461,22 @@ function BCAuthentication() {
 	bc.authentication.OPERATION_AUTHENTICATE = "AUTHENTICATE";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD = "RESET_EMAIL_PASSWORD";
 	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED = "RESET_EMAIL_PASSWORD_ADVANCED";
+	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_WITH_EXPIRY = "RESET_EMAIL_PASSWORD_WITH_EXPIRY";
+	bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED_WITH_EXPIRY = "RESET_EMAIL_PASSWORD_ADVANCED_WITH_EXPIRY";
 	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD = "RESET_UNIVERSAL_ID_PASSWORD";
 	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED = "RESET_UNIVERSAL_ID_PASSWORD_ADVANCED";
+	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_WITH_EXPIRY = "RESET_UNIVERSAL_ID_PASSWORD_WITH_EXPIRY";
+	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED_WITH_EXPIRY = "RESET_UNIVERSAL_ID_PASSWORD_ADVANCED_WITH_EXPIRY";
 
 	bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS = "Anonymous";
 	bc.authentication.AUTHENTICATION_TYPE_EMAIL = "Email";
 	bc.authentication.AUTHENTICATION_TYPE_EXTERNAL = "External";
 	bc.authentication.AUTHENTICATION_TYPE_FACEBOOK = "Facebook";
+	bc.authentication.AUTHENTICATION_TYPE_APPLE = "Apple";
 	bc.authentication.AUTHENTICATION_TYPE_GOOGLE = "Google";
+	bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID = "GoogleOpenId";
+	bc.authentication.AUTHENTICATION_TYPE_APPLE = "Apple";
+
 	bc.authentication.AUTHENTICATION_TYPE_UNIVERSAL = "Universal";
 	bc.authentication.AUTHENTICATION_TYPE_GAME_CENTER = "GameCenter";
 	bc.authentication.AUTHENTICATION_TYPE_STEAM = "Steam";
@@ -1627,6 +1644,28 @@ function BCAuthentication() {
 	};
 
 	/**
+	 * Authenticate the user with brainCloud using their Facebook Credentials
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+	 * @param appleId {string} - The Facebook id of the user
+	 * @param appleToken {string} - The validated token from the Facebook SDK
+	 * (that will be further validated when sent to the bC service)
+	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+	 * @param responseHandler {function} - The user callback method
+	 */
+	bc.authentication.authenticateApple = function(appleId, appleToken, forceCreate, responseHandler) {
+		bc.authentication.authenticate(
+			appleId,
+			appleToken,
+			bc.authentication.AUTHENTICATION_TYPE_APPLE,
+			null,
+			forceCreate,
+			responseHandler);
+	};
+
+	/**
 	 * Authenticate the user using their Game Center id
 	 *
 	 * Service Name - authenticationV2
@@ -1648,22 +1687,88 @@ function BCAuthentication() {
 	};
 
 	/**
+     * Authenticate the user using a google user id (email address) and google authentication token.
+     *
+     * Service Name - authenticationV2
+     * Service Operation - AUTHENTICATE
+     *
+     * @param appleUserId {string} - This can be the user id OR the email of the user for the account
+     * @param identityToken {string} - The token confirming the user's identity
+     * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+     * If set to false, you need to handle errors in the case of new users.
+     * @param responseHandler {function} - The user callback method
+     */
+    bc.authentication.authenticateApple = function(appleUserId, identityToken, forceCreate, responseHandler) {
+		bc.authentication.authenticate(
+			appleUserId,
+			identityToken,
+			bc.authentication.AUTHENTICATION_TYPE_APPLE,
+			null,
+			forceCreate,
+			responseHandler);
+    };
+
+	/**
 	 * Authenticate the user using a google user id (email address) and google authentication token.
 	 *
 	 * Service Name - authenticationV2
 	 * Service Operation - AUTHENTICATE
 	 *
-	 * @param googleId {string} - String representation of google+ userid (email)
+	 * @param googleUserId {string} - String representation of google+ userId. Gotten with calls like RequestUserId
+	 * @param serverAuthCode {string} - The server authentication token derived via the google apis. Gotten with calls like RequestServerAuthCode
+	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+	 * If set to false, you need to handle errors in the case of new players.
+	 * @param responseHandler {function} - The user callback method
+	 */
+	bc.authentication.authenticateGoogle = function(googleUserId, serverAuthCode, forceCreate, responseHandler) {
+		bc.authentication.authenticate(
+			googleUserId,
+			serverAuthCode,
+			bc.authentication.AUTHENTICATION_TYPE_GOOGLE,
+			null,
+			forceCreate,
+			responseHandler);
+	};
+
+		/**
+	 * Authenticate the user using a google user id (email address) and google authentication token.
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+	 * @param googleUserAccountEmail {string} - String representation of google+ userid (email)
+	 * @param IdToken {string} - The id token of the google account. Can get with calls like requestIdToken
+	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+	 * If set to false, you need to handle errors in the case of new players.
+	 * @param responseHandler {function} - The user callback method
+	 */
+	bc.authentication.authenticateGoogleOpenId = function(googleUserAccountEmail, IdToken, forceCreate, responseHandler) {
+		bc.authentication.authenticate(
+			googleUserAccountEmail,
+			IdToken,
+			bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
+			null,
+			forceCreate,
+			responseHandler);
+	};
+
+	/**
+	 * Authenticate the user using a google user id (email address) and google authentication token.
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+	 * @param googleOpenId {string} - String representation of google+ userid (email)
 	 * @param googleToken {string} - The authentication token derived via the google apis.
 	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
 	 * If set to false, you need to handle errors in the case of new players.
 	 * @param responseHandler {function} - The user callback method
 	 */
-	bc.authentication.authenticateGoogle = function(googleId, googleToken, forceCreate, responseHandler) {
+	bc.authentication.authenticateGoogleOpenId = function(googleOpenId, googleToken, forceCreate, responseHandler) {
 		bc.authentication.authenticate(
-			googleId,
+			googleOpenId,
 			googleToken,
-			bc.authentication.AUTHENTICATION_TYPE_GOOGLE,
+			bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
 			null,
 			forceCreate,
 			responseHandler);
@@ -1827,6 +1932,81 @@ function BCAuthentication() {
 		};
 		bc.brainCloudManager.sendRequest(request);
 	};
+
+		/**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param tokenTtlInMinutes
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetEmailPasswordWithExpiry = function(email, tokenTtlInMinutes, responseHandler) {
+		var callerCallback = responseHandler;
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_WITH_EXPIRY,
+			data: {
+				gameId: appId,
+				externalId: email,
+				tokenTtlInMinutes:tokenTtlInMinutes
+			},
+			callerCallback: responseHandler,
+			callback: function(result) {
+				if (result && result.status == 200) {
+
+				}
+				if (callerCallback) {
+					callerCallback(result);
+				}
+				//console.log("CallerCallback: " + callerCallback);
+			}
+
+		};
+		//console.log("Request: " + JSON.stringify(request));
+		bc.brainCloudManager.sendRequest(request);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetEmailPasswordAdvancedWithExpiry = function(emailAddress, serviceParams, tokenTtlInMinutes, responseHandler) {
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_EMAIL_PASSWORD_ADVANCED_WITH_EXPIRY,
+			data: {
+                gameId: appId,
+                emailAddress: emailAddress,
+				serviceParams: serviceParams,
+				tokenTtlInMinutes:tokenTtlInMinutes
+            },
+            callback: responseHandler
+		};
+		bc.brainCloudManager.sendRequest(request);
+	};
 	
 		/**
 	 * Reset Universal Id password
@@ -1894,6 +2074,82 @@ function BCAuthentication() {
                 gameId: appId,
                 universalId: universalId,
 				serviceParams: serviceParams
+            },
+            callback: responseHandler
+		};
+		bc.brainCloudManager.sendRequest(request);
+	};
+	
+	/**
+	 * Reset Universal Id password
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetUniversalIdPassord
+	 *
+	 * @param universalId {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 * @param tokenTtlInMinutes
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetUniversalIdPasswordWithExpiry = function(universalId, tokenTtlInMinutes, responseHandler) {
+		var callerCallback = responseHandler;
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD,
+			data: {
+				gameId: appId,
+				universalId: universalId,
+				tokenTtlInMinutes:tokenTtlInMinutes
+			},
+			callerCallback: responseHandler,
+			callback: function(result) {
+				if (result && result.status == 200) {
+
+				}
+				if (callerCallback) {
+					callerCallback(result);
+				}
+				//console.log("CallerCallback: " + callerCallback);
+			}
+
+		};
+		//console.log("Request: " + JSON.stringify(request));
+		bc.brainCloudManager.sendRequest(request);
+    };
+
+	/**
+	 * Reset Universal Id password wth template options
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetUniversalIdPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param universalId {string} - the universalId
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param tokenTtlInMinutes
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bc.authentication.resetUniversalIdPasswordAdvancedWithExpiry = function(universalId, serviceParams, tokenTtlInMinutes, responseHandler) {
+		var appId = bc.brainCloudManager.getAppId();
+
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED,
+			data: {
+                gameId: appId,
+                universalId: universalId,
+				serviceParams: serviceParams,
+				tokenTtlInMinutes: tokenTtlInMinutes
             },
             callback: responseHandler
 		};
@@ -2383,6 +2639,11 @@ function BCCustomEntity() {
 	bc.customEntity.OPERATION_UPDATE_ENTITY= "UPDATE_ENTITY";
 	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS= "UPDATE_ENTITY_FIELDS";
 	bc.customEntity.OPERATION_DELETE_ENTITY = "DELETE_ENTITY";
+	bc.customEntity.OPERATION_DELETE_ENTITIES = "DELETE_ENTITIES";
+	bc.customEntity.OPERATION_DELETE_SINGLETON = "DELETE_SINGLETON";
+	bc.customEntity.OPERATION_READ_SINGLETON = "READ_SINGLETON";
+	bc.customEntity.OPERATION_UPDATE_SINGLETON = "UPDATE_SINGLETON";
+	bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS = "UPDATE_SINGLETON_FIELDS";
 
 	/**
 	 * Creates new custom entity.
@@ -2399,10 +2660,10 @@ function BCCustomEntity() {
 	 * @param callback
 	 *            {function} The callback handler.
 	 */
-	bc.customEntity.createEntity = function(entityType, data, acl, timeToLive, isOwned, callback) {
+	bc.customEntity.createEntity = function(entityType, dataJson, acl, timeToLive, isOwned, callback) {
 		var message = {
 			entityType : entityType,
-			data : data,
+			dataJson : dataJson,
 			timeToLive : timeToLive, 
 			isOwned : isOwned 
 		};
@@ -2648,6 +2909,153 @@ function BCCustomEntity() {
 			callback : callback
 		});
 	};
+
+/**
+*deletes entities based on the delete criteria.
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param deleteCriteria
+* 			  {json} delte criteria
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.deleteEntities = function(entityType, deleteCriteria, callback) {
+	var message = {
+		entityType : entityType,
+		deleteCriteria : deleteCriteria
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_DELETE_ENTITIES,
+		data : message,
+		callback : callback
+	});
+};
+
+/**
+*
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param version
+* 			  
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.deleteSingleton = function(entityType, version, callback) {
+	var message = {
+		entityType : entityType,
+		version : version
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_DELETE_SINGLETON,
+		data : message,
+		callback : callback
+	});
+};
+
+/**
+*
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.readSingleton = function(entityType, callback) {
+	var message = {
+		entityType : entityType
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_READ_SINGLETON,
+		data : message,
+		callback : callback
+	});
+};
+
+/**
+*
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param version
+* 			  
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.updateSingleton = function(entityType, version, dataJson, acl, timeToLive, callback) {
+	var message = {
+		entityType : entityType,
+		version : version,
+		dataJson : dataJson,
+		acl : acl,
+		timeToLive: timeToLive
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_UPDATE_SINGLETON,
+		data : message,
+		callback : callback
+	});
+};
+
+/**
+*
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param version
+* 			  
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.updateSingletonFields = function(entityType, version, fieldsJson, callback) {
+	var message = {
+		entityType : entityType,
+		version : version,
+		fieldsJson : fieldsJson
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS,
+		data : message,
+		callback : callback
+	});
+};
+
+/**
+*
+* 
+* @param entityType
+*            {string} The entity type as defined by the user
+* @param version
+* 			  
+* @param callback
+*            {function} The callback handler.
+*/
+bc.customEntity.incrementData = function(entityType, entityId, fieldsJson, callback) {
+	var message = {
+		entityType : entityType,
+		entityId : entityId,
+		fieldsJson : fieldsJson
+	};
+
+	bc.brainCloudManager.sendRequest({
+		service : bc.SERVICE_CUSTOM_ENTITY,
+		operation : bc.customEntity.OPERATION_INCREMENT_DATA,
+		data : message,
+		callback : callback
+	});
+};
+
 
 	/**
 	 *Deletes the specified custom entity on the server.
@@ -4601,6 +5009,106 @@ function BCGlobalApp() {
 }
 
 BCGlobalApp.apply(window.brainCloudClient = window.brainCloudClient || {});
+
+function BCGlobalFile() {
+    var bc = this;
+
+	bc.globalFile = {};
+
+	bc.SERVICE_GLOBAL_FILE = "globalFileV3";
+
+	bc.globalFile.OPERATION_GET_FILE_INFO = "GET_FILE_INFO";
+	bc.globalFile.OPERATION_GET_FILE_INFO_SIMPLE = "GET_FILE_INFO_SIMPLE";
+	bc.globalFile.OPERATION_GET_GLOBAL_CDN_URL = "GET_GLOBAL_CDN_URL";
+	bc.globalFile.OPERATION_GET_GLOBAL_FILE_LIST = "GET_GLOBAL_FILE_LIST";
+
+	/**
+	 * Returns information on a file using fileId.
+	 *
+	 * Service Name - GlobalFile
+	 * Service Operation - GET_FILE_INFO
+	 *
+	 * @param fileId The Id of the file
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.globalFile.getFileInfo = function(fileId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GLOBAL_FILE,
+			operation : bc.globalFile.OPERATION_GET_FILE_INFO,
+			data : {
+				fileId : fileId
+			},
+			callback : callback
+		});
+	};
+
+	/**
+	 * Returns information on a file using path and name.
+	 *
+	 * Service Name - GlobalFile
+	 * Service Operation - GET_FILE_INFO_SIMPLE
+	 *
+	 * @param folderPath The folder path of the file
+	 * @param filename the name of the file being searched
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.globalFile.getFileInfoSimple = function(folderPath, filename, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GLOBAL_FILE,
+			operation : bc.globalFile.OPERATION_GET_FILE_INFO_SIMPLE,
+			data : {
+				folderPath : folderPath,
+				filename : filename
+			},
+			callback : callback
+		});
+	};
+
+	/**
+	 * Returns information on a file using path and name.
+	 *
+	 * Service Name - GlobalFile
+	 * Service Operation - GET_GLOBAL_CDN_URL
+	 *
+	 * @param fileId The Id of the file
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.globalFile.getGlobalCDNUrl = function(fileId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GLOBAL_FILE,
+			operation : bc.globalFile.OPERATION_GET_GLOBAL_CDN_URL,
+			data : {
+				fileId : fileId
+			},
+			callback : callback
+		});
+	};
+
+	/**
+	 * Returns information on a file using path and name.
+	 *
+	 * Service Name - GlobalFile
+	 * Service Operation - GET_GLOBAL_CDN_URL
+	 *
+	 * @param folderPath The folder path of the file
+	 * @param recurse Does it recurse?
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.globalFile.getGlobalFileList = function(folderPath, recurse, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_GLOBAL_FILE,
+			operation : bc.globalFile.OPERATION_GET_GLOBAL_FILE_LIST,
+			data : {
+				folderPath : folderPath,
+				recurse : recurse
+			},
+			callback : callback
+		});
+	};
+
+}
+
+BCGlobalFile.apply(window.brainCloudClient = window.brainCloudClient || {});
 /**
  * @status - incomplete - see STUB
  */
@@ -6274,7 +6782,9 @@ function BCIdentity() {
 		steam : "Steam",
 		blockChain : "BlockChain",
 		google : "Google",
+		googleOpenId : "GoogleOpenId",
 		twitter : "Twitter",
+		twitter : "Apple",
 		parse : "Parse",
 		external : "External",
 		unknown : "UNKNOWN"
@@ -6598,6 +7108,118 @@ function BCIdentity() {
 	 */
 	bc.identity.detachGoogleIdentity = function(googleId, continueAnon, callback) {
 		bc.identity.detachIdentity(googleId, bc.authentication.AUTHENTICATION_TYPE_GOOGLE, continueAnon, callback);
+	};
+
+	/**
+	 * Attach the user's Google credentials to the current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Attach
+	 *
+	 * @param googleOpenId The Google id of the user
+	 * @param authenticationToken The validated token from the Google SDK
+	 *   (that will be further validated when sent to the bC service)
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 * Errors to watch for:  SWITCHING_PROFILES - this means that the Google identity you provided
+	 * already points to a different profile.  You will likely want to offer the player the
+	 * choice to *SWITCH* to that profile, or *MERGE* the profiles.
+	 *
+	 * To switch profiles, call ClearSavedProfileID() and call AuthenticateGoogle().
+	 */
+	bc.identity.attachGoogleOpenIdIdentity = function(googleOpenId, authenticationToken, callback) {
+		bc.identity.attachIdentity(googleOpenId, authenticationToken, bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID, callback);
+	};
+
+	/**
+	 * Merge the profile associated with the provided Google credentials with the
+	 * current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Merge
+	 *
+	 * @param googleOpenId The Google id of the user
+	 * @param authenticationToken The validated token from the Google SDK
+	 *   (that will be further validated when sent to the bC service)
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 */
+	bc.identity.mergeGoogleIdentity = function(googleOpenId, authenticationToken, callback) {
+		bc.identity.mergeIdentity(googleOpenId, authenticationToken, bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID, callback);
+	};
+
+	/**
+	 * Detach the Google identity from this profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Detach
+	 *
+	 * @param googleOpenId The Google id of the user
+	 * @param continueAnon Proceed even if the profile will revert to anonymous?
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 * Watch for DOWNGRADING_TO_ANONYMOUS_ERROR - occurs if you set continueAnon to false, and
+	 * disconnecting this identity would result in the profile being anonymous (which means that
+	 * the profile wouldn't be retrievable if the user loses their device)
+	 */
+	bc.identity.detachGoogleIdentity = function(googleOpenId, continueAnon, callback) {
+		bc.identity.detachIdentity(googleOpenId, bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID, continueAnon, callback);
+	};
+
+		/**
+	 * Attach the user's Google credentials to the current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Attach
+	 *
+	 * @param appleId The Google id of the user
+	 * @param authenticationToken The validated token from the Google SDK
+	 *   (that will be further validated when sent to the bC service)
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 * Errors to watch for:  SWITCHING_PROFILES - this means that the Google identity you provided
+	 * already points to a different profile.  You will likely want to offer the player the
+	 * choice to *SWITCH* to that profile, or *MERGE* the profiles.
+	 *
+	 * To switch profiles, call ClearSavedProfileID() and call AuthenticateGoogle().
+	 */
+	bc.identity.attachAppleIdentity = function(appleId, authenticationToken, callback) {
+		bc.identity.attachIdentity(appleId, authenticationToken, bc.authentication.AUTHENTICATION_TYPE_APPLE, callback);
+	};
+
+	/**
+	 * Merge the profile associated with the provided Google credentials with the
+	 * current profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Merge
+	 *
+	 * @param appleId The Google id of the user
+	 * @param authenticationToken The validated token from the Google SDK
+	 *   (that will be further validated when sent to the bC service)
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 */
+	bc.identity.mergeAppleIdentity = function(appleId, authenticationToken, callback) {
+		bc.identity.mergeIdentity(appleId, authenticationToken, bc.authentication.AUTHENTICATION_TYPE_APPLE, callback);
+	};
+
+	/**
+	 * Detach the Google identity from this profile.
+	 *
+	 * Service Name - Identity
+	 * Service Operation - Detach
+	 *
+	 * @param appleId The Google id of the user
+	 * @param continueAnon Proceed even if the profile will revert to anonymous?
+	 * @param callback The method to be invoked when the server response is received
+	 *
+	 * Watch for DOWNGRADING_TO_ANONYMOUS_ERROR - occurs if you set continueAnon to false, and
+	 * disconnecting this identity would result in the profile being anonymous (which means that
+	 * the profile wouldn't be retrievable if the user loses their device)
+	 */
+	bc.identity.detachAppleIdentity = function(appleId, continueAnon, callback) {
+		bc.identity.detachIdentity(appleId, bc.authentication.AUTHENTICATION_TYPE_APPLE, continueAnon, callback);
 	};
 
 	/**
@@ -8942,6 +9564,9 @@ function BCPlayerState() {
 	bc.playerState.OPERATION_GET_USER_STATUS = "GET_USER_STATUS";
 	bc.playerState.OPERATION_SET_USER_STATUS = "SET_USER_STATUS";
 
+	bc.playerState.OPERATION_UPDATE_TIME_ZONE_OFFSET = "UPDATE_TIMEZONE_OFFSET";
+	bc.playerState.OPERATION_UPDATE_LANGUAGE_CODE = "UPDATE_LANGUAGE_CODE";
+
 	/**
 	 * @deprecated Use deleteUser instead - Removal after September 1 2017
 	 */
@@ -9063,6 +9688,46 @@ function BCPlayerState() {
 			operation : bc.playerState.REMOVE_ATTRIBUTES,
 			data : {
 				attributes : attributes
+			},
+			callback : callback
+		});
+	};
+
+	/**
+	 * Remove user's attributes.
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - RemoveAttributes
+	 *
+	 * @param timeZoneOffset Json array of attribute names.
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.updateTimeZoneOffset = function(timeZoneOffset, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_PLAYERSTATE,
+			operation : bc.playerState.OPERATION_UPDATE_TIME_ZONE_OFFSET,
+			data : {
+				timeZoneOffset : timeZoneOffset
+			},
+			callback : callback
+		});
+	};
+
+	/**
+	 * Remove user's attributes.
+	 *
+	 * Service Name - PlayerState
+	 * Service Operation - RemoveAttributes
+	 *
+	 * @param languageCode Json array of attribute names.
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.playerState.updateLanguageCode = function(languageCode, callback) {
+		bc.brainCloudManager.sendRequest({
+			service : bc.SERVICE_PLAYERSTATE,
+			operation : bc.playerState.OPERATION_UPDATE_LANGUAGE_CODE,
+			data : {
+				languageCode : languageCode
 			},
 			callback : callback
 		});
@@ -11358,7 +12023,9 @@ function BCReasonCodes() {
     bc.reasonCodes.RTT_ROOM_CANCELLED = 80102;
     bc.reasonCodes.RTT_ERROR_ASSIGNING_ROOM = 80103;
     bc.reasonCodes.RTT_ERROR_LAUNCHING_ROOM = 80104;
+    bc.reasonCodes.RTT_BY_REQUEST = 80105;
     bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
+    bc.reasonCodes.RTT_FIND_REQUEST_CANCELLED = 80201;
     bc.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT = 90001;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_CANCELLED = 90100;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_TIMED_OUT = 90101;
@@ -11848,6 +12515,8 @@ function BCScript() {
 	bc.script.OPERATION_SCHEDULE_CLOUD_SCRIPT = "SCHEDULE_CLOUD_SCRIPT";
 	bc.script.OPERATION_RUN_PARENT_SCRIPT = "RUN_PARENT_SCRIPT";
 	bc.script.OPERATION_CANCEL_SCHEDULED_SCRIPT = "CANCEL_SCHEDULED_SCRIPT";
+	bc.script.OPERATION_GET_SCHEDULED_CLOUD_SCRIPTS = "GET_SCHEDULED_CLOUD_SCRIPTS";
+	bc.script.OPERATION_GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS = "GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS";
 	bc.script.OPERATION_RUN_PEER_SCRIPT = "RUN_PEER_SCRIPT";
 	bc.script.OPERATION_RUN_PEER_SCRIPT_ASYNC = "RUN_PEER_SCRIPT_ASYNC";
 
@@ -11895,6 +12564,31 @@ function BCScript() {
 				scriptName: scriptName,
 				scriptData: scriptData,
 				startDateUTC: startDateInUTC.getTime()
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param scriptName The name of the script to be run
+	 * @param scriptData Data to be sent to the script in json format
+	 * @param startDateInUTC A 64 bit number representing the time and date to run the script
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.scheduleRunScriptMillisUTC = function(scriptName, scriptData, startDateInUTC, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_SCHEDULE_CLOUD_SCRIPT,
+			data: {
+				scriptName: scriptName,
+				scriptData: scriptData,
+				startDateUTC: startDateInUTC
 			},
 			callback: callback
 		});
@@ -11965,6 +12659,44 @@ function BCScript() {
 			operation: bc.script.OPERATION_CANCEL_SCHEDULED_SCRIPT,
 			data: {
 				jobId: jobId
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.getRunningOrQueuedCloudScripts = function(callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS,
+			callback: callback
+		});
+	};
+
+		/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param startDateInUTC A date Object representing the time and date to run the script
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.getScheduledCloudScripts = function(startDateInUTC, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_GET_SCHEDULED_CLOUD_SCRIPTS,
+			data: {
+				startDateUTC: startDateInUTC.getTime()
 			},
 			callback: callback
 		});
@@ -12826,6 +13558,28 @@ function BCStatusCodes() {
 }
 
 BCStatusCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
+
+function BCTimeUtils() {
+    var bc = this;
+
+    bc.timeUtils = {};
+
+    bc.timeUtils.UTCDateTimeToUTCMillis = function(utcDate) {
+        return utcDate.getTime(); // return the utc milliseconds
+    };
+
+    bc.timeUtils.UTCMillisToUTCDateTime = function(utcMillis) {
+        //var date = new Date(0); // The 0 sets the date to the epoch
+        //return date.setUTCSeconds(utcSeconds); //add the seconds to the date
+        return new Date(utcMillis);
+    };
+
+    //redundant calls in JS that will simply return that which they pass in. Here to note that these calls are in the other libs.
+    //Date LocalTimeToUTCTime(Date localDate)
+    //Date UTCTimeToLocalTime (Date utcDate)
+
+}
+BCTimeUtils.apply(window.brainCloudClient = window.brainCloudClient || {});
 
 function BCTime() {
     var bc = this;
@@ -13825,7 +14579,10 @@ function BrainCloudClient() {
         BCStatusCodes.apply(bcc);
         BCTime.apply(bcc);
         BCTournament.apply(bcc);
+        BCGlobalFile.apply(bcc);
         BCCustomEntity.apply(bcc);
+
+        BCTimeUtils.apply(bcc);
 
         bcc.brainCloudManager = new BrainCloudManager();
         bcc.brainCloudRttComms = new BrainCloudRttComms(this);
@@ -13871,10 +14628,12 @@ function BrainCloudClient() {
         bcc.brainCloudManager.statusCodes = bcc.statusCodes;
         bcc.brainCloudManager.time = bcc.time;
         bcc.brainCloudManager.tournament = bcc.tournament;
+        bcc.brainCloudManager.globalFile = bcc.globalFile;
         bcc.brainCloudManager.itemCatalog = bcc.itemCatalog;
         bcc.brainCloudManager.userItems = bcc.userItems;
         bcc.brainCloudManager.customEntity = bcc.customEntity;
-
+        bcc.brainCloudManager.timeUtils = bcc.timeUtils;
+        
         bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
         bcc.brainCloudRelayComms.brainCloudClient = bcc;
@@ -13926,9 +14685,11 @@ function BrainCloudClient() {
         bcc.brainCloudManager.statusCodes = bcc.brainCloudClient.statusCodes = bcc.brainCloudClient.statusCodes || {};
         bcc.brainCloudManager.time = bcc.brainCloudClient.time = bcc.brainCloudClient.time || {};
         bcc.brainCloudManager.tournament = bcc.brainCloudClient.tournament = bcc.brainCloudClient.tournament || {};
+        bcc.brainCloudManager.globalFile = bcc.brainCloudClient.globalFile = bcc.brainCloudClient.globalFile || {};
         bcc.brainCloudManager.itemCatalog = bcc.brainCloudClient.itemCatalog = bcc.brainCloudClient.itemCatalog || {};
         bcc.brainCloudManager.userItems = bcc.brainCloudClient.userItems = bcc.brainCloudClient.userItems || {};
         bcc.brainCloudManager.customEntity = bcc.brainCloudClient.customEntity = bcc.brainCloudClient.customEntity || {};
+        bcc.brainCloudManager.timeUtils = bcc.brainCloudClient.timeUtils = bcc.brainCloudClient.timeUtils || {};
 
         bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
@@ -13936,7 +14697,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.3.6";
+    bcc.version = "4.5.5";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -14490,6 +15251,21 @@ function BrainCloudRelayComms(_client) {
     }
 
     bcr.send = function(netId, data) {
+        if (!((netId < MAX_PLAYERS && netId >= 0) || netId == bc.relay.TO_ALL_PLAYERS))
+        {
+            if (bcr.connectCallback.failure) {
+                bcr.connectCallback.failure("Relay Error: Invalid NetId " + netId);
+            }
+            return;
+        }
+        if (data.length > 1024)
+        {
+            if (bcr.connectCallback.failure) {
+                bcr.connectCallback.failure("Relay Error: Packet too big " + data.length + " > max 1024");
+            }
+            return;
+        }
+
         var buffer = new Buffer(data.length + 3)
         buffer.writeUInt16BE(data.length + 3, 0);
         buffer.writeUInt8(netId, 2);
@@ -14923,9 +15699,11 @@ function BrainCloudWrapper(wrapperName) {
         bcw.statusCodes = bcw.brainCloudClient.statusCodes;
         bcw.time = bcw.brainCloudClient.time;
         bcw.tournament = bcw.brainCloudClient.tournament;
+        bcw.globalFile = bcw.brainCloudClient.globalFile;
         bcw.itemCatalog = bcw.brainCloudClient.itemCatalog;
         bcw.userItems = bcw.brainCloudClient.userItems;
         bcw.customEntity = bcw.brainCloudClient.customEntity;
+        bcw.timeUtils = bcw.brainCloudClient.timeUtils;
 
         bcw.brainCloudManager = bcw.brainCloudClient.brainCloudManager = bcw.brainCloudClient.brainCloudManager || {};
 
@@ -15185,25 +15963,78 @@ function BrainCloudWrapper(wrapperName) {
      * Service Name - authenticationV2
      * Service Operation - AUTHENTICATE
      *
-     * @param googleId {string} - String representation of google+ userid (email)
-     * @param googleToken {string} - The authentication token derived via the google apis.
+     * @param appleUserId {string} - This can be the user id OR the email of the user for the account
+     * @param identityToken {string} - The token confirming the user's identity
      * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
      * If set to false, you need to handle errors in the case of new users.
      * @param responseHandler {function} - The user callback method
      */
-    bcw.authenticateGoogle = function(googleId, googleToken, forceCreate, responseHandler) {
+    bcw.authenticateApple = function(appleUserId, identityToken, forceCreate, responseHandler) {
 
         bcw._initializeIdentity(false);
 
-        bcw.brainCloudClient.authentication.authenticateGoogle(
-            googleId,
-            googleToken,
+        bcw.brainCloudClient.authentication.authenticateApple(
+            appleUserId,
+            identityToken,
             forceCreate,
             function(result) {
                 bcw._authResponseHandler(result);
                 responseHandler(result);
             });
     };
+
+    /**
+     * Authenticate the user using a google user id (email address) and google authentication token.
+     *
+     * Service Name - authenticationV2
+     * Service Operation - AUTHENTICATE
+     *
+     * @param googleUserId {string} - String representation of google+ userId. Gotten with calls like RequestUserId
+     * @param serverAuthCode {string} - The server authentication token derived via the google apis. Gotten with calls like RequestServerAuthCode
+     * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+     * If set to false, you need to handle errors in the case of new users.
+     * @param responseHandler {function} - The user callback method
+     */
+    bcw.authenticateGoogle = function(googleUserId, serverAuthCode, forceCreate, responseHandler) {
+
+        bcw._initializeIdentity(false);
+
+        bcw.brainCloudClient.authentication.authenticateGoogle(
+            googleUserId,
+            serverAuthCode,
+            forceCreate,
+            function(result) {
+                bcw._authResponseHandler(result);
+                responseHandler(result);
+            });
+    };
+
+    
+	/**
+	 * Authenticate the user using a google user id (email address) and google authentication token.
+	 *
+	 * Service Name - authenticationV2
+	 * Service Operation - AUTHENTICATE
+	 *
+	 * @param googleUserAccountEmail {string} - String representation of google+ userid (email)
+	 * @param IdToken {string} - The id token of the google account. Can get with calls like requestIdToken
+	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+	 * If set to false, you need to handle errors in the case of new players.
+	 * @param responseHandler {function} - The user callback method
+	 */
+	bcw.authenticateGoogleOpenId = function(googleUserAccountEmail, IdToken, forceCreate, responseHandler) {
+        
+        bcw._initializeIdentity(false);
+
+        bcw.brainCloudClient.authentication.authenticateGoogleOpenId(
+            googleUserAccountEmail,
+            IdToken,
+            forceCreate,
+            function(result) {
+                bcw._authResponseHandler(result);
+                responseHandler(result);
+            });
+	};
 
 
     /**
@@ -15682,6 +16513,45 @@ function BrainCloudWrapper(wrapperName) {
         bcw.brainCloudClient.authentication.resetEmailPasswordAdvanced(emailAddress, serviceParams, responseHandler);
     };
 
+    	/**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+     * @param tokenTtlInMinutes
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPasswordWithExpiry = function(email, tokenTtlInMinutes,responseHandler) {
+		bcw.brainCloudClient.authentication.resetEmailPasswordWithExpiry(email, tokenTtlInMinutes, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+     *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+     * @param tokenTtlInMinutes
+ 	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetEmailPasswordAdvancedWithExpiry = function(emailAddress, serviceParams, tokenTtlInMinutes, responseHandler) {
+        bcw.brainCloudClient.authentication.resetEmailPasswordAdvancedWithExpiry(emailAddress, serviceParams, tokenTtlInMinutes, responseHandler);
+    };
+
     /** Method authenticates the user using universal credentials
      *
      * @param responseHandler {function} - The user callback method
@@ -15690,6 +16560,90 @@ function BrainCloudWrapper(wrapperName) {
         bcw.authenticateAnonymous(responseHandler);
     };
     
+    /**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetUniversalIdPassword = function(universalId, responseHandler) {
+		bcw.brainCloudClient.authentication.resetUniversalIdPassword(universalId, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+	 *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetUniversalIdPasswordAdvanced = function(universalId, serviceParams, responseHandler) {
+        bcw.brainCloudClient.authentication.resetUniversalIdPasswordAdvanced(universalId, serviceParams, responseHandler);
+    };
+
+    /**
+	 * Reset Email password - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPassword
+	 *
+	 * @param email {string} - The email address to send the reset email to.
+	 * @param responseHandler {function} - The user callback method
+     * @param tokenTtlInMinutes
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetUniversalIdPasswordWithExpiry = function(universalId, tokenTtlInMinutes,responseHandler) {
+		bcw.brainCloudClient.authentication.resetUniversalIdPasswordWithExpiry(universalId, tokenTtlInMinutes, responseHandler);
+    };
+
+	/**
+	 * Reset Email password with service parameters - sends a password reset email to the specified address
+	 *
+	 * Service Name - authenticationV2
+	 * Operation - ResetEmailPasswordAdvanced
+	 *
+     * @param appId {string} - The application Id
+	 * @param email {string} - The email address to send the reset email to.
+     * @param serviceParams {json} - Parameters to send to the email service. See the documentation for
+     *	a full list. http://getbraincloud.com/apidocs/apiref/#capi-mail
+     * @param tokenTtlInMinutes
+ 	 * @param responseHandler {function} - The user callback method
+	 *
+	 * Note the follow error reason codes:
+	 *
+	 * SECURITY_ERROR (40209) - If the email address cannot be found.
+	 */
+	bcw.resetUniversalIdPasswordAdvancedWithExpiry = function(universalId, serviceParams, tokenTtlInMinutes, responseHandler) {
+        bcw.brainCloudClient.authentication.resetUniversalIdPasswordAdvancedWithExpiry(universalId, serviceParams, tokenTtlInMinutes, responseHandler);
+    };
+
+    /** Method authenticates the user using universal credentials
+     *
+     * @param responseHandler {function} - The user callback method
+     */
+    bcw.reconnect = function(responseHandler) {
+        bcw.authenticateAnonymous(responseHandler);
+    };
+
     /**
      * Attempt to restore the session based on saved information in cookies.
      * This will failed in the session is expired. It's intended to be able to
