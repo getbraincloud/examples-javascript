@@ -10,6 +10,8 @@ function BCScript() {
 	bc.script.OPERATION_SCHEDULE_CLOUD_SCRIPT = "SCHEDULE_CLOUD_SCRIPT";
 	bc.script.OPERATION_RUN_PARENT_SCRIPT = "RUN_PARENT_SCRIPT";
 	bc.script.OPERATION_CANCEL_SCHEDULED_SCRIPT = "CANCEL_SCHEDULED_SCRIPT";
+	bc.script.OPERATION_GET_SCHEDULED_CLOUD_SCRIPTS = "GET_SCHEDULED_CLOUD_SCRIPTS";
+	bc.script.OPERATION_GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS = "GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS";
 	bc.script.OPERATION_RUN_PEER_SCRIPT = "RUN_PEER_SCRIPT";
 	bc.script.OPERATION_RUN_PEER_SCRIPT_ASYNC = "RUN_PEER_SCRIPT_ASYNC";
 
@@ -57,6 +59,31 @@ function BCScript() {
 				scriptName: scriptName,
 				scriptData: scriptData,
 				startDateUTC: startDateInUTC.getTime()
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param scriptName The name of the script to be run
+	 * @param scriptData Data to be sent to the script in json format
+	 * @param startDateInUTC A 64 bit number representing the time and date to run the script
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.scheduleRunScriptMillisUTC = function(scriptName, scriptData, startDateInUTC, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_SCHEDULE_CLOUD_SCRIPT,
+			data: {
+				scriptName: scriptName,
+				scriptData: scriptData,
+				startDateUTC: startDateInUTC
 			},
 			callback: callback
 		});
@@ -127,6 +154,44 @@ function BCScript() {
 			operation: bc.script.OPERATION_CANCEL_SCHEDULED_SCRIPT,
 			data: {
 				jobId: jobId
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.getRunningOrQueuedCloudScripts = function(callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_GET_RUNNING_OR_QUEUED_CLOUD_SCRIPTS,
+			callback: callback
+		});
+	};
+
+		/**
+	 * Allows cloud script executions to be scheduled
+	 *
+	 * Service Name - Script
+	 * Service Operation - ScheduleCloudScript
+	 *
+	 * @param startDateInUTC A date Object representing the time and date to run the script
+	 * @param callback The method to be invoked when the server response is received
+	 * @see The API documentation site for more details on cloud code
+	 */
+	bc.script.getScheduledCloudScripts = function(startDateInUTC, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_SCRIPT,
+			operation: bc.script.OPERATION_GET_SCHEDULED_CLOUD_SCRIPTS,
+			data: {
+				startDateUTC: startDateInUTC.getTime()
 			},
 			callback: callback
 		});
