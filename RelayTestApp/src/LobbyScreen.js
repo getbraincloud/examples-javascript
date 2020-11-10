@@ -20,7 +20,7 @@ class LobbyScreen extends Component
     onColorSelected(index)
     {
         this.props.user.colorIndex = index
-        let me = this.props.lobby.members.find(member => member.profileId == this.props.user.id)
+        let me = this.props.lobby.members.find(member => member.profileId === this.props.user.id)
         if (me)
         {
             me.extra.colorIndex = index
@@ -44,7 +44,7 @@ class LobbyScreen extends Component
                 }
                 </ul>
                 {
-                    this.props.lobby.owner == this.props.user.id && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
+                    this.props.lobby.owner === this.props.user.id && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
                 }
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave</button>
             </div>

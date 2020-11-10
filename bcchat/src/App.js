@@ -246,12 +246,12 @@ class App extends Component
                         let state = this.state;
                         state.user.pic = file.downloadUrl;
                         this.setState(state);
-                        this.bcWrapper.playerState.updatePlayerPictureUrl(file.downloadUrl, result =>
+                        this.bcWrapper.playerState.updateUserPictureUrl(file.downloadUrl, result =>
                         {
                             console.log(JSON.stringify(result));
                             if (result.status !== 200)
                             {
-                                this.dieWithMessage("Failed to updatePlayerPictureUrl");
+                                this.dieWithMessage("Failed to updateUserPictureUrl");
                                 return;
                             }
                         });

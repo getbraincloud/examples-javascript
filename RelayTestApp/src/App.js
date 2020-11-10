@@ -45,7 +45,11 @@ class App extends Component
             user: null,         // Our user
             lobby: null,        // Lobby with its members as received from brainCloud Lobby Service
             server: null,       // Server info (IP, port, protocol, passcode)
-            shockwaves: []      // Players' created shockwaves
+            shockwaves: [],     // Players' created shockwaves
+            relayOptions: {
+                reliable: false,
+                ordered: true
+            }
         }
     }
 
@@ -130,7 +134,7 @@ class App extends Component
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
             // Find or create a lobby
-            this.bc.lobby.findOrCreateLobby("CursorParty", 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+            this.bc.lobby.findOrCreateLobby("CursorPartyV2", 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
             {
                 if (result.status !== 200)
                 {
@@ -170,7 +174,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code == this.bc.reasonCodes.RTT_ROOM_READY)
+            if (result.data.reason.code === this.bc.reasonCodes.RTT_ROOM_READY)
             {
                 // Server has been created. Connect to it
                 this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
@@ -183,7 +187,10 @@ class App extends Component
                     lobbyId: this.state.server.lobbyId
                 }, result =>
                 {
-                    this.setState({ screen: "game" })
+                    let state = this.state
+                    state.lobby.members.forEach(member => member.allowSendTo = (member.profileId !== state.user.id))
+                    state.screen = "game"
+                    this.setState(state)
                 }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
             }
             else
@@ -192,16 +199,43 @@ class App extends Component
                 this.onGameScreenClose()
             }
         }
-        else if (result.operation == "STARTING")
+        else if (result.operation === "STARTING")
         {
             // Game is starting, show loading screen
             this.setState({ screen: "connecting" })
         }
-        else if (result.operation == "ROOM_READY")
+        else if (result.operation === "ROOM_READY")
         {
             // Server has been created, save connection info.
             this.setState({ server: result.data })
         }
+    }
+
+    // Gameplay option toggles
+    onToggleReliable()
+    {
+        let state = this.state
+        state.relayOptions.reliable = !state.relayOptions.reliable
+        this.setState(state)
+    }
+
+    onToggleOrdered()
+    {
+        let state = this.state
+        state.relayOptions.ordered = !state.relayOptions.ordered
+        this.setState(state)
+    }
+
+    onTogglePlayerMask(profileId)
+    {
+        let state = this.state
+        let member = state.lobby.members.find(member => member.profileId === profileId)
+        if (member)
+        {
+            member.allowSendTo = !member.allowSendTo
+        }
+        console.log("poop: " + profileId + " = " + member.allowSendTo)
+        this.setState(state)
     }
 
     // Called to terminate the current session and go back to the main menu
@@ -225,7 +259,7 @@ class App extends Component
     onColorChanged(colorIndex)
     {
         let state = this.state
-        this.state.user.colorIndex = colorIndex
+        state.user.colorIndex = colorIndex
         this.setState(state)
 
         // Update the extra information for our player so other lobby members are notified of
@@ -237,7 +271,7 @@ class App extends Component
     onStart()
     {
         let state = this.state
-        this.state.user.isReady = true
+        state.user.isReady = true
         this.setState(state)
 
         // Set our state to ready and notify the lobby Service.
@@ -249,7 +283,7 @@ class App extends Component
     {
         let state = this.state;
         let memberProfileId = this.bc.relay.getProfileIdForNetId(netId)
-        let member = state.lobby.members.find(member => member.profileId == memberProfileId)
+        let member = state.lobby.members.find(member => member.profileId === memberProfileId)
         let str = data.toString('ascii');
         console.log(str)
         let json = JSON.parse(str)
@@ -265,6 +299,8 @@ class App extends Component
             case "shockwave":
                 this.createShockwave(json.data, colors[member.extra.colorIndex])
                 break
+
+            default: break;
         }
 
         this.setState(state)
@@ -273,10 +309,10 @@ class App extends Component
     // Received a Relay Server system message
     onSystemMessage(json)
     {
-        if (json.op == "DISCONNECT") // A member has disconnected from the game
+        if (json.op === "DISCONNECT") // A member has disconnected from the game
         {
             let state = this.state;
-            let member = state.lobby.members.find(member => member.profileId == json.profileId)
+            let member = state.lobby.members.find(member => member.profileId === json.profileId)
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
         }
@@ -286,7 +322,7 @@ class App extends Component
     onPlayerMove(pos)
     {
         let state = this.state;
-        let member = state.lobby.members.find(member => member.profileId == state.user.id)
+        let member = state.lobby.members.find(member => member.profileId === state.user.id)
         member.pos = {x: pos.x, y: pos.y};
         this.setState(state)
 
@@ -294,14 +330,32 @@ class App extends Component
         // packet loss.
         // Note: This is using the JS API which uses only WebSocket, meaning there will never be packet loss. But other
         // API can connect to the same game instance and might communicate to the relay server in UDP.
-        this.bc.relay.send(Buffer.from(JSON.stringify({op:"move",data:pos}), 'ascii'), this.bc.relay.TO_ALL_PLAYERS, false, true, this.bc.relay.CHANNEL_HIGH_PRIORITY_1);
+        this.bc.relay.sendToAll(Buffer.from(JSON.stringify({op:"move",data:pos}), 'ascii'), false, true, this.bc.relay.CHANNEL_HIGH_PRIORITY_1);
     }
 
     // Player has clicked to create a shockwave
     onPlayerShockwave(pos)
     {
+        // Build player mask.
+        let playerMask = this.state.lobby.members.reduce((playerMask, member) =>
+        {
+            if (!member.allowSendTo)
+            {
+                return playerMask
+            }
+            else
+            {
+                let netId = this.bc.relay.getNetIdForProfileId(member.profileId)
+
+                // Note here we don't use bitwise operations because
+                // the mask can be up to 40 players, and using bitwise limits us to 32 bits in JS.
+                // But for a game with less than 32 players, this shouldn't be a problem.
+                return playerMask + Math.pow(2, netId)
+            }
+        }, 0)
+
         // We send the shockewave event as reliable because such action needs to be guaranteed.
-        this.bc.relay.send(Buffer.from(JSON.stringify({op:"shockwave",data:pos}), 'ascii'), this.bc.relay.TO_ALL_PLAYERS, true, false, this.bc.relay.CHANNEL_HIGH_PRIORITY_2);
+        this.bc.relay.sendToPlayers(Buffer.from(JSON.stringify({op:"shockwave",data:pos}), 'ascii'), playerMask, true, false, this.bc.relay.CHANNEL_HIGH_PRIORITY_2);
 
         // Create the shockwave instance on our instance
         this.createShockwave(pos, colors[this.state.user.colorIndex])
@@ -394,7 +448,7 @@ class App extends Component
                     <div className="App">
                         <header className="App-header">
                             <LoadingScreen text="Joining Match..." />
-                            <small>If this takes a while, don't worry. This means a new server is warming up just for you.</small>
+                            {/*<small>If this takes a while, don't worry. This means a new server is warming up just for you.</small>*/}
                         </header>
                     </div>
                 )
@@ -406,7 +460,16 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <small>Move mouse around and click to create shockwaves.</small>
-                            <GameScreen user={this.state.user} lobby={this.state.lobby} shockwaves={this.state.shockwaves} onBack={this.onGameScreenClose.bind(this)} onPlayerMove={this.onPlayerMove.bind(this)} onPlayerShockwave={this.onPlayerShockwave.bind(this)} />
+                            <GameScreen user={this.state.user} 
+                                        lobby={this.state.lobby} 
+                                        shockwaves={this.state.shockwaves} 
+                                        relayOptions={this.state.relayOptions}
+                                        onBack={this.onGameScreenClose.bind(this)} 
+                                        onPlayerMove={this.onPlayerMove.bind(this)} 
+                                        onPlayerShockwave={this.onPlayerShockwave.bind(this)}
+                                        onToggleReliable={this.onToggleReliable.bind(this)} 
+                                        onToggleOrdered={this.onToggleOrdered.bind(this)} 
+                                        onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
                         </header>
                     </div>
                 )
