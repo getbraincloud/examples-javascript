@@ -5,11 +5,14 @@ including release history, api documentation, and tutorials please visit:
 
 http://apidocs.braincloudservers.com/
 
+The concatenated and minified versions are under the folder "optimized/".
+The K6 file under "k6/" folder.
+
 Thanks and happy coding!
 - The brainCloud Team
 
 
 
 Platform: Javascript
-Version: 4.6.0.146
+Version: 4.7.0.162
 

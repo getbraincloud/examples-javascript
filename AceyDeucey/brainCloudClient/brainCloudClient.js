@@ -7,6 +7,7 @@ function BrainCloudClient() {
     var bcc = this;
 
     bcc.name = "BrainCloudClient";
+    bcc.appVersion = "1.0";
 
     // If this is not the singleton, initialize it
     if(window.brainCloudClient !== bcc) {
@@ -152,6 +153,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.s3Handling = bcc.brainCloudClient.s3Handling = bcc.brainCloudClient.s3Handling || {};
         bcc.brainCloudManager.script = bcc.brainCloudClient.script = bcc.brainCloudClient.script || {};
         bcc.brainCloudManager.socialLeaderboard = bcc.brainCloudClient.socialLeaderboard = bcc.brainCloudClient.socialLeaderboard || {};
+        bcc.brainCloudManager.leaderboard = bcc.brainCloudManager.socialLeaderboard;
         bcc.brainCloudManager.statusCodes = bcc.brainCloudClient.statusCodes = bcc.brainCloudClient.statusCodes || {};
         bcc.brainCloudManager.time = bcc.brainCloudClient.time = bcc.brainCloudClient.time || {};
         bcc.brainCloudManager.tournament = bcc.brainCloudClient.tournament = bcc.brainCloudClient.tournament || {};
@@ -167,7 +169,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.6.0";
+    bcc.version = "4.7.1";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -200,6 +202,8 @@ function BrainCloudClient() {
             return;
         }
 
+        bcc.appVersion = appVersion;
+
         bcc.brainCloudManager.initialize(appId, secret, appVersion);
     };
 
@@ -223,6 +227,8 @@ function BrainCloudClient() {
             console.log("ERROR | Failed to initialize brainCloud - " + error);
             return;
         }
+
+        bcc.appVersion = appVersion;
 
         bcc.brainCloudManager.initializeWithApps(defaultAppId, secretMap, appVersion);
     };
@@ -256,6 +262,15 @@ function BrainCloudClient() {
      */
     bcc.getAppId = function() {
         return bcc.brainCloudManager.getAppId();
+    };
+
+    /**
+     * Returns the app version
+     * 
+     * @return {string} - The application version
+     */
+    bcc.getAppVersion = function() {
+        return bcc.appVersion;
     };
 
     /**
@@ -338,6 +353,13 @@ function BrainCloudClient() {
     };
 
     /**
+     * @deprecated Use registerGlobalErrorCallback() instead - Removal after March 1 2022
+     */
+    bcc.setErrorCallback = function(errorCallback) {
+        bcc.brainCloudManager.setErrorCallback(errorCallback);
+    };
+
+    /**
      * Sets a callback handler for any error messages that come from brainCloud.
      * This will include any networking errors as well as requests from the client
      * which do not register a callback handler.
@@ -345,7 +367,7 @@ function BrainCloudClient() {
      * @param errorCallback
      *            {function} - The error callback
      */
-    bcc.setErrorCallback = function(errorCallback) {
+    bcc.registerGlobalErrorCallback = function(errorCallback) {
         bcc.brainCloudManager.setErrorCallback(errorCallback);
     };
 

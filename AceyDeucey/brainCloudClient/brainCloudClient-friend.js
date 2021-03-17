@@ -18,6 +18,7 @@ function BCFriend() {
 	bc.friend.OPERATION_FIND_PLAYER_BY_NAME = "FIND_PLAYER_BY_NAME";
 	bc.friend.OPERATION_FIND_PLAYER_BY_UNIVERSAL_ID = "FIND_PLAYER_BY_UNIVERSAL_ID";
 	bc.friend.OPERATION_LIST_FRIENDS = "LIST_FRIENDS";
+	bc.friend.OPERATION_GET_MY_SOCIAL_INFO = "GET_MY_SOCIAL_INFO";
 	bc.friend.OPERATION_ADD_FRIENDS = "ADD_FRIENDS";
 	bc.friend.OPERATION_REMOVE_FRIENDS = "REMOVE_FRIENDS";
 	bc.friend.OPERATION_GET_SUMMARY_DATA_FOR_PROFILE_ID = "GET_SUMMARY_DATA_FOR_PROFILE_ID";
@@ -137,6 +138,20 @@ function BCFriend() {
 	};
 
 	/**
+     * @deprecated Use readFriendUserState() instead - Removal after March 1 2022
+	 */
+	bc.friend.readFriendPlayerState = function(friendId, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_READ_FRIEND_PLAYER_STATE,
+			data: {
+				friendId: friendId
+			},
+			callback: callback
+		});
+	};
+
+	/**
 	 * Read a friend's state.
 	 *
 	 * Service Name - PlayerState
@@ -145,7 +160,7 @@ function BCFriend() {
 	 * @param friendId Target friend
 	 * @param callback Method to be invoked when the server response is received.
 	 */
-	bc.friend.readFriendPlayerState = function(friendId, callback) {
+	bc.friend.readFriendUserState = function(friendId, callback) {
 		bc.brainCloudManager.sendRequest({
 			service: bc.SERVICE_FRIEND,
 			operation: bc.friend.OPERATION_READ_FRIEND_PLAYER_STATE,
@@ -238,6 +253,28 @@ function BCFriend() {
 			callback: callback
 		});
 	};
+
+	/**
+	 * 
+	 * 	 
+	 * Service Name - friend
+	 * Service Operation - GET_MY_SOCIAL_INFO
+	 *
+	 * @param friendPlatform Friend platform to query.
+	 * @param includeSummaryData  True if including summary data; false otherwise.
+	 * @param in_callback Method to be invoked when the server response is received.
+	 */
+		 bc.friend.getMySocialInfo = function(friendPlatform, includeSummaryData, callback) {
+			bc.brainCloudManager.sendRequest({
+				service: bc.SERVICE_FRIEND,
+				operation: bc.friend.OPERATION_GET_MY_SOCIAL_INFO,
+				data: {
+					friendPlatform: friendPlatform,
+					includeSummaryData: includeSummaryData
+				},
+				callback: callback
+			});
+		};
 
 	/**
 	 * Links the current user and the specified users as brainCloud friends.
