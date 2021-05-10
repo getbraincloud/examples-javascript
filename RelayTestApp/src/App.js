@@ -174,26 +174,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code === this.bc.reasonCodes.RTT_ROOM_READY)
-            {
-                // Server has been created. Connect to it
-                this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
-                this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
-                this.bc.relay.connect({
-                    ssl: false,
-                    host: this.state.server.connectData.address,
-                    port: this.state.server.connectData.ports.ws,
-                    passcode: this.state.server.passcode,
-                    lobbyId: this.state.server.lobbyId
-                }, result =>
-                {
-                    let state = this.state
-                    state.lobby.members.forEach(member => member.allowSendTo = (member.profileId !== state.user.id))
-                    state.screen = "game"
-                    this.setState(state)
-                }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
-            }
-            else
+            if (result.data.reason.code != this.bc.reasonCodes.RTT_ROOM_READY)
             {
                 // Disbanded for any other reason than ROOM_READY, means we failed to launch the game.
                 this.onGameScreenClose()
@@ -206,8 +187,24 @@ class App extends Component
         }
         else if (result.operation === "ROOM_READY")
         {
-            // Server has been created, save connection info.
-            this.setState({ server: result.data })
+            let server = result.data;
+
+            // Server has been created. Connect to it
+            this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
+            this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
+            this.bc.relay.connect({
+                ssl: false,
+                host: server.connectData.address,
+                port: server.connectData.ports.ws,
+                passcode: server.passcode,
+                lobbyId: server.lobbyId
+            }, result =>
+            {
+                let state = this.state
+                state.lobby.members.forEach(member => member.allowSendTo = (member.profileId !== state.user.id))
+                state.screen = "game"
+                this.setState(state)
+            }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
         }
     }
 
@@ -250,7 +247,6 @@ class App extends Component
         let state = this.state
         state.screen = "mainMenu"
         state.lobby = null
-        state.server = null
         state.user.isReady = false
         this.setState(state)
     }
