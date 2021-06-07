@@ -11,7 +11,7 @@ class MainMenuScreen extends Component
 {
     onPlay()
     {
-        this.props.onPlay()
+        this.props.onPlay(this.refs.hosting.options[this.refs.hosting.selectedIndex].value)
     }
 
     render()
@@ -20,6 +20,11 @@ class MainMenuScreen extends Component
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>
+                <label for="hosting">Choose hosting service:</label>
+                <select name="hosting" ref="hosting">
+                    <option value="CursorPartyV2">brainCloud</option>
+                    <option value="CursorPartyGameLift">GameLift</option>
+                </select>
                 <div className="btn-frame">
                     <button className="Button" onClick={this.onPlay.bind(this)}>PLAY GAME</button>
                 </div>

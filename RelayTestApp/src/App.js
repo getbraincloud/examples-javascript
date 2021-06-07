@@ -121,7 +121,7 @@ class App extends Component
     }
 
     // Clicked play from the main menu (Menu shown after authentication)
-    onPlayClicked()
+    onPlayClicked(lobbyType)
     {
         this.setState({ screen: "joiningLobby" })
 
@@ -134,7 +134,7 @@ class App extends Component
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
             // Find or create a lobby
-            this.bc.lobby.findOrCreateLobby("CursorPartyV2", 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+            this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
             {
                 if (result.status !== 200)
                 {
