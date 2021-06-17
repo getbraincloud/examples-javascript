@@ -105,6 +105,7 @@
 
 		document.getElementById("cloudPath").value = "images";
 		document.getElementById("cloudFileName").value = "logo.png";
+		document.getElementById("fileInMemoryContent").value = "Hello World!";
 		document.getElementById("isShareable").checked = true;
 		document.getElementById("replaceIfExists").checked = true;
 
@@ -239,6 +240,20 @@
 		);
 	}
 
+	function uploadFileFromMemory() {
+		
+		brainCloud.file.uploadFileFromMemory(
+			document.getElementById("cloudPath").value, 
+			document.getElementById("cloudFileName").value, 
+			document.getElementById("isShareable").checked, 
+			document.getElementById("replaceIfExists").checked, 
+			new Blob([document.getElementById("fileInMemoryContent").value], {type: 'text/plain'}),
+			function(result) {
+				document.getElementById("incomingResponse").innerHTML = "uploadFileFromMemory: " + JSON.stringify(result, null, 2);
+			}
+		);
+	}
+
 	function listUserFiles() {
 		brainCloud.file.listUserFiles(document.getElementById("cloudPath").value, true,
 			function(result) {
@@ -337,6 +352,7 @@
 				<div id="fileName"></div>
 				<div id="fileSize"></div>
 				<div id="fileType"></div>
+				<p>File In Memory Content&nbsp;<input type="text" id="fileInMemoryContent" /></p>
 				<p>&nbsp;</p>
 				<div></div>
 			</form>
@@ -357,10 +373,11 @@
 		<td>
 			<h2>Step 4</h2>
 			<p>Upload the file or run a different action</p>
-			<p>&nbsp;<input type="button" style="width:120px;" onclick="uploadFile()" value="Upload File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfile">DocLink</a> <div id="progress"></div></p>
-			<p>&nbsp;<input type="button" style="width:120px;" onclick="listUserFiles()" value="List User Files" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-listuserfiles">DocLink</a></p>
-			<p>&nbsp;<input type="button" style="width:120px;" onclick="deleteUserFile()" value="Delete User File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-deleteuserfile">DocLink</a></p>
-			<p>&nbsp;<input type="button" style="width:120px;" onclick="getCdnUrl()" value="Get CDN URL" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-getcdnurl">DocLink</a></p>
+			<p>&nbsp;<input type="button" style="width:200px;" onclick="uploadFile()" value="Upload File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfile">DocLink</a> <div id="progress"></div></p>
+			<p>&nbsp;<input type="button" style="width:200px;" onclick="uploadFileFromMemory()" value="Upload File From Memory" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfilefrommemory">DocLink</a> <div id="progress"></div></p>
+			<p>&nbsp;<input type="button" style="width:200px;" onclick="listUserFiles()" value="List User Files" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-listuserfiles">DocLink</a></p>
+			<p>&nbsp;<input type="button" style="width:200px;" onclick="deleteUserFile()" value="Delete User File" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-deleteuserfile">DocLink</a></p>
+			<p>&nbsp;<input type="button" style="width:200px;" onclick="getCdnUrl()" value="Get CDN URL" /> &nbsp; <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-getcdnurl">DocLink</a></p>
 			<p id="downloadLink"></p>
 			<img src="logo.png" id="downloadImage" alt="brainCloud" width = "300px" >
 		</td>

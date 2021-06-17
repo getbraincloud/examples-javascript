@@ -108,6 +108,7 @@ class App extends Component
                 screen: "mainMenu",
                 user: {
                     id: result.data.profileId,
+                    cxId: null,
                     name: this.username,
                     colorIndex: parseInt(localStorageColor),
                     isReady: false
@@ -128,6 +129,10 @@ class App extends Component
         // Enable RTT service
         this.bc.rttService.enableRTT(() =>
         {
+            let state = this.state
+            state.user.cxId = this.bc.rttService.getRTTConnectionId()
+            this.setState(state)
+
             console.log("RTT Enabled");
 
             // Register lobby callback
@@ -201,7 +206,7 @@ class App extends Component
             }, result =>
             {
                 let state = this.state
-                state.lobby.members.forEach(member => member.allowSendTo = (member.profileId !== state.user.id))
+                state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
                 state.screen = "game"
                 this.setState(state)
             }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
@@ -223,15 +228,14 @@ class App extends Component
         this.setState(state)
     }
 
-    onTogglePlayerMask(profileId)
+    onTogglePlayerMask(cxId)
     {
         let state = this.state
-        let member = state.lobby.members.find(member => member.profileId === profileId)
+        let member = state.lobby.members.find(member => member.cxId === cxId)
         if (member)
         {
             member.allowSendTo = !member.allowSendTo
         }
-        console.log("poop: " + profileId + " = " + member.allowSendTo)
         this.setState(state)
     }
 
@@ -278,8 +282,8 @@ class App extends Component
     onRelayMessage(netId, data)
     {
         let state = this.state;
-        let memberProfileId = this.bc.relay.getProfileIdForNetId(netId)
-        let member = state.lobby.members.find(member => member.profileId === memberProfileId)
+        let memberCxId = this.bc.relay.getCxIdForNetId(netId)
+        let member = state.lobby.members.find(member => member.cxId === memberCxId)
         let str = data.toString('ascii');
         console.log(str)
         let json = JSON.parse(str)
@@ -308,7 +312,7 @@ class App extends Component
         if (json.op === "DISCONNECT") // A member has disconnected from the game
         {
             let state = this.state;
-            let member = state.lobby.members.find(member => member.profileId === json.profileId)
+            let member = state.lobby.members.find(member => member.cxId === json.cxId)
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
         }
@@ -318,7 +322,7 @@ class App extends Component
     onPlayerMove(pos)
     {
         let state = this.state;
-        let member = state.lobby.members.find(member => member.profileId === state.user.id)
+        let member = state.lobby.members.find(member => member.cxId === state.user.cxId)
         member.pos = {x: pos.x, y: pos.y};
         this.setState(state)
 
@@ -341,7 +345,7 @@ class App extends Component
             }
             else
             {
-                let netId = this.bc.relay.getNetIdForProfileId(member.profileId)
+                let netId = this.bc.relay.getNetIdForCxId(member.cxId)
 
                 // Note here we don't use bitwise operations because
                 // the mask can be up to 40 players, and using bitwise limits us to 32 bits in JS.

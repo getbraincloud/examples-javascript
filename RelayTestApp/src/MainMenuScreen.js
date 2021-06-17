@@ -20,7 +20,7 @@ class MainMenuScreen extends Component
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>
-                <label for="hosting">Choose hosting service:</label>
+                <label>Choose hosting service:</label>
                 <select name="hosting" ref="hosting">
                     <option value="CursorPartyV2">brainCloud</option>
                     <option value="CursorPartyGameLift">GameLift</option>
