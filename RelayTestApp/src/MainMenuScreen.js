@@ -23,6 +23,7 @@ class MainMenuScreen extends Component
                 <label>Choose hosting service:</label>
                 <select name="hosting" ref="hosting">
                     <option value="CursorPartyV2">brainCloud</option>
+                    <option value="CursorPartyV2Backfill">brainCloud Backfill</option>
                     <option value="CursorPartyGameLift">GameLift</option>
                 </select>
                 <div className="btn-frame">
