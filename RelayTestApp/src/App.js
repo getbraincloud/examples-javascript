@@ -124,7 +124,7 @@ class App extends Component
     // Clicked play from the main menu (Menu shown after authentication)
     onPlayClicked(lobbyType)
     {
-        this.setState({ screen: "joiningLobby" })
+        this.setState({ screen: "joiningLobby", lobbyType: lobbyType })
 
         // Enable RTT service
         this.bc.rttService.enableRTT(() =>
@@ -138,15 +138,49 @@ class App extends Component
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
-            // Find or create a lobby
-            this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+            // If using gamelift, we will do region pings
+            if (lobbyType == "CursorPartyGameLift")
             {
-                if (result.status !== 200)
+                this.bc.lobby.getRegionsForLobbies([lobbyType], (result) =>
                 {
-                    this.dieWithMessage("Failed to find lobby")
-                }
-                // Success of lobby found will be in the event onLobbyEvent
-            })
+                    if (result.status !== 200) 
+                    {
+                        this.dieWithMessage("Failed to get regions for lobbies")
+                        return
+                    }
+
+                    this.bc.lobby.pingRegions((result) =>
+                    {
+                        if (result.status !== 200) 
+                        {
+                            this.dieWithMessage("Failed to ping regions")
+                            return
+                        }
+
+                        // Find or create a lobby
+                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                        {
+                            if (result.status !== 200)
+                            {
+                                this.dieWithMessage("Failed to find lobby")
+                            }
+                            // Success of lobby found will be in the event onLobbyEvent
+                        })
+                    })
+                })
+            }
+            else
+            {
+                // Find or create a lobby
+                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                {
+                    if (result.status !== 200)
+                    {
+                        this.dieWithMessage("Failed to find lobby")
+                    }
+                    // Success of lobby found will be in the event onLobbyEvent
+                })
+            }
         }, () =>
         {
             if (this.state.screen === "joiningLobby")
@@ -194,13 +228,18 @@ class App extends Component
         {
             let server = result.data;
 
+            // If the lobby is gamelift, the port name will be "gamelift"
+            let wsPort = 0;
+            if (this.state.lobbyType == "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
+            else wsPort = server.connectData.ports.ws;
+
             // Server has been created. Connect to it
             this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
             this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
             this.bc.relay.connect({
                 ssl: false,
                 host: server.connectData.address,
-                port: server.connectData.ports.ws,
+                port: wsPort,
                 passcode: server.passcode,
                 lobbyId: server.lobbyId
             }, result =>
