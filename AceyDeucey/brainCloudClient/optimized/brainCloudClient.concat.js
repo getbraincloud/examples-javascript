@@ -948,6 +948,7 @@ function BCAppStore() {
     bc.appStore.OPERATION_GET_SALES_INVENTORY = "GET_INVENTORY";
     bc.appStore.OPERATION_START_PURCHASE = "START_PURCHASE";
     bc.appStore.OPERATION_FINALIZE_PURCHASE = "FINALIZE_PURCHASE";
+    bc.appStore.OPERATION_REFRESH_PROMOTIONS = "REFRESH_PROMOTIONS";
 
     /**
     * Verifies that purchase was properly made at the store.
@@ -1117,6 +1118,27 @@ function BCAppStore() {
         bc.brainCloudManager.sendRequest({
             service: bc.SERVICE_APP_STORE,
             operation: bc.appStore.OPERATION_FINALIZE_PURCHASE,
+            data: message,
+            callback: callback
+        });
+    };
+
+    /**
+    * Returns up-to-date eligible 'promotions' for the user and 
+    * a 'promotionsRefreshed' flag indicating whether the user's promotion info required refreshing.
+    *
+    * Service Name - AppStore
+    * Service Operation - RefreshPromotions
+    *
+    * @param callback The method to be invoked when the server response is received
+    */
+     bc.appStore.refreshPromotions = function(callback) {
+        var message = {
+        };
+        
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_APP_STORE,
+            operation: bc.appStore.OPERATION_REFRESH_PROMOTIONS,
             data: message,
             callback: callback
         });
@@ -3897,6 +3919,10 @@ function BCEvents() {
 	bc.event.OPERATION_DELETE_SENT = "DELETE_SENT";
 	bc.event.OPERATION_GET_EVENTS = "GET_EVENTS";
 
+	bc.event.OPERATION_DELETE_INCOMING_EVENTS = "DELETE_INCOMING_EVENTS";
+	bc.event.OPERATION_DELETE_INCOMING_EVENTS_OLDER_THAN = "DELETE_INCOMING_EVENTS_OLDER_THAN";
+	bc.event.OPERATION_DELETE_INCOMING_EVENTS_BY_TYPE_OLDER_THAN = "DELETE_INCOMING_EVENTS_BY_TYPE_OLDER_THAN";
+
 
 	/**
 	 * Sends an event to the designated player id with the attached json data.
@@ -3987,6 +4013,68 @@ function BCEvents() {
 			service: bc.SERVICE_EVENT,
 			operation: bc.event.OPERATION_GET_EVENTS,
 			data: null,
+			callback: callback
+		});
+	};
+
+	/**
+	 * Delete a list of events out of the user's incoming mailbox.
+	 *
+	 * Service Name - Event
+	 * Service Operation - DeleteIncomingEvents
+	 *
+	 * @param evIds Collection of event ids
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	 bc.event.deleteIncomingEvents = function(evIds, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_EVENT,
+			operation: bc.event.OPERATION_DELETE_INCOMING_EVENTS,
+			data: {
+				evIds: evIds
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Delete any events of the given type older than the given date out of the user's incoming mailbox.
+	 *
+	 * Service Name - Event
+	 * Service Operation - DeleteIncomingEventsByTypeOlderThan
+	 * 
+	 * @param eventType The user-defined type of the event
+	 * @param dateMillis createdAt cut-off time whereby older events will be deleted
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	 bc.event.DeleteIncomingEventsByTypeOlderThan = function(eventType, dateMillis, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_EVENT,
+			operation: bc.event.OPERATION_DELETE_INCOMING_EVENTS_OLDER_THAN,
+			data: {
+				eventType: eventType,
+				dateMillis: dateMillis
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Delete any events older than the given date out of the user's incoming mailbox.
+	 *
+	 * Service Name - Event
+	 * Service Operation - DeleteIncomingEventsOlderThan
+	 * 
+	 * @param dateMillis createdAt cut-off time whereby older events will be deleted
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	 bc.event.deleteIncomingEventsOlderThan = function(dateMillis, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_EVENT,
+			operation: bc.event.OPERATION_DELETE_INCOMING_EVENTS_OLDER_THAN,
+			data: {
+				dateMillis: dateMillis
+			},
 			callback: callback
 		});
 	};
@@ -4094,6 +4182,160 @@ function BCFile() {
         fd.append("fileSize", fileSize);
         fd.append("uploadFile", file);
         xhr.send(fd);
+    };
+
+    /**
+     * Method uploads the supplied file to the brainCloud server. Note that you must
+     * call prepareUserUpload to retrieve the uploadId before calling this method.
+     * It is assumed that any methods required to monitor the file upload including
+     * progress, and completion are attached to the XMLHttpRequest xhr object's
+     * events such as:
+     *
+     * xhr.upload.addEventListener("progress", uploadProgress);
+     * xhr.addEventListener("load", transferComplete);
+     * xhr.addEventListener("error", transferFailed);
+     * xhr.addEventListener("abort", transferCanceled);
+     *
+     * @param xhr The XMLHttpRequest object that the brainCloud client will
+     * use to upload the file.
+     * @param file The file object
+     * @param uploadId The upload id obtained via prepareUserUpload()
+     * @param peerCode - optional - peerCode.  A Peer needs to allow prepareUserUpload 
+     */
+    bc.file.uploadFile = function(xhr, file, uploadId, peerCode) {
+
+        var url = bc.brainCloudManager.getFileUploadUrl();
+        var fd = new FormData();
+        var fileSize = file.size;
+
+        xhr.open("POST", url, true);
+        fd.append("sessionId", bc.brainCloudManager.getSessionId());
+        if (peerCode !== undefined) fd.append("peerCode", peerCode);
+        fd.append("uploadId", uploadId);
+        fd.append("fileSize", fileSize);
+        fd.append("uploadFile", file);
+        xhr.send(fd);
+    };
+
+    /**
+     * Upload screenshots from memory instead of local file storage. On success the file will begin uploading to the brainCloud server.
+     * This method allows uploads to happen in situations where local file access is not possible or convenient.
+     * For example, screenshots from Unity-based WebGL apps.
+     *
+     * @param cloudPath The desired cloud path of the file
+     * @param cloudFilename The desired cloud filename of the file
+     * @param shareable True if the file is shareable.
+     * @param replaceIfExists Whether to replace file if it exists
+     * @param encodedText The converted file data from memory in string format
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.file.uploadFileFromMemory = function(cloudPath, cloudFilename, shareable, replaceIfExists, fileData, callback) {
+
+        var fileSize = fileData.length ? fileData.length : fileData.size
+        var message = {
+            cloudPath: cloudPath,
+            cloudFilename: cloudFilename,
+            shareable: shareable,
+            replaceIfExists: replaceIfExists,
+            fileSize: fileSize
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_FILE,
+            operation : bc.file.OPERATION_PREPARE_USER_UPLOAD,
+            data : message,
+            callback : function(prepareResult)
+            {
+                if (prepareResult.status && prepareResult.status == 200)
+                {
+                    var formData = new FormData();
+                    formData.append("sessionId", bc.brainCloudManager._sessionId);
+                    // if (_peerCode != "") postForm.AddField("peerCode", _peerCode); // [dsl] TODO - what's that?
+                    formData.append("uploadId", prepareResult.data.fileDetails.uploadId);
+                    formData.append("fileSize", fileSize);
+                    formData.append("uploadFile", fileData, { filename: cloudFilename });
+
+                    if (formData.submit)
+                    {
+                        // We might be running this inside nodejs, xhr.send(formData) will fail
+                        formData.submit(bc.brainCloudManager._fileUploadUrl, function(err, res)
+                        {
+                            if (res.statusCode != 200)
+                            {
+                                if (callback) callback({reasonCode:res.statusCode, errorMessage:res.statusMessage});
+                            }
+                            else
+                            {
+                                if (callback) callback(prepareResult);
+                            }
+                            res.resume();
+                        });
+                    }
+                    else
+                    {
+                        var xhr;
+                        if (window.XMLHttpRequest)
+                        {
+                            // code for IE7+, Firefox, Chrome, Opera, Safari
+                            xhr = new XMLHttpRequest();
+                        }
+                        else
+                        {
+                            // code for IE6, IE5
+                            xhr = new ActiveXObject("Microsoft.XMLHTTP");
+                        }
+                
+                        xhr.onreadystatechange = function()
+                        {
+                            if (xhr.readyState == XMLHttpRequest.DONE)
+                            {
+                                if (xhr.status == 200)
+                                {
+                                    // We forward back the response for the prepare, which was successful and have information about the file
+                                    if (callback) callback(prepareResult);
+                                }
+                                else
+                                {
+                                    reasonCode = 0;
+                                    statusMessage = ""
+                                    try
+                                    {
+                                        var errorResponse = JSON.parse(xhr.responseText);
+                                        if (errorResponse["reason_code"])
+                                        {
+                                            reasonCode = errorResponse["reason_code"];
+                                        }
+                                        if (errorResponse["status_message"])
+                                        {
+                                            statusMessage = errorResponse["status_message"];
+                                        }
+                                        else
+                                        {
+                                            statusMessage = xhr.responseText;
+                                        }
+                                    }
+                                    catch (e)
+                                    {
+                                        reasonCode = 0;
+                                        statusMessage = xhr.responseText;
+                                    }
+                
+                                    if (callback) callback({reasonCode:reasonCode, errorMessage:statusMessage});
+                                }
+                            }
+                        }; // end inner function
+            
+                        xhr.open("POST", bc.brainCloudManager._fileUploadUrl, true);
+                        // xhr.setRequestHeader("Content-type", "multipart/form-data");
+                        xhr.send(formData);
+                    }
+                }
+                else
+                {
+                    if (callback) callback(result); // Pass the error to the user
+                }
+            }
+        });
     };
 
     /**
@@ -4217,6 +4459,7 @@ function BCFriend() {
 	bc.friend.OPERATION_LIST_FRIENDS = "LIST_FRIENDS";
 	bc.friend.OPERATION_GET_MY_SOCIAL_INFO = "GET_MY_SOCIAL_INFO";
 	bc.friend.OPERATION_ADD_FRIENDS = "ADD_FRIENDS";
+	bc.friend.OPERATION_ADD_FRIENDS_FROM_PLATFORM = "ADD_FRIENDS_FROM_PLATFORM";
 	bc.friend.OPERATION_REMOVE_FRIENDS = "REMOVE_FRIENDS";
 	bc.friend.OPERATION_GET_SUMMARY_DATA_FOR_PROFILE_ID = "GET_SUMMARY_DATA_FOR_PROFILE_ID";
 	bc.friend.OPERATION_GET_USERS_ONLINE_STATUS = "GET_USERS_ONLINE_STATUS";
@@ -4488,6 +4731,30 @@ function BCFriend() {
 			operation: bc.friend.OPERATION_ADD_FRIENDS,
 			data: {
 				profileIds: profileIds
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Links the profiles for the specified externalIds for the given friend platform as internal friends.
+	 *
+	 * Service Name - friend
+	 * Service Operation - ADD_FRIENDS_FOR_PLATFORM
+	 *
+	 * @param friendPlatform Platform to add from (i.e: "Facebook").
+	 * @param mode ADD or SYNC.
+	 * @param externalIds Collection of external IDs from the friend platform.
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.addFriendsFromPlatform = function(friendPlatform, mode, externalIds, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_ADD_FRIENDS_FROM_PLATFORM,
+			data: {
+				friendPlatform: friendPlatform,
+				mode: mode,
+				externalIds: externalIds
 			},
 			callback: callback
 		});
@@ -5065,6 +5332,8 @@ function BCGlobalApp() {
 
 	bc.SERVICE_GLOBAL_APP = "globalApp";
 	bc.globalApp.OPERATION_READ_PROPERTIES = "READ_PROPERTIES";
+	bc.globalApp.OPERATION_READ_SELECTED_PROPERTIES = "READ_SELECTED_PROPERTIES";
+	bc.globalApp.OPERATION_READ_PROPERTIES_IN_CATEGORIES = "READ_PROPERTIES_IN_CATEGORIES";
 
 	/**
 	 * Read game's global properties
@@ -5082,6 +5351,51 @@ function BCGlobalApp() {
 		});
 	};
 
+	/**
+	 * Returns a list of properties, identified by the property names provided.
+	 * If a property from the list isn't found, it just isn't returned (no error).
+	 *
+	 * Service Name - GlobalApp
+	 * Service Operation - READ_SELECTED_PROPERTIES
+	 * 
+	 * @param propertyNames Specifies which properties to return
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.globalApp.readSelectedProperties = function(propertyNames, callback) {
+        var message = {
+            propertyNames: propertyNames
+        };
+
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_GLOBAL_APP,
+			operation: bc.globalApp.OPERATION_READ_SELECTED_PROPERTIES,
+			data: message,
+			callback: callback
+		});
+	};
+
+	/**
+	 * Returns a list of properties, identified by the categories provided.
+	 * If a category from the list isn't found, it just isn't returned (no error).
+	 *
+	 * Service Name - GlobalApp
+	 * Service Operation - READ_PROPERTIES_IN_CATEGORIES
+	 * 
+	 * @param categories Specifies which category to return
+	 * @param in_callback The method to be invoked when the server response is received
+	 */
+	bc.globalApp.readPropertiesInCategories = function(categories, callback) {
+        var message = {
+            categories: categories
+        };
+
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_GLOBAL_APP,
+			operation: bc.globalApp.OPERATION_READ_PROPERTIES_IN_CATEGORIES,
+			data: message,
+			callback: callback
+		});
+	};
 }
 
 BCGlobalApp.apply(window.brainCloudClient = window.brainCloudClient || {});
@@ -8030,6 +8344,8 @@ function BCLobby() {
     bc.lobby.OPERATION_CANCEL_FIND_REQUEST = "CANCEL_FIND_REQUEST";
     bc.lobby.OPERATION_GET_REGIONS_FOR_LOBBIES = "GET_REGIONS_FOR_LOBBIES";
     bc.lobby.OPERATION_PING_REGIONS = "PING_REGIONS";
+    bc.lobby.OPERATION_GET_LOBBY_INSTANCES = "GET_LOBBY_INSTANCES";
+    bc.lobby.OPERATION_GET_LOBBY_INSTANCES_WITH_PING_DATA = "GET_LOBBY_INSTANCES_WITH_PING_DATA";
 
     // Private variables for ping 
     var pingData = null;
@@ -8506,6 +8822,51 @@ function BCLobby() {
                 callback(result);
             }
         })
+    };
+
+    /**
+     * Gets a map keyed by rating of the visible lobby instances matching the given type and rating range.
+     *
+     * Service Name - Lobby
+     * Service Operation - GET_LOBBY_INSTANCES
+     *
+     * @param lobbyType The type of lobby to look for.
+     * @param criteriaJson A JSON string used to describe filter criteria.
+     */
+    bc.lobby.getLobbyInstances = function(lobbyType, criteriaJson, callback)
+    {
+        var data = {
+            lobbyType: lobbyType,
+            criteriaJson: criteriaJson
+        };
+
+        bc.brainCloudManager.sendRequest
+        ({
+            service: bc.SERVICE_LOBBY,
+            operation: bc.lobby.OPERATION_GET_LOBBY_INSTANCES,
+            data: data,
+            callback: callback
+        })
+    };
+
+    /**
+     * Gets a map keyed by rating of the visible lobby instances matching the given type and rating range.
+     * Only lobby instances in the regions that satisfy the ping portion of the criteriaJson (based on the values provided in pingData) will be returned.
+     *
+     * Service Name - Lobby
+     * Service Operation - GET_LOBBY_INSTANCES_WITH_PING_DATA
+     *
+     * @param lobbyType The type of lobby to look for.
+     * @param criteriaJson A JSON string used to describe filter criteria.
+     */
+    bc.lobby.getLobbyInstancesWithPingData = function(lobbyType, criteriaJson, callback)
+    {
+        var data = {
+            lobbyType: lobbyType,
+            criteriaJson: criteriaJson
+        };
+
+        attachPingDataAndSend(data, bc.lobby.OPERATION_GET_LOBBY_INSTANCES_WITH_PING_DATA, callback);
     };
 
     bc.lobby.pingRegions = function(callback)
@@ -11905,7 +12266,6 @@ function BCRelay() {
     bc.relay.CHANNEL_NORMAL_PRIORITY      = 2;
     bc.relay.CHANNEL_LOW_PRIORITY         = 3;
 
-
     /**
     * Start a connection, based on connection type to 
     * brainClouds Relay Servers. Connect options come in
@@ -11968,6 +12328,13 @@ function BCRelay() {
     }
 
     /**
+     * Get the lobby's owner Connection Id
+     */
+    bc.relay.getOwnerCxId = function() {
+        return bc.brainCloudRelayComms.getOwnerCxId();
+    }
+
+    /**
      * Returns the profileId associated with a netId.
      */
     bc.relay.getProfileIdForNetId = function(netId) {
@@ -11975,10 +12342,24 @@ function BCRelay() {
     }
 
     /**
+     * Returns the Connection Id associated with a netId.
+     */
+    bc.relay.getCxIdForNetId = function(netId) {
+        return bc.brainCloudRelayComms.getCxIdForNetId(netId);
+    }
+
+    /**
      * Returns the netId associated with a profileId.
      */
     bc.relay.getNetIdForProfileId = function(profileId) {
         return bc.brainCloudRelayComms.getNetIdForProfileId(profileId);
+    }
+
+    /**
+     * Returns the netId associated with a connection Id.
+     */
+    bc.relay.getNetIdForCxId = function(cxId) {
+        return bc.brainCloudRelayComms.getNetIdForCxId(cxId);
     }
 
     /**
@@ -13090,6 +13471,47 @@ function BCSocialLeaderboard() {
                 operation : bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC,
                 data : {
                     leaderboardId : leaderboardName,
+                    score : score,
+                    data : data,
+                    leaderboardType : leaderboardType,
+                    rotationType : "DAYS",
+                    rotationResetTime : rotationReset.getTime().toFixed(0),
+                    retainedCount : retainedCount,
+                    numDaysToRotate : numDaysToRotate
+                },
+                callback : callback
+            });
+    };
+
+    /**
+     * Post the players score to the given social leaderboard.
+     * Pass leaderboard config data to dynamically create if necessary.
+     * You can optionally send a user-defined json string of data
+     * with the posted score. This string could include information
+     * relevant to the posted score.
+     *
+     * Service Name - SocialLeaderboard
+     * Service Operation - PostGroupScoreDynamic
+     *
+     * @param leaderboardId the leaderboard to post to
+     * @param groupId the group's id
+     * @param score The score to post
+     * @param data Optional user-defined data to post with the score
+     * @param leaderboardType leaderboard type
+     * @param rotationType Type of rotation
+     * @param rotationReset A date Object representing the time and date to start rotation
+     * @param retainedCount How many rotations to keep
+     * @param numDaysToRotate How many days between each rotation
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.socialLeaderboard.postScoreToDynamicGroupLeaderboardDaysUTC = function(leaderboardId, groupId, score, data, leaderboardType, rotationReset, retainedCount, numDaysToRotate, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service : bc.SERVICE_LEADERBOARD,
+                operation : bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD,
+                data : {
+                    leaderboardId : leaderboardId,
+                    groupId: groupId,
                     score : score,
                     data : data,
                     leaderboardType : leaderboardType,
@@ -14736,7 +15158,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.7.1";
+    bcc.version = "4.9.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -15077,11 +15499,14 @@ function BrainCloudRelayComms(_client) {
     bcr.name = "BrainCloudRelayComms";
     bcr.isConnected = false;
 
+    // [dsl] - Added in 4.8.0
+    bcr._cxId = null;
+    bcr._ownerCxId = null;
+    bcr._netIdToCxId = {};
+    bcr._cxIdToNetId = {};
+
     bcr._debugEnabled = false;
     bcr._netId = bcr.INVALID_NET_ID; // My net Id
-    bcr._ownerId = null;
-    bcr._netIdToProfileId = {};
-    bcr._profileIdToNetId = {};
     bcr._systemCallback = null;
     bcr._relayCallback = null;
     bcr._pingIntervalMS = 1000;
@@ -15095,22 +15520,44 @@ function BrainCloudRelayComms(_client) {
         bcr._debugEnabled = debugEnabled;
     };
 
+    bcr.getOwnerCxId = function() {
+        return bcr._ownerCxId;
+    }
+
+    bcr.getCxIdForNetId = function(netId) {
+        if (!bcr._netIdToCxId.hasOwnProperty(netId))
+            return null;
+        return bcr._netIdToCxId[netId];
+    }
+
+    bcr.getNetIdForCxId = function(cxId) {
+        if (!bcr._cxIdToNetId.hasOwnProperty(cxId))
+            return bcr.INVALID_NET_ID;
+        return bcr._cxIdToNetId[cxId];
+    }
+
     bcr.getProfileIdForNetId = function(netId) {
-        if (!bcr._netIdToProfileId.hasOwnProperty(netId))
-            return INVALID_PROFILE_ID;
-        return bcr._netIdToProfileId[netId];
+        var cxId = bcr.getCxIdForNetId(netId);
+        if (cxId == null) return null;
+        return cxId.split(":")[1];
     }
 
     bcr.getNetIdForProfileId = function(profileId) {
-        if (!bcr._profileIdToNetId.hasOwnProperty(profileId))
-            return bcr.INVALID_NET_ID;
-        return bcr._profileIdToNetId[profileId];
+        for (var cxId in bcr._cxIdToNetId)
+        {
+            if (profileId === cxId.split(":")[1])
+                return bcr.getNetIdForCxId(cxId);
+        }
+        return bcr.INVALID_NET_ID;
     }
 
     bcr.connect = function(options, success, failure) {
         if (bcr.isConnected) {
             bcr.disconnect();
         }
+
+        // Make sure RTT is enabled
+        // ...
 
         var ssl = options.ssl ? options.ssl : false;
         var host = options.host;
@@ -15187,7 +15634,7 @@ function BrainCloudRelayComms(_client) {
     }
 
     bcr.getOwnerProfileId = function() {
-        return bcr._ownerId;
+        return bcr._ownerCxId.spit(':')[1];
     }
 
     bcr.stopPing = function() {
@@ -15228,7 +15675,7 @@ function BrainCloudRelayComms(_client) {
         // Send a connect request
         var payload = {
             lobbyId: bcr.connectInfo.lobbyId,
-            profileId: bcr.m_client.getProfileId(),
+            cxId: bcr.m_client.rttService.getRTTConnectionId(),
             passcode: bcr.connectInfo.passcode,
             version: bcr.m_client.version
         };
@@ -15425,12 +15872,12 @@ function BrainCloudRelayComms(_client) {
 
         switch (json.op) {
             case "CONNECT": {
-                bcr._netIdToProfileId[json.netId] = json.profileId;
-                bcr._profileIdToNetId[json.profileId] = json.netId;
-                if (json.profileId == _client.getProfileId()) {
+                bcr._netIdToCxId[json.netId] = json.cxId;
+                bcr._cxIdToNetId[json.cxId] = json.netId;
+                if (json.cxId == _client.rttService.getRTTConnectionId()) {
                     if (!bcr.isConnected) {
                         bcr._netId = json.netId;
-                        bcr._ownerId = json.ownerId;
+                        bcr._ownerCxId = json.ownerCxId;
                         bcr.isConnected = true;
                         bcr.startPing();
                         if (bcr.connectCallback.success) {
@@ -15441,12 +15888,12 @@ function BrainCloudRelayComms(_client) {
                 break;
             }
             case "NET_ID": {
-                bcr._netIdToProfileId[json.netId] = json.profileId;
-                bcr._profileIdToNetId[json.profileId] = json.netId;
+                bcr._netIdToCxId[json.netId] = json.cxId;
+                bcr._cxIdToNetId[json.cxId] = json.netId;
                 break;
             }
             case "MIGRATE_OWNER": {
-                bcr._ownerId = json.profileId;
+                bcr._ownerId = json.cxId;
                 break;
             }
         }
