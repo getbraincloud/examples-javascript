@@ -154,16 +154,14 @@ class App extends Component {
         if (result.data.lobby) {
             this.setState({ lobby: { ...result.data.lobby, lobbyId: result.data.lobbyId }, joiningState: result.data.lobby.state })
         }
-        if (result.data.connectData) {
-            this.setState({ server: result.data })
-        }
 
-        if (result.operation === "DISBANDED") {
-            if (result.data.reason.code === 80101) {
-                // Start the game!
-                this.setState({ screen: "game" })
-            }
-            else {
+        if (result.operation === "ROOM_READY") {
+            // Start the game!
+            this.setState({ server: result.data, screen: "game" })
+        }
+        else if (result.operation === "DISBANDED") {
+            if (result.data.reason.code != 80101) {
+                // Disbanded without room ready
                 this.onGameScreenClose()
             }
         }

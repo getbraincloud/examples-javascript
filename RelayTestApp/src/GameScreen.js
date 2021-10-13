@@ -45,9 +45,9 @@ class GameScreen extends Component
         this.props.onToggleOrdered()
     }
 
-    onTogglePlayerMask(profileId)
+    onTogglePlayerMask(cxId)
     {
-        this.props.onTogglePlayerMask(profileId)
+        this.props.onTogglePlayerMask(cxId)
     }
 
     render()
@@ -59,9 +59,9 @@ class GameScreen extends Component
                         <p>Player Mask (For shockwaves)</p>
                         {
                             this.props.lobby.members.map(member => (
-                                <div key={`${member.profileId}_mask`}>
-                                    <input type="checkbox" name={`${member.profileId}_mask`} onChange={() => this.onTogglePlayerMask(member.profileId)} defaultChecked={member.allowSendTo}/>
-                                    <label htmlFor={`${member.profileId}_mask`}>{member.name}</label>
+                                <div key={`${member.cxId}_mask`}>
+                                    <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo}/>
+                                    <label htmlFor={`${member.cxId}_mask`}>{member.name}</label>
                                 </div>
                             ))
                         }
@@ -81,8 +81,8 @@ class GameScreen extends Component
                             ))
                         }
                         {
-                            this.props.lobby.members.filter(member => member.pos && member.profileId !== this.props.user.id).map(member => (
-                                <div key={`${member.profileId}_arrow`} className="Entity" style={{left: `${member.pos.x}px`, top: `${member.pos.y}px`}}>
+                            this.props.lobby.members.filter(member => member.pos && member.cxId !== this.props.user.cxId).map(member => (
+                                <div key={`${member.cxId}_arrow`} className="Entity" style={{left: `${member.pos.x}px`, top: `${member.pos.y}px`}}>
                                     <img className="Arrow" src={`arrow${member.extra.colorIndex}.png`} alt="arrow"/>
                                     <p style={{color: colors[member.extra.colorIndex]}}>{member.name}</p>
                                 </div>

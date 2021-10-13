@@ -108,6 +108,7 @@ class App extends Component
                 screen: "mainMenu",
                 user: {
                     id: result.data.profileId,
+                    cxId: null,
                     name: this.username,
                     colorIndex: parseInt(localStorageColor),
                     isReady: false
@@ -121,27 +122,65 @@ class App extends Component
     }
 
     // Clicked play from the main menu (Menu shown after authentication)
-    onPlayClicked()
+    onPlayClicked(lobbyType)
     {
-        this.setState({ screen: "joiningLobby" })
+        this.setState({ screen: "joiningLobby", lobbyType: lobbyType })
 
         // Enable RTT service
         this.bc.rttService.enableRTT(() =>
         {
+            let state = this.state
+            state.user.cxId = this.bc.rttService.getRTTConnectionId()
+            this.setState(state)
+
             console.log("RTT Enabled");
 
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
-            // Find or create a lobby
-            this.bc.lobby.findOrCreateLobby("CursorPartyV2", 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+            // If using gamelift, we will do region pings
+            if (lobbyType == "CursorPartyGameLift")
             {
-                if (result.status !== 200)
+                this.bc.lobby.getRegionsForLobbies([lobbyType], (result) =>
                 {
-                    this.dieWithMessage("Failed to find lobby")
-                }
-                // Success of lobby found will be in the event onLobbyEvent
-            })
+                    if (result.status !== 200) 
+                    {
+                        this.dieWithMessage("Failed to get regions for lobbies")
+                        return
+                    }
+
+                    this.bc.lobby.pingRegions((result) =>
+                    {
+                        if (result.status !== 200) 
+                        {
+                            this.dieWithMessage("Failed to ping regions")
+                            return
+                        }
+
+                        // Find or create a lobby
+                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                        {
+                            if (result.status !== 200)
+                            {
+                                this.dieWithMessage("Failed to find lobby")
+                            }
+                            // Success of lobby found will be in the event onLobbyEvent
+                        })
+                    })
+                })
+            }
+            else
+            {
+                // Find or create a lobby
+                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                {
+                    if (result.status !== 200)
+                    {
+                        this.dieWithMessage("Failed to find lobby")
+                    }
+                    // Success of lobby found will be in the event onLobbyEvent
+                })
+            }
         }, () =>
         {
             if (this.state.screen === "joiningLobby")
@@ -174,26 +213,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code === this.bc.reasonCodes.RTT_ROOM_READY)
-            {
-                // Server has been created. Connect to it
-                this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
-                this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
-                this.bc.relay.connect({
-                    ssl: false,
-                    host: this.state.server.connectData.address,
-                    port: this.state.server.connectData.ports.ws,
-                    passcode: this.state.server.passcode,
-                    lobbyId: this.state.server.lobbyId
-                }, result =>
-                {
-                    let state = this.state
-                    state.lobby.members.forEach(member => member.allowSendTo = (member.profileId !== state.user.id))
-                    state.screen = "game"
-                    this.setState(state)
-                }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
-            }
-            else
+            if (result.data.reason.code != this.bc.reasonCodes.RTT_ROOM_READY)
             {
                 // Disbanded for any other reason than ROOM_READY, means we failed to launch the game.
                 this.onGameScreenClose()
@@ -206,8 +226,29 @@ class App extends Component
         }
         else if (result.operation === "ROOM_READY")
         {
-            // Server has been created, save connection info.
-            this.setState({ server: result.data })
+            let server = result.data;
+
+            // If the lobby is gamelift, the port name will be "gamelift"
+            let wsPort = 0;
+            if (this.state.lobbyType == "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
+            else wsPort = server.connectData.ports.ws;
+
+            // Server has been created. Connect to it
+            this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
+            this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
+            this.bc.relay.connect({
+                ssl: false,
+                host: server.connectData.address,
+                port: wsPort,
+                passcode: server.passcode,
+                lobbyId: server.lobbyId
+            }, result =>
+            {
+                let state = this.state
+                state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
+                state.screen = "game"
+                this.setState(state)
+            }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
         }
     }
 
@@ -226,15 +267,14 @@ class App extends Component
         this.setState(state)
     }
 
-    onTogglePlayerMask(profileId)
+    onTogglePlayerMask(cxId)
     {
         let state = this.state
-        let member = state.lobby.members.find(member => member.profileId === profileId)
+        let member = state.lobby.members.find(member => member.cxId === cxId)
         if (member)
         {
             member.allowSendTo = !member.allowSendTo
         }
-        console.log("poop: " + profileId + " = " + member.allowSendTo)
         this.setState(state)
     }
 
@@ -250,7 +290,6 @@ class App extends Component
         let state = this.state
         state.screen = "mainMenu"
         state.lobby = null
-        state.server = null
         state.user.isReady = false
         this.setState(state)
     }
@@ -282,8 +321,8 @@ class App extends Component
     onRelayMessage(netId, data)
     {
         let state = this.state;
-        let memberProfileId = this.bc.relay.getProfileIdForNetId(netId)
-        let member = state.lobby.members.find(member => member.profileId === memberProfileId)
+        let memberCxId = this.bc.relay.getCxIdForNetId(netId)
+        let member = state.lobby.members.find(member => member.cxId === memberCxId)
         let str = data.toString('ascii');
         console.log(str)
         let json = JSON.parse(str)
@@ -312,7 +351,7 @@ class App extends Component
         if (json.op === "DISCONNECT") // A member has disconnected from the game
         {
             let state = this.state;
-            let member = state.lobby.members.find(member => member.profileId === json.profileId)
+            let member = state.lobby.members.find(member => member.cxId === json.cxId)
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
         }
@@ -322,7 +361,7 @@ class App extends Component
     onPlayerMove(pos)
     {
         let state = this.state;
-        let member = state.lobby.members.find(member => member.profileId === state.user.id)
+        let member = state.lobby.members.find(member => member.cxId === state.user.cxId)
         member.pos = {x: pos.x, y: pos.y};
         this.setState(state)
 
@@ -345,7 +384,7 @@ class App extends Component
             }
             else
             {
-                let netId = this.bc.relay.getNetIdForProfileId(member.profileId)
+                let netId = this.bc.relay.getNetIdForCxId(member.cxId)
 
                 // Note here we don't use bitwise operations because
                 // the mask can be up to 40 players, and using bitwise limits us to 32 bits in JS.
