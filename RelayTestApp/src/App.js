@@ -228,6 +228,9 @@ class App extends Component
         {
             let server = result.data;
 
+            // Make sure we're back at ready = false, if we have multiple rounds
+            // this.bc.lobby.updateReady(this.state.lobby.lobbyId, false, {colorIndex: this.state.user.colorIndex})
+
             // If the lobby is gamelift, the port name will be "gamelift"
             let wsPort = 0;
             if (this.state.lobbyType == "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
@@ -247,6 +250,20 @@ class App extends Component
                 let state = this.state
                 state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
                 state.screen = "game"
+
+                // If we are Long Live Lobby, we quit the game after 20sec
+                if (this.state.lobbyType == "CursorPartyV2LongLive")
+                {
+                    state.nextRoundTimeout = setTimeout(this.onRoundFinished.bind(this), 20000);
+                    state.lobby.timeLeft = 20;
+                    state.timeLeftTick = setInterval(() =>
+                    {
+                        let state = this.state
+                        state.lobby.timeLeft = Math.max(0, state.lobby.timeLeft - 1);
+                        this.setState(state)
+                    }, 1000);
+                }
+
                 this.setState(state)
             }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
         }
@@ -291,7 +308,39 @@ class App extends Component
         state.screen = "mainMenu"
         state.lobby = null
         state.user.isReady = false
+        if (state.nextRoundTimeout)
+        {
+            clearTimeout(state.nextRoundTimeout);
+            state.nextRoundTimeout = null;
+        }
+        if (state.timeLeftTick)
+        {
+            clearInterval(state.timeLeftTick);
+            state.timeLeftTick = null;
+        }
         this.setState(state)
+    }
+
+    // For long lived lobby, rounds last 20sec then go back here, to the lobby screen
+    onRoundFinished()
+    {
+        this.bc.relay.deregisterRelayCallback()
+        this.bc.relay.deregisterSystemCallback()
+        this.bc.relay.disconnect()
+
+        let state = this.state
+        state.screen = "lobby"
+        state.user.isReady = false
+        state.nextRoundTimeout = null;
+        if (state.timeLeftTick)
+        {
+            clearInterval(state.timeLeftTick);
+            state.timeLeftTick = null;
+        }
+        this.setState(state)
+
+        // Set our state to not ready and notify the lobby Service.
+        // this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, {colorIndex: this.state.user.colorIndex})
     }
 
     // The player has picked a different color in the Lobby menu

@@ -91,6 +91,7 @@ class GameScreen extends Component
                     </div>
                 </div>
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
+                <p>{this.props.lobby.timeLeft ? ("Time left: " + this.props.lobby.timeLeft + " seconds") : ""}</p>
             </div>
         )
     }
