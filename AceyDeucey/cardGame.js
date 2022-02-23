@@ -101,7 +101,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	//_bc.enableLogging(true);
 
 	// change this url if you want to point to another brainCloud server
-	// brainCloudManager.setDispatcherURL("https://sharedprod.braincloudservers.com/dispatcher");
+	// brainCloudManager.setDispatcherURL("https://api.braincloudservers.com/dispatcher");
 
 	$scope.dispatchButtonPress = function () {
 		if ($scope.state === "NEW_HAND") {

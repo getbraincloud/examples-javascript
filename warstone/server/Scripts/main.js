@@ -25,11 +25,11 @@ function makeS2SURL(host, port)
     {
         if (!port)
         {
-            return "sharedprod.braincloudservers.com"
+            return "api.braincloudservers.com"
         }
         else
         {
-            return "sharedprod.braincloudservers.com"//:" + port
+            return "api.braincloudservers.com"//:" + port
         }
     }
     else
