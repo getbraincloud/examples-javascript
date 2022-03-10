@@ -55,11 +55,12 @@ function BrainCloudManager ()
     bcm._bundlerIntervalId = null;
     bcm._packetTimeouts = [15, 20, 35, 50];
     bcm._retry = 0;
+    bcm._requestId = 0; // This is not like packet id. We need this to make sure we don't trigger events on XMLHttpRequest responses if we already moved on. Had issues with retrying and losing internet
 
     bcm._appId = "";
     bcm._secret = "";
     bcm._secretMap = {};
-    bcm._serverUrl = "https://sharedprod.braincloudservers.com";
+    bcm._serverUrl = "https://api.braincloudservers.com";
     bcm._dispatcherUrl = bcm._serverUrl + "/dispatcherv2";
     bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
     bcm._appVersion = "";
@@ -601,6 +602,8 @@ function BrainCloudManager ()
             xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
         }
 
+        xmlhttp.requestId = ++bcm._requestId;
+
 //> REMOVE IF K6
         xmlhttp.ontimeout_bc = function()
         {
@@ -619,7 +622,7 @@ function BrainCloudManager ()
 
         xmlhttp.onreadystatechange = function()
         {
-            if (xmlhttp.hasTimedOut)
+            if (xmlhttp.hasTimedOut || xmlhttp.requestId != bcm._requestId)
             {
                 return;
             }
@@ -681,6 +684,9 @@ function BrainCloudManager ()
                     {
                         bcm._errorCallback(errorMessage);
                     }
+                    if (!errorMessage || errorMessage == "") errorMessage = "Unknown error. Did you lose internet connection?";
+                    bcm.fakeErrorResponse(bcm.statusCodes.CLIENT_NETWORK_ERROR, reasonCode,
+                        errorMessage);
                 }
             }
         }; // end inner function
@@ -1590,6 +1596,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_GOOGLE = "Google";
 	bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID = "GoogleOpenId";
 	bc.authentication.AUTHENTICATION_TYPE_APPLE = "Apple";
+	bc.authentication.AUTHENTICATION_TYPE_ULTRA = "Ultra";
 
 	bc.authentication.AUTHENTICATION_TYPE_UNIVERSAL = "Universal";
 	bc.authentication.AUTHENTICATION_TYPE_GAME_CENTER = "GameCenter";
@@ -1658,6 +1665,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS,
 			null,
 			forceCreate,
+            null,
 			callback);
 	};
 
@@ -1683,6 +1691,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_EMAIL,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1706,6 +1715,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_EXTERNAL,
 			externalAuthName,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1728,6 +1738,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_FACEBOOK,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1750,6 +1761,7 @@ function BCAuthentication() {
 				bc.authentication.AUTHENTICATION_TYPE_FACEBOOK_LIMITED,
 				null,
 				forceCreate,
+                null,
 				responseHandler);
 		};
 
@@ -1772,6 +1784,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_APPLE,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1793,6 +1806,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_GAME_CENTER,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1815,6 +1829,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_APPLE,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
     };
 
@@ -1837,6 +1852,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_GOOGLE,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1859,6 +1875,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1881,8 +1898,32 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
+
+    /**
+     * Authenticate the user for Ultra.
+     *
+     * Service Name - authenticationV2
+     * Service Operation - AUTHENTICATE
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param ultraIdToken {string} - The "id_token" taken from Ultra's JWT.
+     * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+     * If set to false, you need to handle errors in the case of new players.
+     * @param responseHandler {function} - The user callback method
+     */
+    bc.authentication.authenticateUltra = function(ultraUsername, ultraIdToken, forceCreate, responseHandler) {
+        bc.authentication.authenticate(
+            ultraUsername,
+            ultraIdToken,
+            bc.authentication.AUTHENTICATION_TYPE_ULTRA,
+            null,
+            forceCreate,
+            null,
+            responseHandler);
+    };
 
 	/**
 	 * Authenticate the user using a steam userId and session ticket (without any validation on the userId).
@@ -1902,6 +1943,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_STEAM,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1926,6 +1968,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_TWITTER,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -1947,8 +1990,33 @@ function BCAuthentication() {
             bc.authentication.AUTHENTICATION_TYPE_UNIVERSAL,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
+
+    /**
+     * A generic Authenticate method that translates to the same as calling a specific one, except it takes an extraJson
+     * that will be passed along to pre- or post- hooks.
+     *
+     * Service Name - Authenticate
+     * Service Operation - Authenticate
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param ids {object} Auth IDs object containing externalId, authenticationToken and optionally authenticationSubType.
+     * @param forceCreate  {boolean} Should a new profile be created for this user if the account does not exist?
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param responseHandler {function} - The user callback method
+     */
+    bc.authentication.authenticateAdvanced = function(authenticationType, ids, forceCreate, extraJson, responseHandler) {
+        bc.authentication.authenticate(
+            ids.externalId,
+            ids.authenticationToken,
+            authenticationType,
+            ids.authenticationSubType,
+            forceCreate,
+            extraJson,
+            responseHandler);
+    };
 
 	/**
 	 * Authenticate the user using a Pase userid and authentication token
@@ -1968,6 +2036,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_PARSE,
 			null,
 			forceCreate,
+            null,
 			responseHandler);
 	};
 
@@ -2283,6 +2352,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_HANDOFF,
 			null,
 			false,
+            null,
 			callback);
 	};
 
@@ -2302,6 +2372,7 @@ function BCAuthentication() {
 			bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF,
 			null,
 			false,
+            null,
 			callback);
 	};
 
@@ -2317,7 +2388,7 @@ function BCAuthentication() {
 	 * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
 	 * @param responseHandler {function} - The user callback method
 	 */
-	bc.authentication.authenticate = function(externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, responseHandler) {
+	bc.authentication.authenticate = function(externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, extraJson, responseHandler) {
 
         var callerCallback = responseHandler;
 		// The joy of closures...
@@ -2359,6 +2430,10 @@ function BCAuthentication() {
 		if (externalAuthName) {
 			data["externalAuthName"] = externalAuthName;
 		};
+
+        if (extraJson) {
+            data["extraJson"] = extraJson;
+        }
 
 
         var request = {
@@ -2748,7 +2823,8 @@ function BCCustomEntity() {
 	bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET= "GET_ENTITY_PAGE_OFFSET";
 	bc.customEntity.OPERATION_READ_ENTITY= "READ_ENTITY";
 	bc.customEntity.OPERATION_UPDATE_ENTITY= "UPDATE_ENTITY";
-	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS= "UPDATE_ENTITY_FIELDS";
+	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS = "UPDATE_ENTITY_FIELDS";
+	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS_SHARDED = "UPDATE_ENTITY_FIELDS_SHARDED";
 	bc.customEntity.OPERATION_DELETE_ENTITY = "DELETE_ENTITY";
 	bc.customEntity.OPERATION_DELETE_ENTITIES = "DELETE_ENTITIES";
 	bc.customEntity.OPERATION_DELETE_SINGLETON = "DELETE_SINGLETON";
@@ -3047,6 +3123,34 @@ function BCCustomEntity() {
 			callback : callback
 		});
 	};
+
+    /**
+     *Sets the specified fields within custom entity data on the server.
+     * 
+     * @param entityType {string} The entity type as defined by the user
+     * @param entityId
+     * @param version 
+     * @param fieldsJson {json} the fields in the entity
+     * @param shardKeyJson The shard key field(s) and value(s), as JSON, applicable to the entity being updated.
+     * @param callback {function} The callback handler.
+     */
+    bc.customEntity.updateEntityFieldsSharded = function(entityType, entityId, version, fieldsJson, shardKeyJson, callback) {
+        var message = {
+            entityType : entityType,
+            entityId : entityId,
+            version : version
+        };
+
+        if (fieldsJson) message.fieldsJson = fieldsJson;
+        if (shardKeyJson) message.shardKeyJson = shardKeyJson;
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS_SHARDED,
+            data : message,
+            callback : callback
+        });
+    };
 
 /**
 *deletes entities based on the delete criteria.
@@ -4593,6 +4697,8 @@ function BCFriend() {
 
 	/**
 	 * Read a friend's state.
+     * If you are not friend with this user, you will get an error
+     * with NOT_FRIENDS reason code.
 	 *
 	 * Service Name - PlayerState
 	 * Service Operation - ReadFriendsPlayerState
@@ -7258,6 +7364,173 @@ function BCIdentity() {
      */
     bc.identity.detachFacebookIdentity = function(facebookId, continueAnon, callback) {
         bc.identity.detachIdentity(facebookId, bc.authentication.AUTHENTICATION_TYPE_FACEBOOK, continueAnon, callback);
+    };
+
+    /**
+     * Attach the user's Ultra credentials to the current profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Attach
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param ultraIdToken {string} - The "id_token" taken from Ultra's JWT.
+     * @param callback The method to be invoked when the server response is received
+     *
+     * Errors to watch for:  SWITCHING_PROFILES - this means that the Ultra identity you provided
+     * already points to a different profile.  You will likely want to offer the player the
+     * choice to *SWITCH* to that profile, or *MERGE* the profiles.
+     *
+     * To switch profiles, call ClearSavedProfileID() and call AuthenticateUltra().
+     */
+    bc.identity.attachUltraIdentity = function(ultraUsername, ultraIdToken, callback) {
+        bc.identity.attachIdentity(ultraUsername, ultraIdToken, bc.authentication.AUTHENTICATION_TYPE_ULTRA, callback);
+    };
+
+    /**
+     * Merge the profile associated with the provided Ultra credentials with the
+     * current profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Merge
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param ultraIdToken {string} - The "id_token" taken from Ultra's JWT.
+     * @param callback The method to be invoked when the server response is received
+     *
+     */
+    bc.identity.mergeUltraIdentity = function(ultraUsername, ultraIdToken, callback) {
+        bc.identity.mergeIdentity(ultraUsername, ultraIdToken, bc.authentication.AUTHENTICATION_TYPE_ULTRA, callback);
+    };
+
+    /**
+     * Detach the Ultra identity from this profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Detach
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param continueAnon Proceed even if the profile will revert to anonymous?
+     * @param callback The method to be invoked when the server response is received
+     *
+     * Watch for DOWNGRADING_TO_ANONYMOUS_ERROR - occurs if you set continueAnon to false, and
+     * disconnecting this identity would result in the profile being anonymous (which means that
+     * the profile wouldn't be retrievable if the user loses their device)
+     */
+    bc.identity.detachUltraIdentity = function(ultraUsername, continueAnon, callback) {
+        bc.identity.detachIdentity(ultraUsername, bc.authentication.AUTHENTICATION_TYPE_ULTRA, continueAnon, callback);
+    };
+
+    /**
+     * Attach the user's credentials to the current profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Attach
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param ids {object} Auth IDs object containing externalId, authenticationToken and optionally authenticationSubType.
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param callback The method to be invoked when the server response is received
+     *
+     * Errors to watch for:  SWITCHING_PROFILES - this means that the identity you provided
+     * already points to a different profile.  You will likely want to offer the player the
+     * choice to *SWITCH* to that profile, or *MERGE* the profiles.
+     *
+     * To switch profiles, call ClearSavedProfileID() and call AuthenticateAdvanced().
+     */
+    bc.identity.attachAdvancedIdentity = function(authenticationType, ids, extraJson, callback) {
+
+        var data = {
+            externalId : ids.externalId,
+            authenticationType : authenticationType,
+            authenticationToken : ids.authenticationToken
+        }
+
+        if (externalAuthName) {
+            data["externalAuthName"] = externalAuthName;
+        };
+
+        if (extraJson) {
+            data["extraJson"] = extraJson;
+        }
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_IDENTITY,
+            operation: bc.identity.OPERATION_ATTACH,
+            data: data,
+            callback: callback
+        });
+    };
+
+    /**
+     * Merge the profile associated with the provided credentials with the
+     * current profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Merge
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param ids {object} Auth IDs object containing externalId, authenticationToken and optionally authenticationSubType.
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.identity.mergeAdvancedIdentity = function(authenticationType, ids, extraJson, callback) {
+
+        var data = {
+            externalId : ids.externalId,
+            authenticationType : authenticationType,
+            authenticationToken : ids.authenticationToken
+        }
+
+        if (externalAuthName) {
+            data["externalAuthName"] = externalAuthName;
+        };
+
+        if (extraJson) {
+            data["extraJson"] = extraJson;
+        }
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_IDENTITY,
+            operation: bc.identity.OPERATION_MERGE,
+            data: data,
+            callback: callback
+        });
+    };
+
+    /**
+     * Detach the identity from this profile.
+     *
+     * Service Name - Identity
+     * Service Operation - Detach
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param externalId The Facebook id of the user
+     * @param continueAnon Proceed even if the profile will revert to anonymous?
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param callback The method to be invoked when the server response is received
+     *
+     * Watch for DOWNGRADING_TO_ANONYMOUS_ERROR - occurs if you set continueAnon to false, and
+     * disconnecting this identity would result in the profile being anonymous (which means that
+     * the profile wouldn't be retrievable if the user loses their device)
+     */
+    bc.identity.detachAdvancedIdentity = function(authenticationType, externalId, continueAnon, extraJson, callback) {
+
+        var data = {
+            externalId : externalId,
+            authenticationType : authenticationType,
+            confirmAnonymous : continueAnon
+        }
+
+        if (extraJson) {
+            data["extraJson"] = extraJson;
+        }
+
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_IDENTITY,
+			operation: bc.identity.OPERATION_DETACH,
+			data: data,
+			callback: callback
+		});
     };
 
     /**
@@ -11662,6 +11935,8 @@ function BCReasonCodes() {
     bc.reasonCodes.UNKNOWN_AUTH_ERROR = 40217;
     bc.reasonCodes.DATABASE_INPUT_TOO_LARGE_ERROR = 40218;
     bc.reasonCodes.MISSING_APP_EMAIL_ACCOUNT = 40219;
+    bc.reasonCodes.DATABASE_DUP_KEY_ERROR = 40220;
+    bc.reasonCodes.EMAIL_NOT_VALID = 40221;
     bc.reasonCodes.UNABLE_TO_GET_FRIENDS_FROM_FACEBOOK = 40300;
     bc.reasonCodes.BAD_SIGNATURE = 40301;
     bc.reasonCodes.UNABLE_TO_VALIDATE_PLAYER = 40302;
@@ -11670,11 +11945,13 @@ function BCReasonCodes() {
     bc.reasonCodes.PLAYER_SESSION_MISMATCH = 40305;
     bc.reasonCodes.OPERATION_REQUIRES_A_SESSION = 40306;
     bc.reasonCodes.TOKEN_DOES_NOT_MATCH_USER = 40307;
+    bc.reasonCodes.MANUAL_REDIRECT = 40308;
     bc.reasonCodes.EVENT_CAN_ONLY_SEND_TO_FRIEND_OR_SELF = 40309;
     bc.reasonCodes.NOT_FRIENDS = 40310;
     bc.reasonCodes.VC_BALANCE_CANNOT_BE_SPECIFIED = 40311;
     bc.reasonCodes.VC_LIMIT_EXCEEDED = 40312;
     bc.reasonCodes.UNABLE_TO_GET_MY_DATA_FROM_FACEBOOK = 40313;
+    bc.reasonCodes.TLS_VERSION_INVALID = 40314;
     bc.reasonCodes.INVALID_AUTHENTICATION_TYPE = 40315;
     bc.reasonCodes.INVALID_GAME_ID = 40316;
     bc.reasonCodes.APPLE_TRANS_ID_ALREADY_CLAIMED = 40317;
@@ -12084,7 +12361,23 @@ function BCReasonCodes() {
     bc.reasonCodes.SCRIPT_HAS_DEPENDENCIES = 40721;
     bc.reasonCodes.PEER_SERVICE_NOT_PUBLISHED = 40722;
     bc.reasonCodes.MISSING_FOLDER_NAME = 40723;
+    bc.reasonCodes.UPLOLAD_IN_PROGRESS = 40724;
+    bc.reasonCodes.REFRESH_IN_PROGRESS = 40725;
+    bc.reasonCodes.REFRESH_INTERRUPTED = 40726;
+    bc.reasonCodes.GAMELIFT_ERROR = 40727;
+    bc.reasonCodes.GAMELIFT_LAUNCH_ERROR = 40728;
+    bc.reasonCodes.MAX_HOSTED_SERVERS_REACHED = 40729;
     bc.reasonCodes.DUPLICATE_PACKET_ID = 40730;
+    bc.reasonCodes.FEATURE_NOT_SUPPORTED_BY_BILLING_PLAN = 40731;
+    bc.reasonCodes.NO_FRIENDS_FOUND = 40740;
+    bc.reasonCodes.PRODUCT_TRANSACTION_NOT_FOUND = 40741;
+    bc.reasonCodes.ITEM_DEF_NOT_FOUND = 40742;
+    bc.reasonCodes.ITEM_DEF_HAS_DEPENDENCIES = 40743;
+    bc.reasonCodes.TRANSFER_JOB_IDLE_TIMEOUT = 40744;
+    bc.reasonCodes.GROUP_MEMBER_ACL_MORE_RESTRICTIVE_THAN_OTHER = 40745;
+    bc.reasonCodes.GROUP_MEMBER_ACL_MUST_BE_READ_WRITE_FOR_UNOWNED_ENTITY = 40746;
+    bc.reasonCodes.GROUP_MEMBER_ACL_REQUIRED = 40747;
+    bc.reasonCodes.GROUP_TYPE_MAX_MEMBERS_EXCEEDED = 40748;
     bc.reasonCodes.REQUEST_FAILED = 40801;
     bc.reasonCodes.RESET_QUESTS_FAILED = 40802;
     bc.reasonCodes.RESET_ALL_QUESTS_AND_MILESTONES_FAILED = 40803;
@@ -12105,6 +12398,12 @@ function BCReasonCodes() {
     bc.reasonCodes.VERSION_MISMATCH = 40821;
     bc.reasonCodes.UNSUPPORTED_CRITERIA_FOR_SHARDED_COLLECTIONS = 40822;
     bc.reasonCodes.STEAM_ERROR = 40830;
+    bc.reasonCodes.INVALID_LEADERBOARD_TOURNAMENT_SETTING = 40840;
+    bc.reasonCodes.LEADERBOARD_EDIT_TOURNAMENT_SETTINGS_ERROR = 40841;
+    bc.reasonCodes.LEADERBOARD_SCORES_EXIST = 40842;
+    bc.reasonCodes.TOURNAMENT_SCORES_EXIST = 40843;
+    bc.reasonCodes.LEADERBOARD_DBVERSION_MISMATCH = 40844;
+    bc.reasonCodes.LEADERBOARD_API_DOES_NOT_APPLY = 40845;
     bc.reasonCodes.MISSING_CONFIG = 40900;
     bc.reasonCodes.INVALID_SAML_RESP = 40901;
     bc.reasonCodes.MISSING_PAGE_NAME = 40902;
@@ -12113,6 +12412,8 @@ function BCReasonCodes() {
     bc.reasonCodes.INVALID_RESPONSE_ID = 40905;
     bc.reasonCodes.LOGOUT_ERROR = 40906;
     bc.reasonCodes.SCRIPT_EXISTS = 40907;
+    bc.reasonCodes.SCRIPT_DUPLICATE_EXISTS = 40908;
+    bc.reasonCodes.INVALID_UPLOAD_EXTENSION = 40909;
     bc.reasonCodes.NO_TWITTER_CONSUMER_KEY = 500001;
     bc.reasonCodes.NO_TWITTER_CONSUMER_SECRET = 500002;
     bc.reasonCodes.INVALID_CONFIGURATION = 500003;
@@ -12164,6 +12465,7 @@ function BCReasonCodes() {
     bc.reasonCodes.BUILDER_API_APP_DISABLED = 60108;
     bc.reasonCodes.BUILDER_API_APP_IS_LIVE = 60109;
     bc.reasonCodes.BUILDER_API_APP_SUSPENDED = 60110;
+    bc.reasonCodes.BUILDER_API_CREATED_AT_MISMATCH = 60111;
     bc.reasonCodes.PLAYSTATION_NETWORK_ERROR = 60200;
     bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
     bc.reasonCodes.RTT_EVICTED = 80001;
@@ -13207,10 +13509,11 @@ function BCSocialLeaderboard() {
     /**
      * Method returns the social leaderboard. A player's social leaderboard is
      * comprised of players who are recognized as being your friend.
-     * For now, this applies solely to Facebook connected players who are
-     * friends with the logged in player (who also must be Facebook connected).
-     * In the future this will expand to other identification means (such as
-     * Game Centre, Google circles etc).
+     * 
+     * The getSocialLeaderboard will retrieve all friends from all friend platforms, so
+     * - all external friends (Facebook, Steam, PlaystationNetwork)
+     * - all internal friends (brainCloud)
+     * - plus "self".
      *
      * Leaderboards entries contain the player's score and optionally, some user-defined
      * data associated with the score. The currently logged in player will also
@@ -13242,11 +13545,12 @@ function BCSocialLeaderboard() {
     /**
      * Method returns the social leaderboard by version. A player's social leaderboard is
      * comprised of players who are recognized as being your friend.
-     * For now, this applies solely to Facebook connected players who are
-     * friends with the logged in player (who also must be Facebook connected).
-     * In the future this will expand to other identification means (such as
-     * Game Centre, Google circles etc).
-     *
+     * 
+     * The getSocialLeaderboard will retrieve all friends from all friend platforms, so
+     * - all external friends (Facebook, Steam, PlaystationNetwork)
+     * - all internal friends (brainCloud)
+     * - plus "self".
+     * 
      * Leaderboards entries contain the player's score and optionally, some user-defined
      * data associated with the score. The currently logged in player will also
      * be returned in the social leaderboard.
@@ -15158,7 +15462,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.9.0";
+    bcc.version = "4.10.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -15238,7 +15542,7 @@ function BrainCloudClient() {
      * value.
      *
      * @param serverUrl
-     *            {string} - The server URL e.g. "https://sharedprod.braincloudservers.com"
+     *            {string} - The server URL e.g. "https://api.braincloudservers.com"
      */
     bcc.setServerUrl = function(serverUrl) {
         bcc.brainCloudManager.setServerUrl(serverUrl);
@@ -15587,20 +15891,33 @@ function BrainCloudRelayComms(_client) {
         // build url with auth as arguments
         var uri = (ssl ? "wss://" : "ws://") + host + ":" + port;
 
+//> ADD IF K6
+//+     var res = ws.connect(uri, {}, function (socket) {
+//+         bcr.socket = socket;
+//+         socket.on('error', bcr.onSocketError);
+//+         socket.on('close', bcr.onSocketClose);
+//+         socket.on('open', bcr.onSocketOpen);
+//+         socket.on('binaryMessage', bcr.onSocketMessage);
+//+     });
+//> END
+//> REMOVE IF K6
         bcr.socket = new WebSocket(uri);
         bcr.socket.addEventListener('error', bcr.onSocketError);
         bcr.socket.addEventListener('close', bcr.onSocketClose);
         bcr.socket.addEventListener('open', bcr.onSocketOpen);
         bcr.socket.addEventListener('message', bcr.onSocketMessage);
+//> END
     }
 
     bcr.disconnect = function() {
         bcr.stopPing();
         if (bcr.socket) {
+//> REMOVE IF K6
             bcr.socket.removeEventListener('error', bcr.onSocketError);
             bcr.socket.removeEventListener('close', bcr.onSocketClose);
             bcr.socket.removeEventListener('open', bcr.onSocketOpen);
             bcr.socket.removeEventListener('message', bcr.onSocketMessage);
+//> END
             bcr.socket.close();
             bcr.socket = null;
         }
@@ -15639,7 +15956,9 @@ function BrainCloudRelayComms(_client) {
 
     bcr.stopPing = function() {
         if (bcr._pingIntervalId) {
+//> REMOVE IF K6
             clearInterval(bcr._pingIntervalId);
+//> END
             bcr._pingIntervalId = null;
         }
         bcr._pingInFlight = false;
@@ -15647,7 +15966,13 @@ function BrainCloudRelayComms(_client) {
 
     bcr.startPing = function() {
         bcr.stopPing();
+//> ADD IF K6
+//+     bcr._pingIntervalId = true;
+//+     bcr.socket.setInterval(function() {
+//> END
+//> REMOVE IF K6
         bcr._pingIntervalId = setInterval(function() {
+//> END
             if (!bcr._pingInFlight) {
                 bcr.sendPing();
             }
@@ -15685,7 +16010,13 @@ function BrainCloudRelayComms(_client) {
 
     bcr.onSocketMessage = function(e) {
         var processResult = function(data) {
+            console.log("Typeof data = " + (typeof data));
+//> ADD IF K6
+//+         var buffer = new Uint8Array(data);
+//> END
+//> REMOVE IF K6
             var buffer = new Buffer(data);
+//> END
             if (data.length < 3) {
                 bcr.disconnect();
                 if (bcr.connectCallback.failure) {
@@ -15696,6 +16027,10 @@ function BrainCloudRelayComms(_client) {
             bcr.onRecv(buffer);
         }
 
+//> ADD IF K6
+//+         processResult(e);
+//> END
+//> REMOVE IF K6
         if (typeof FileReader !== 'undefined') {
             // Web Browser
             var reader = new FileReader();
@@ -15707,6 +16042,7 @@ function BrainCloudRelayComms(_client) {
             // Node.js
             processResult(e.data);
         }
+//> END
     }
 
     bcr.sendJson = function(netId, json) {
@@ -15714,10 +16050,23 @@ function BrainCloudRelayComms(_client) {
     }
 
     bcr.sendText = function(netId, text) {
+//> ADD IF K6
+//+     var buffer = new Uint8Array(text.length + 3);
+//+     var value_16u = text.length + 3;
+//+     buffer[0] = value_16u & 0xFF;
+//+     buffer[1] = (value_16u >> 8) & 0xFF;
+//+     buffer[2] = netId;
+//+     for (var i = 0; i < text.length; ++i)
+//+     {
+//+         buffer[3 + i] = text.charCodeAt(i);
+//+     }
+//> END
+//> REMOVE IF K6
         var buffer = new Buffer(text.length + 3)
         buffer.writeUInt16BE(text.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.write(text, 3, text.length);
+//> END
         bcr.socket.send(buffer);
         
         if (bcr._debugEnabled) {
@@ -15775,7 +16124,12 @@ function BrainCloudRelayComms(_client) {
         var packetId = bcr._sendPacketId[p0][p1][p2][p3];
         rh += packetId;
 
+//> ADD IF K6
+//+     var buffer = new Uint8Array(data.length + 11);
+//> END
+//> REMOVE IF K6
         var buffer = new Buffer(data.length + 11)
+//> END
         buffer.writeUInt16BE(data.length + 11, 0)
         buffer.writeUInt8(bcr.CL2RS_RELAY, 2)
         buffer.writeUInt16BE(rh, 3)
@@ -15796,10 +16150,22 @@ function BrainCloudRelayComms(_client) {
         bcr._pingInFlight = true;
         bcr._pingTime = new Date().getTime();
 
+//> ADD IF K6
+//+     var buffer = new Uint8Array(5);
+//+     var value_16u = 5;
+//+     buffer[0] = value_16u & 0xFF;
+//+     buffer[1] = (value_16u >> 8) & 0xFF;
+//+     buffer[2] = bcr.CL2RS_PING;
+//+     value_16u = bcr.ping;
+//+     buffer[3] = value_16u & 0xFF;
+//+     buffer[4] = (value_16u >> 8) & 0xFF;
+//> END
+//> REMOVE IF K6
         var buffer = new Buffer(5)
         buffer.writeUInt16BE(5, 0);
         buffer.writeUInt8(bcr.CL2RS_PING, 2);
         buffer.writeUInt16BE(bcr.ping, 3);
+//> END
         bcr.socket.send(buffer);
     }
 
@@ -15819,16 +16185,33 @@ function BrainCloudRelayComms(_client) {
             return;
         }
 
+//> ADD IF K6
+//+     var buffer = new Uint8Array(data.length + 3);
+//+     var value_16u = data.length + 3;
+//+     buffer[0] = value_16u & 0xFF;
+//+     buffer[1] = (value_16u >> 8) & 0xFF;
+//+     buffer[2] = netId;
+//+     buffer.set(data, 3);
+//> END
+//> REMOVE IF K6
         var buffer = new Buffer(data.length + 3)
         buffer.writeUInt16BE(data.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.set(data, 3);
+//> END
         bcr.socket.send(buffer);
     }
 
     bcr.onRecv = function(buffer) {
+//> ADD IF K6
+//+     buffer = new Uint8Array(buffer);
+//+     var size = buffer[0] | (buffer[1] << 8);
+//+     var controlByte = buffer[2];
+//> END
+//> REMOVE IF K6
         var size = buffer.readUInt16BE(0);
         var controlByte = buffer.readUInt8(2);
+//> END
 
         if (controlByte == bcr.RS2CL_RSMG) {
             bcr.onRSMG(buffer);
@@ -15847,7 +16230,12 @@ function BrainCloudRelayComms(_client) {
             // Ignore, don't throw.
         }
         else if (controlByte == bcr.RS2CL_RELAY) {
+//> ADD IF K6
+//+         var netId = buffer[10];
+//> END
+//> REMOVE IF K6
             var netId = buffer.readUInt8(10);
+//> END
             if (bcr._debugEnabled) {
                 console.log("RELAY RECV from netId: " + netId + " size: " + size);
             }
@@ -15920,6 +16308,37 @@ var disconnectMessage= null;
 //> ADD IF K6
 //+ import ws from 'k6/ws';
 //+ import { check } from "k6";
+//+ function Utf8ArrayToStr(array) {
+//+     var out, i, len, c;
+//+     var char2, char3;
+//+     out = "";
+//+     len = array.length;
+//+     i = 0;
+//+     while(i < len) {
+//+     c = array[i++];
+//+     switch(c >> 4)
+//+     { 
+//+       case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+//+         // 0xxxxxxx
+//+         out += String.fromCharCode(c);
+//+         break;
+//+       case 12: case 13:
+//+         // 110x xxxx   10xx xxxx
+//+         char2 = array[i++];
+//+         out += String.fromCharCode(((c & 0x1F) << 6) | (char2 & 0x3F));
+//+         break;
+//+       case 14:
+//+         // 1110 xxxx  10xx xxxx  10xx xxxx
+//+         char2 = array[i++];
+//+         char3 = array[i++];
+//+         out += String.fromCharCode(((c & 0x0F) << 12) |
+//+                        ((char2 & 0x3F) << 6) |
+//+                        ((char3 & 0x3F) << 0));
+//+         break;
+//+     }
+//+     }
+//+     return out;
+//+ }
 //> END
 
 function getBrowserName() {
@@ -16010,12 +16429,17 @@ function BrainCloudRttComms (m_client) {
 
 //> ADD IF K6
 //+     bcrtt._rttConnectionStatus = bcrtt.RTTConnectionStatus.CONNECTED;
-//+     var res = ws.connect(uri, {}, (socket) => {
+//+     var res = ws.connect(uri, {}, function (socket) {
 //+         bcrtt.socket = socket;
-//+         bcrtt.socket.on('error', bcrtt.onSocketError);
-//+         bcrtt.socket.on('close', bcrtt.onSocketClose);
-//+         bcrtt.socket.on('open', bcrtt.onSocketOpen);
-//+         bcrtt.socket.on('message', bcrtt.onSocketMessage);
+//+         socket.on('error', bcrtt.onSocketError);
+//+         socket.on('close', bcrtt.onSocketClose);
+//+         socket.on('open', bcrtt.onSocketOpen);
+//+         socket.on('message', bcrtt.onSocketMessage);
+//+         socket.on('binaryMessage', msg =>
+//+         {
+//+             var message = Utf8ArrayToStr(new Uint8Array(msg))
+//+             bcrtt.onSocketMessage(message);
+//+         });
 //+     });
 //> END
 //> REMOVE IF K6
@@ -16083,9 +16507,13 @@ function BrainCloudRttComms (m_client) {
     }
 
     bcrtt.onSocketMessage = function(e) {
+
         if (bcrtt.isRTTEnabled()) { // This should always be true, but just in case user called disabled and we end up receiving the even anyway
             var processResult = function(result) {
                 if (result.service == "rtt") {
+                    if (bcrtt._debugEnabled) {
+                        console.log("WS RECV: " + JSON.stringify(result));
+                    }
                     if(result.operation == "CONNECT")
                     {
                         bcrtt.connectionId = result.data.cxId;
@@ -16152,10 +16580,15 @@ function BrainCloudRttComms (m_client) {
     }
 
     bcrtt.startHeartbeat = function() {
+        if (!bcrtt.heartbeatId) {
+//> ADD IF K6
+//+         bcrtt.heartbeatId = true;
+//+         bcrtt.socket.setInterval(function() {
+//> END
 //> REMOVE IF K6
-        if (!this.heartbeatId) {
             bcrtt.heartbeatId = setInterval(function() {
-                // Send a connect request
+//> END
+                // Send a heartbeat request
                 var request = {
                     operation: "HEARTBEAT",
                     service: "rtt",
@@ -16169,7 +16602,6 @@ function BrainCloudRttComms (m_client) {
                 bcrtt.socket.send(JSON.stringify(request));
             }, 1000 * DEFAULT_RTT_HEARTBEAT);
         }
-//> END
     }
 
     bcrtt.onRecv = function(result) {
@@ -16248,7 +16680,9 @@ function BrainCloudRttComms (m_client) {
             bcrtt._rttConnectionStatus = bcrtt.RTTConnectionStatus.DISCONNECTING;
 
             if (bcrtt.heartbeatId) {
+//> REMOVE IF K6
                 clearInterval(bcrtt.heartbeatId);
+//> END
                 bcrtt.heartbeatId = null;
             }
     
@@ -16663,6 +17097,31 @@ function BrainCloudWrapper(wrapperName) {
     };
 
     /**
+     * Authenticate the user for Ultra.
+     *
+     * Service Name - authenticationV2
+     * Service Operation - AUTHENTICATE
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param ultraIdToken {string} - The "id_token" taken from Ultra's JWT.
+     * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+     * If set to false, you need to handle errors in the case of new players.
+     * @param responseHandler {function} - The user callback method
+     */
+     bcw.authenticateUltra = function(ultraUsername, ultraIdToken, forceCreate, responseHandler) {
+        bcw._initializeIdentity(false);
+
+        bcw.brainCloudClient.authentication.authenticateUltra(
+            ultraUsername, 
+            ultraIdToken, 
+            forceCreate,
+            function(result) {
+                bcw._authResponseHandler(result);
+                responseHandler(result);
+            });
+    };
+
+    /**
      * Authenticate the user using a google user id (email address) and google authentication token.
      *
      * Service Name - authenticationV2
@@ -16797,7 +17256,37 @@ function BrainCloudWrapper(wrapperName) {
             });
     };
 
-        /**
+    
+    /**
+     * A generic Authenticate method that translates to the same as calling a specific one, except it takes an extraJson
+     * that will be passed along to pre- or post- hooks.
+     *
+     * Service Name - Authenticate
+     * Service Operation - Authenticate
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param ids {object} Auth IDs object containing externalId, authenticationToken and optionally authenticationSubType.
+     * @param forceCreate  {boolean} Should a new profile be created for this user if the account does not exist?
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param responseHandler {function} - The user callback method
+     */
+     bcw.authenticateAdvanced = function(authenticationType, ids, forceCreate, extraJson, responseHandler) {
+
+        bcw._initializeIdentity(false);
+
+        bcw.brainCloudClient.authentication.authenticateAdvanced(
+            authenticationType,
+            ids,
+            forceCreate,
+            extraJson,
+            function(result) {
+                bcw._authResponseHandler(result);
+                responseHandler(result);
+            });
+    };
+
+
+    /**
      * Authenticate the user using a Pase userid and authentication token
      *
      * Service Name - Authenticate
@@ -17049,6 +17538,41 @@ function BrainCloudWrapper(wrapperName) {
         bcw.brainCloudClient.identity.getIdentities(getIdentitiesCallback(authenticationCallback));
     };
 
+    /**
+     * Smart Switch Authenticate will logout of the current profile, and switch to the new authentication type.
+     * In event the current session was previously an anonymous account, the smart switch will delete that profile.
+     * Use this function to keep a clean designflow from anonymous to signed profiles
+     * 
+     * Authenticate the user for Ultra.
+     *
+     * Service Name - authenticationV2
+     * Service Operation - AUTHENTICATE
+     *
+     * @param ultraUsername {string} - it's what the user uses to log into the Ultra endpoint initially
+     * @param ultraIdToken {string} - The "id_token" taken from Ultra's JWT.
+     * @param forceCreate {boolean} - Should a new profile be created for this user if the account does not exist?
+     * If set to false, you need to handle errors in the case of new players.
+     * @param responseHandler {function} - The user callback method
+     */
+    bcw.smartSwitchAuthenticateUltra = function(ultraUsername, ultraIdToken, forceCreate, responseHandler)
+    {
+        bcw._initializeIdentity(false);
+
+        authenticationCallback = function() {
+            bcw.brainCloudClient.authentication.authenticateUltra(
+                ultraUsername,
+                ultraIdToken,
+                forceCreate,
+                function(result) {
+                    bcw._authResponseHandler(result);
+                    responseHandler(result);
+                });
+        };
+
+        bcw.brainCloudClient.identity.getIdentities(getIdentitiesCallback(authenticationCallback));
+    };
+    
+
 
     /**
      * Smart Switch Authenticate will logout of the current profile, and switch to the new authentication type.
@@ -17149,6 +17673,42 @@ function BrainCloudWrapper(wrapperName) {
                 userId,
                 userPassword,
                 forceCreate,
+                function(result) {
+                    bcw._authResponseHandler(result);
+                    responseHandler(result);
+                });
+        };
+
+        bcw.brainCloudClient.identity.getIdentities(getIdentitiesCallback(authenticationCallback));
+    };
+
+    /**
+     * Smart Switch Authenticate will logout of the current profile, and switch to the new authentication type.
+     * In event the current session was previously an anonymous account, the smart switch will delete that profile.
+     * Use this function to keep a clean designflow from anonymous to signed profiles
+     *
+     * A generic Authenticate method that translates to the same as calling a specific one, except it takes an extraJson
+     * that will be passed along to pre- or post- hooks.
+     *
+     * Service Name - Authenticate
+     * Service Operation - Authenticate
+     *
+     * @param authenticationType {string} Universal, Email, Facebook, etc. Please refer to the authentication type list here: https://getbraincloud.com/apidocs/apiref/#appendix-authtypes
+     * @param ids {object} Auth IDs object containing externalId, authenticationToken and optionally authenticationSubType.
+     * @param forceCreate  {boolean} Should a new profile be created for this user if the account does not exist?
+     * @param extraJson {object} Additional to piggyback along with the call, to be picked up by pre- or post- hooks. Leave empty string for no extraJson.
+     * @param responseHandler {function} - The user callback method
+     */
+    bcw.smartSwitchAuthenticateAdvanced = function(authenticationType, ids, forceCreate, extraJson, responseHandler) {
+
+        bcw._initializeIdentity(false);
+
+        authenticationCallback = function() {
+            bcw.brainCloudClient.authentication.authenticateAdvanced(
+                authenticationType,
+                ids,
+                forceCreate,
+                extraJson,
                 function(result) {
                     bcw._authResponseHandler(result);
                     responseHandler(result);
