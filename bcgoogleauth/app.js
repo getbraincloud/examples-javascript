@@ -20,16 +20,16 @@ app.post('/', (req, res)=>{
 
     res.send('success verify user id_token');                   
 
-    _bc.authenticateGoogleOpenId(email, id_token, true, result =>
+    _bc.authenticateGoogleOpenId(user_id, id_token, true, result =>
     {
         var status = result.status;
         console.log(status + " : " + JSON.stringify(result, null, 2));
         if (status == 200){
             _bc.playerState.readUserState(result =>
-                {
-                    var status = result.status;
-                    console.log(status + " : " + JSON.stringify(result, null, 2));
-                });
+            {
+                var status = result.status;
+                console.log(status + " : " + JSON.stringify(result, null, 2));
+            });
         }
     });
 })
