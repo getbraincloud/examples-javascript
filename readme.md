@@ -9,3 +9,4 @@ Examples:
 - [File Update](FileUploader/readme.md) - Example tool for uploading files to brainCloud
 - [Relay Test App](RelayTestApp/README.md) - Example app using relay server
 - [Warstone](warstone/readme.md) - RTT multiplayer card game example
+- [bcGoogleAuth](bcgoogleauth/readme.md) - Simple integrate Google Sign in example
