@@ -1,9 +1,8 @@
 {
   "name": "warstone",
-  "version": "4.10.0",
+  "version": "4.11.0",
   "private": true,
   "dependencies": {
-    "braincloud": "^4.10.0",
     "isomorphic-ws": "^4.0.1",
     "react": "^16.8.6",
     "react-dom": "^16.4.2",
