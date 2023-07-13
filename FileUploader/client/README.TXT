@@ -14,5 +14,5 @@ Thanks and happy coding!
 
 
 Platform: Javascript
-Version: 4.14.0
+Version: 4.15.0
 
