@@ -1,6 +1,6 @@
 {
   "name": "bcchat",
-  "version": "4.15.0",
+  "version": "5.0.0",
   "private": true,
   "dependencies": {
     "braincloud": "file:../../js/deploy/node",
