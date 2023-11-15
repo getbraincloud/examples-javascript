@@ -330,12 +330,12 @@ class App extends Component
         switch (json.op)
         {
             // Player moved the mouse
-            case "move":
+            case "move":   
                 member.pos = {x: json.data.x, y: json.data.y};
                 break
 
             // Player clicked to create a shockwave
-            case "shockwave":
+            case "shockwave":   
                 this.createShockwave(json.data, colors[member.extra.colorIndex])
                 break
 
@@ -400,12 +400,12 @@ class App extends Component
         this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
 
-    // Create a shocwave at position and color on the game screen
+    // Create a shockwave at position and color on the game screen
     createShockwave(pos, color)
     {
         let shockwaves = this.state.shockwaves;
         let shockwave = {
-            pos: {x: pos.x, y: pos.y},
+            pos: {x: pos.x * 800, y: pos.y * 600},
             color: color,
             id: this.shockwaveNextId++ // This is used to ID the HTML element so the CSS animation doesn't bug.
         }

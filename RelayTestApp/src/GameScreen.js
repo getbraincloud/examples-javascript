@@ -25,12 +25,13 @@ class GameScreen extends Component
     onMouseMove(e)
     {
         var rect = this.refs.GamePlayArea.getBoundingClientRect();
-        this.mousePos.x = Math.floor(e.clientX - rect.left);
-        this.mousePos.y = Math.floor(e.clientY - rect.top);
+        this.mousePos.x = ((e.clientX - rect.left) / 800);
+        this.mousePos.y = ((e.clientY - rect.top) / 600);
+
         this.props.onPlayerMove(this.mousePos)
     }
 
-    onShocwave(e)
+    onShockwave(e)
     {
         this.props.onPlayerShockwave(this.mousePos)
     }
@@ -72,7 +73,7 @@ class GameScreen extends Component
                         <label htmlFor="chkOrdered">Ordered</label>
                     </div>
                     <div className="GamePlayArea" ref="GamePlayArea" style={{cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float:"left"}} 
-                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onShocwave.bind(this)}>
+                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onShockwave.bind(this)}>
                         {
                             this.props.shockwaves.map(shockwave => (
                                 <div key={`${shockwave.id}`} className="Entity" style={{left: `${shockwave.pos.x-64}px`, top: `${shockwave.pos.y-64}px`}}>
@@ -82,7 +83,7 @@ class GameScreen extends Component
                         }
                         {
                             this.props.lobby.members.filter(member => member.pos && member.cxId !== this.props.user.cxId).map(member => (
-                                <div key={`${member.cxId}_arrow`} className="Entity" style={{left: `${member.pos.x}px`, top: `${member.pos.y}px`}}>
+                                <div key={`${member.cxId}_arrow`} className="Entity" style={{left: `${member.pos.x * 800}px`, top: `${member.pos.y * 600}px`}}>
                                     <img className="Arrow" src={`arrow${member.extra.colorIndex}.png`} alt="arrow"/>
                                     <p style={{color: colors[member.extra.colorIndex]}}>{member.name}</p>
                                 </div>
