@@ -31,7 +31,7 @@ class GameScreen extends Component
         this.props.onPlayerMove(this.mousePos)
     }
 
-    onShocwave(e)
+    onShockwave(e)
     {
         this.props.onPlayerShockwave(this.mousePos)
     }
@@ -73,7 +73,7 @@ class GameScreen extends Component
                         <label htmlFor="chkOrdered">Ordered</label>
                     </div>
                     <div className="GamePlayArea" ref="GamePlayArea" style={{cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float:"left"}} 
-                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onShocwave.bind(this)}>
+                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onShockwave.bind(this)}>
                         {
                             this.props.shockwaves.map(shockwave => (
                                 <div key={`${shockwave.id}`} className="Entity" style={{left: `${shockwave.pos.x-64}px`, top: `${shockwave.pos.y-64}px`}}>

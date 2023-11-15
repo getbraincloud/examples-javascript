@@ -400,7 +400,7 @@ class App extends Component
         this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
 
-    // Create a shocwave at position and color on the game screen
+    // Create a shockwave at position and color on the game screen
     createShockwave(pos, color)
     {
         let shockwaves = this.state.shockwaves;
