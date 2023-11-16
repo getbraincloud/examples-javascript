@@ -47,6 +47,7 @@ class LobbyScreen extends Component
                     this.props.lobby.ownerCxId === this.props.user.cxId && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
                 }
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave</button>
+                <p>Lobby ID: {this.props.lobby.lobbyId}</p>
             </div>
         )
     }
