@@ -5,46 +5,56 @@ let colors = require('./Colors').colors
 // Props:
 // user
 // lobby
-class LobbyScreen extends Component
-{
-    onBack()
-    {
+class LobbyScreen extends Component {
+    onBack() {
         this.props.onBack()
     }
 
-    onStart()
-    {
+    onStart() {
         this.props.onStart()
     }
 
-    onColorSelected(index)
-    {
+    onJoin() {
+        this.props.onJoin()
+    }
+
+    onColorSelected(index) {
         this.props.user.colorIndex = index
         let me = this.props.lobby.members.find(member => member.cxId === this.props.user.cxId)
-        if (me)
-        {
+        if (me) {
             me.extra.colorIndex = index
         }
         localStorage.setItem("color", "" + index)
         this.props.onColorChanged(index)
     }
 
-    render()
-    {
+    checkMatchStarted(){
+        for(let i = 0; i < this.props.lobby.members.length; i++){
+            if(this.props.lobby.members[i].extra.presentSinceStart){
+                return true
+            }
+        }
+        return false
+    }
+
+    render() {
         return (
             <div className="LobbyScreen">
                 <div>
                     {
-                        colors.map((color, i) => (<div key={color} className="colorBtn" style={{backgroundColor:color, display:"inline-block", width:"50px", height:"40px"}} onClick={this.onColorSelected.bind(this, i)}>{i}</div>))
+                        colors.map((color, i) => (<div key={color} className="colorBtn" style={{ backgroundColor: color, display: "inline-block", width: "50px", height: "40px" }} onClick={this.onColorSelected.bind(this, i)}>{i}</div>))
                     }
                 </div>
                 <ul>
-                {
-                    this.props.lobby.members.map(member => (<li key={member.cxId} style={{color: colors[member.extra.colorIndex]}}>{member.name}</li>))
-                }
+                    {
+                        this.props.lobby.members.map(member => (<li key={member.cxId} style={{ color: colors[member.extra.colorIndex] }}>{member.name}</li>))
+                    }
                 </ul>
                 {
                     this.props.lobby.ownerCxId === this.props.user.cxId && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
+                }
+                {
+                    this.checkMatchStarted() === true && !this.props.user.presentSinceStart ? <button className="Button" onClick={this.onJoin.bind(this)}>Join Match</button> : ""
                 }
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave</button>
                 <p>Lobby ID: {this.props.lobby.lobbyId}</p>

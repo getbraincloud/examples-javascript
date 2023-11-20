@@ -12,6 +12,9 @@ import GameScreen from './GameScreen';
 let brainCloud = require("braincloud")
 let colors = require('./Colors').colors
 
+let presentWhileStarted = false;
+let server = null;
+
 class App extends Component
 {
     constructor()
@@ -111,7 +114,8 @@ class App extends Component
                     cxId: null,
                     name: this.username,
                     colorIndex: parseInt(localStorageColor),
-                    isReady: false
+                    isReady: false,
+                    presentSinceStart: false
                 }
             })
         }
@@ -130,6 +134,10 @@ class App extends Component
         this.bc.rttService.enableRTT(() =>
         {
             let state = this.state
+            let extraJson = {
+                colorIndex:this.state.user.colorIndex,
+                presentSinceStart: this.state.user.presentSinceStart
+            }
             state.user.cxId = this.bc.rttService.getRTTConnectionId()
             this.setState(state)
 
@@ -139,7 +147,7 @@ class App extends Component
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
             // If using gamelift, we will do region pings
-            if (lobbyType == "CursorPartyGameLift")
+            if (lobbyType === "CursorPartyGameLift")
             {
                 this.bc.lobby.getRegionsForLobbies([lobbyType], (result) =>
                 {
@@ -158,7 +166,7 @@ class App extends Component
                         }
 
                         // Find or create a lobby
-                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result =>
                         {
                             if (result.status !== 200)
                             {
@@ -172,7 +180,7 @@ class App extends Component
             else
             {
                 // Find or create a lobby
-                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
+                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result =>
                 {
                     if (result.status !== 200)
                     {
@@ -213,7 +221,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code != this.bc.reasonCodes.RTT_ROOM_READY)
+            if (result.data.reason.code !== this.bc.reasonCodes.RTT_ROOM_READY)
             {
                 // Disbanded for any other reason than ROOM_READY, means we failed to launch the game.
                 this.onGameScreenClose()
@@ -221,34 +229,24 @@ class App extends Component
         }
         else if (result.operation === "STARTING")
         {
+            presentWhileStarted = true;
+
+            this.updatePresentSinceStart();
+
             // Game is starting, show loading screen
             this.setState({ screen: "connecting" })
         }
         else if (result.operation === "ROOM_READY")
         {
-            let server = result.data;
-
-            // If the lobby is gamelift, the port name will be "gamelift"
-            let wsPort = 0;
-            if (this.state.lobbyType == "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
-            else wsPort = server.connectData.ports.ws;
+            server = result.data;
 
             // Server has been created. Connect to it
-            this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
-            this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
-            this.bc.relay.connect({
-                ssl: false,
-                host: server.connectData.address,
-                port: wsPort,
-                passcode: server.passcode,
-                lobbyId: server.lobbyId
-            }, result =>
-            {
-                let state = this.state
-                state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
-                state.screen = "game"
-                this.setState(state)
-            }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
+
+            // Check to see if a user joined the lobby before the match started or after.
+            // If a user joins while match is in progress, you will only receive MEMBER_JOIN & ROOM_READY RTT updates.
+            if (presentWhileStarted) {
+                this.connectRelay();
+            }
         }
     }
 
@@ -299,22 +297,36 @@ class App extends Component
     {
         let state = this.state
         state.user.colorIndex = colorIndex
+        let extraJson = {
+            colorIndex: colorIndex,
+            presentSinceStart: state.user.presentSinceStart
+        }
         this.setState(state)
 
         // Update the extra information for our player so other lobby members are notified of
         // our color change.
-        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, {colorIndex: colorIndex})
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
     }
 
     // Owner of the lobby clicked the "Start" button
     onStart()
     {
         let state = this.state
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
         state.user.isReady = true
         this.setState(state)
 
         // Set our state to ready and notify the lobby Service.
-        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, {colorIndex: this.state.user.colorIndex})
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+    }
+
+    // Player clicked the "Join Match" button, requesting to join a match that had been started prior to them joining the lobby
+    onJoin()
+    {        
+        this.connectRelay();
     }
 
     // A relay message coming from another player
@@ -354,6 +366,11 @@ class App extends Component
             let member = state.lobby.members.find(member => member.cxId === json.cxId)
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
+        }
+        else if(json.op === "END_MATCH")
+        {
+            // TODO:  sync with Unity
+            this.state.user.presentSinceStart = false;
         }
     }
 
@@ -398,6 +415,45 @@ class App extends Component
 
         // Create the shockwave instance on our instance
         this.createShockwave(pos, colors[this.state.user.colorIndex])
+    }
+
+    connectRelay() {
+        
+        // If the lobby is gamelift, the port name will be "gamelift"
+        let wsPort = 0;
+        if (this.state.lobbyType === "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
+        else wsPort = server.connectData.ports.ws;
+        
+        console.log("presentWhileStarted true");
+
+        presentWhileStarted = false;
+
+        this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
+        this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
+        this.bc.relay.connect({
+            ssl: false,
+            host: server.connectData.address,
+            port: wsPort,
+            passcode: server.passcode,
+            lobbyId: server.lobbyId
+        }, result => {
+            let state = this.state
+            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
+            state.screen = "game"
+            this.setState(state)
+        }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
+    }
+
+    updatePresentSinceStart()
+    {
+        this.state.user.presentSinceStart = true;
+        
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+
     }
 
     // Create a shockwave at position and color on the game screen
@@ -470,13 +526,13 @@ class App extends Component
                 )
             }
             case "lobby":
-            {
+            {   
                 return (
                     <div className="App">
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <p>LOBBY</p>
-                            <LobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} />
+                            <LobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/>
                         </header>
                     </div>
                 )
