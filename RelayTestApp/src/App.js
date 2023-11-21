@@ -329,6 +329,18 @@ class App extends Component
         this.connectRelay();
     }
 
+    // Return to the lobby with the same players
+    onEndMatch()
+    {
+        let extraJson = {
+            cxId: this.bc.brainCloudClient.getRTTConnectionId(),
+            lobbyId: this.state.lobby.lobbyId,
+            op: "END_MATCH"
+        }
+
+        this.bc.relay.endMatch(extraJson)
+    }
+
     // A relay message coming from another player
     onRelayMessage(netId, data)
     {
@@ -370,7 +382,18 @@ class App extends Component
         else if(json.op === "END_MATCH")
         {
             // TODO:  sync with Unity
+            this.state.user.isReady = false;
             this.state.user.presentSinceStart = false;
+
+            let extraJson = {
+                colorIndex: this.state.user.colorIndex,
+                presentSinceStart: this.state.user.presentSinceStart
+            }
+            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson, result => {
+                if(result.status === 200){
+                    this.setState({screen: "lobby"})
+                }
+            })
         }
     }
 
@@ -424,8 +447,6 @@ class App extends Component
         if (this.state.lobbyType === "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
         else wsPort = server.connectData.ports.ws;
         
-        console.log("presentWhileStarted true");
-
         presentWhileStarted = false;
 
         this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
@@ -560,6 +581,7 @@ class App extends Component
                                         shockwaves={this.state.shockwaves} 
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)} 
+                                        onEndMatch={this.onEndMatch.bind(this)}
                                         onPlayerMove={this.onPlayerMove.bind(this)} 
                                         onPlayerShockwave={this.onPlayerShockwave.bind(this)}
                                         onToggleReliable={this.onToggleReliable.bind(this)} 

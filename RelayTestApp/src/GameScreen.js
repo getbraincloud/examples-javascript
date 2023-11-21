@@ -22,6 +22,10 @@ class GameScreen extends Component
         this.props.onBack()
     }
 
+    onEndMatch() {
+        this.props.onEndMatch()
+    }
+
     onMouseMove(e)
     {
         var rect = this.refs.GamePlayArea.getBoundingClientRect();
@@ -92,6 +96,9 @@ class GameScreen extends Component
                     </div>
                 </div>
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
+                {
+                    this.props.lobby.ownerCxId === this.props.user.cxId ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
+                }
             </div>
         )
     }
