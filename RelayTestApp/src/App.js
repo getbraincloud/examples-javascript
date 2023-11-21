@@ -289,6 +289,7 @@ class App extends Component
         state.screen = "mainMenu"
         state.lobby = null
         state.user.isReady = false
+        state.user.presentSinceStart = false
         this.setState(state)
     }
 
@@ -379,6 +380,10 @@ class App extends Component
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
         }
+        else if(json.op === "CONNECT"){
+            let state = this.state
+            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
+        }
         else if(json.op === "END_MATCH")
         {
             // TODO:  sync with Unity
@@ -389,6 +394,7 @@ class App extends Component
                 colorIndex: this.state.user.colorIndex,
                 presentSinceStart: this.state.user.presentSinceStart
             }
+
             this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson, result => {
                 if(result.status === 200){
                     this.setState({screen: "lobby"})
@@ -459,7 +465,6 @@ class App extends Component
             lobbyId: server.lobbyId
         }, result => {
             let state = this.state
-            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
             state.screen = "game"
             this.setState(state)
         }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
