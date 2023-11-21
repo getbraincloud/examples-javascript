@@ -386,7 +386,6 @@ class App extends Component
         }
         else if(json.op === "END_MATCH")
         {
-            // TODO:  sync with Unity
             this.state.user.isReady = false;
             this.state.user.presentSinceStart = false;
 
