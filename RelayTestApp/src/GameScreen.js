@@ -66,7 +66,9 @@ class GameScreen extends Component
                             this.props.lobby.members.map(member => (
                                 <div key={`${member.cxId}_mask`}>
                                     <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo}/>
-                                    <label htmlFor={`${member.cxId}_mask`}>{member.name}</label>
+                                    {
+                                        member.isReady === true ? <label htmlFor={`${member.cxId}_mask`}>{member.name}</label> : <label htmlFor={`${member.cxId}_mask`}>{member.name + " (in lobby)"}</label>
+                                    }
                                 </div>
                             ))
                         }

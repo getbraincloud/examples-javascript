@@ -14,6 +14,11 @@ let colors = require('./Colors').colors
 
 let presentWhileStarted = false;
 let server = null;
+let showJoinButton = false;
+
+export function getShowJoinButton(){
+    return showJoinButton;
+}
 
 class App extends Component
 {
@@ -247,6 +252,12 @@ class App extends Component
             if (presentWhileStarted) {
                 this.connectRelay();
             }
+            else{
+                showJoinButton = true;
+
+                // refresh the screen to display join button
+                this.setState({ screen: "lobby" })
+            }
         }
     }
 
@@ -290,6 +301,7 @@ class App extends Component
         state.lobby = null
         state.user.isReady = false
         state.user.presentSinceStart = false
+        showJoinButton = false
         this.setState(state)
     }
 
@@ -327,6 +339,17 @@ class App extends Component
     // Player clicked the "Join Match" button, requesting to join a match that had been started prior to them joining the lobby
     onJoin()
     {        
+        let state = this.state
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
+        state.user.isReady = true
+        this.setState(state)
+
+        // Set our state to ready and notify the lobby Service.
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+        
         this.connectRelay();
     }
 
@@ -380,14 +403,16 @@ class App extends Component
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
         }
-        else if(json.op === "CONNECT"){
+        else if(json.op === "CONNECT"){            
             let state = this.state
-            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
+            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId)
+            )
         }
         else if(json.op === "END_MATCH")
         {
             this.state.user.isReady = false;
             this.state.user.presentSinceStart = false;
+            showJoinButton = false;
 
             let extraJson = {
                 colorIndex: this.state.user.colorIndex,

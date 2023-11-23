@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 
+import { getShowJoinButton } from './App'
+
 let colors = require('./Colors').colors
 
 // Props:
@@ -28,15 +30,6 @@ class LobbyScreen extends Component {
         this.props.onColorChanged(index)
     }
 
-    checkMatchStarted(){
-        for(let i = 0; i < this.props.lobby.members.length; i++){
-            if(this.props.lobby.members[i].extra.presentSinceStart){
-                return true
-            }
-        }
-        return false
-    }
-
     render() {
         return (
             <div className="LobbyScreen">
@@ -54,7 +47,7 @@ class LobbyScreen extends Component {
                     this.props.lobby.ownerCxId === this.props.user.cxId && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
                 }
                 {
-                    this.checkMatchStarted() === true && !this.props.user.presentSinceStart ? <button className="Button" onClick={this.onJoin.bind(this)}>Join Match</button> : ""
+                    getShowJoinButton() ? <button className="Button" onClick={this.onJoin.bind(this)}>Join Match</button> : ""
                 }
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave</button>
                 <p>Lobby ID: {this.props.lobby.lobbyId}</p>
