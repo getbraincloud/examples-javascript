@@ -410,8 +410,9 @@ class App extends Component
         }
         else if(json.op === "END_MATCH")
         {
-            this.state.user.isReady = false;
-            this.state.user.presentSinceStart = false;
+            let state = this.state
+            state.user.isReady = false;
+            state.user.presentSinceStart = false;
             showJoinButton = false;
 
             let extraJson = {
@@ -496,7 +497,8 @@ class App extends Component
 
     updatePresentSinceStart()
     {
-        this.state.user.presentSinceStart = true;
+        let state = this.state
+        state.user.presentSinceStart = true;
         
         let extraJson = {
             colorIndex: this.state.user.colorIndex,
