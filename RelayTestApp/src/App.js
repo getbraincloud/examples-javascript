@@ -499,6 +499,7 @@ class App extends Component
     {
         let state = this.state
         state.user.presentSinceStart = true;
+        state.user.isReady = true;
         
         let extraJson = {
             colorIndex: this.state.user.colorIndex,
