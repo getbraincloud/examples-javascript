@@ -40,7 +40,9 @@ class LobbyScreen extends Component {
                 </div>
                 <ul>
                     {
-                        this.props.lobby.members.map(member => (<li key={member.cxId} style={{ color: colors[member.extra.colorIndex] }}>{member.name}</li>))
+                        this.props.lobby.members.map(member => (
+                            member.cxId === this.props.lobby.ownerCxId ? <li key={member.cxId} style={{ color: colors[member.extra.colorIndex] }}>{member.name + " (host)"}</li> : <li key={member.cxId} style={{ color: colors[member.extra.colorIndex] }}>{member.name}</li>
+                        ))
                     }
                 </ul>
                 {
