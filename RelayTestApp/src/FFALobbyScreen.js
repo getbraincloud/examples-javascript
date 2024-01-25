@@ -7,7 +7,7 @@ let colors = require('./Colors').colors
 // Props:
 // user
 // lobby
-class LobbyScreen extends Component {
+class FFALobbyScreen extends Component {
     onBack() {
         this.props.onBack()
     }
@@ -32,7 +32,7 @@ class LobbyScreen extends Component {
 
     render() {
         return (
-            <div className="LobbyScreen">
+            <div className="FFALobbyScreen">
                 <div>
                     {
                         colors.map((color, i) => (<div key={color} className="colorBtn" style={{ backgroundColor: color, display: "inline-block", width: "50px", height: "40px" }} onClick={this.onColorSelected.bind(this, i)}>{i}</div>))
@@ -58,4 +58,4 @@ class LobbyScreen extends Component {
     }
 }
 
-export default LobbyScreen;
+export default FFALobbyScreen;

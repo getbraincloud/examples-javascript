@@ -9,7 +9,7 @@ let colors = require('./Colors').colors
 // relayOptions
 //   reliable
 //   ordered
-class GameScreen extends Component
+class FFAGameScreen extends Component
 {
     constructor()
     {
@@ -58,7 +58,7 @@ class GameScreen extends Component
     render()
     {
         return (
-            <div className="GameScreen">
+            <div className="FFAGameScreen">
                 <div>
                     <div className="OptionPanel" ref="OptionPanel" style={{float:"left", paddingRight:32, textAlign:"left"}}>
                         <p>Player Mask (For shockwaves)</p>
@@ -106,4 +106,4 @@ class GameScreen extends Component
     }
 }
 
-export default GameScreen;
+export default FFAGameScreen;

@@ -11,7 +11,8 @@ class MainMenuScreen extends Component
 {
     onPlay()
     {
-        this.props.onPlay(this.refs.hosting.options[this.refs.hosting.selectedIndex].value)
+        console.log("lobby type = " + this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
+        this.props.onPlay(this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
     }
 
     render()
@@ -20,14 +21,18 @@ class MainMenuScreen extends Component
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>
-                <label>Choose hosting service:</label>
-                <select name="hosting" ref="hosting">
-                    <option value="CursorPartyV2">brainCloud</option>
-                    <option value="CursorPartyV2Backfill">brainCloud Backfill</option>
-                    <option value="CursorPartyGameLift">GameLift</option>
+                {/* TODO:  Lobby Options - TITLE */}
+                <label>Choose lobby type:</label>
+                {/* TODO:  Free For All Lobbies - HEADING */}
+                <select name="lobbyTypes" ref="lobbyTypes">
+                    <option value="CursorPartyV2">CursorPartyV2</option>
+                    <option value="CursorPartyV2Backfill">CursorPartyV2Backfill</option>
+                    <option value="CursorPartyGameLift">CursorPartyGameLift</option>
+                    <option value="TeamCursorPartyV2">TeamCursorPartyV2</option>
+                    <option value="TeamCursorPartyV2Backfill">TeamCursorPartyV2Backfill</option>
                 </select>
                 <div className="btn-frame">
-                    <button className="Button" onClick={this.onPlay.bind(this)}>PLAY GAME</button>
+                    <button className="Button" onClick={this.onPlay.bind(this)}>PLAY</button>
                 </div>
 
                 <div className="bottomText">
