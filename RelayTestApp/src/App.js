@@ -383,9 +383,11 @@ class App extends Component
 
         if (team === "alpha") {
             state.user.colorIndex = 4
+            state.user.opposingTeam = "beta"
         }
         else if (team === "beta") {
             state.user.colorIndex = 3
+            state.user.opposingTeam = "alpha"
         }
         let extraJson = {
             colorIndex: state.user.colorIndex,
@@ -468,7 +470,11 @@ class App extends Component
 
             // Player clicked to create a shockwave
             case "shockwave":   
-                this.createShockwave(json.data, colors[member.extra.colorIndex])
+            if(json.data.teamCode === 0){
+                this.createShockwave(json.data, colors[7])
+                break
+            }    
+            this.createShockwave(json.data, colors[member.extra.colorIndex])
                 break
 
             default: break;
@@ -530,7 +536,7 @@ class App extends Component
     // Player has clicked to create a shockwave
     onPlayerShockwave(pos)
     {
-
+        // TODO:  unused now
         // Build player mask.
         let playerMask = this.state.lobby.members.reduce((playerMask, member) =>
         {
@@ -557,16 +563,59 @@ class App extends Component
     }
 
     // Player has clicked to create a shockwave
-    onPlayerClicked(pos, mouseButton)
-    {
-        // TODO:  send to all players
+    onPlayerClicked(pos, mouseButton) {
+        console.log("player clicked!")
+        
+        let toNetId = []
+        let reliable = true
+        let ordered = false
+        let channel = this.bc.relay.CHANNEL_HIGH_PRIORITY_2
 
-        // TODO:  send to opponents
+        // TODO:  TEMPORARY FIX. Get rid of .team and .opposingTeam, and switch to teamCodes everywhere to make this simpler.
+        let teamCode = this.state.user.team === "alpha" ? 1 : 2
+        let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
 
-        // TODO:  send to team mates
+        if (mouseButton === 0) {
+            console.log("Left Click - sending to everyone")
+            // TODO:  send to everyone
+            this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
 
-        // Create the shockwave instance on our instance
-        this.createShockwave(pos, colors[this.state.user.colorIndex])
+            this.createShockwave(pos, colors[7])
+        }
+        else if (mouseButton === 1) {
+            console.log("Midle click - sending to opposing team: " + this.state.user.opposingTeam)
+            // TODO:  send to opponents
+            this.state.lobby.members.forEach(member => {
+                if (member.team === this.state.user.opposingTeam) {
+                    console.log("found an opp")
+                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                    toNetId.push(netId)
+                }
+            })
+
+            toNetId.forEach(netId => {
+                this.bc.relay.send(this.createShockwaveJSON(pos, opponentCode), netId, reliable, ordered, channel)
+            })
+
+            this.createShockwave(pos, colors[this.state.user.colorIndex])
+        }
+        else if (mouseButton === 2) {
+            console.log("Right click - sending to team " + this.state.user.team)
+            // TODO:  send to team mates
+            this.state.lobby.members.forEach(member => {
+                if (member.team === this.state.user.team) {
+                    console.log("found a team mate: " + member.name)
+                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                    toNetId.push(netId)
+                }
+            })
+
+            toNetId.forEach(netId => {
+                this.bc.relay.send(this.createShockwaveJSON(pos, teamCode), netId, reliable, ordered, channel)
+            })
+
+            this.createShockwave(pos, colors[this.state.user.colorIndex])
+        }
     }
 
     connectRelay() {
@@ -605,6 +654,18 @@ class App extends Component
         }
         this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
 
+    }
+
+    // Create shockwave JSON for to send to lobby members
+    createShockwaveJSON(pos, intendedTeam){
+        let shockwaveData = {
+            x: pos.x,
+            y: pos.y,
+            teamCode: intendedTeam,
+            instigator: this.state.user.team === "alpha" ? 1 : 2
+        }
+        
+        return Buffer.from(JSON.stringify({ op: "shockwave", data: shockwaveData }), 'ascii')
     }
 
     // Create a shockwave at position and color on the game screen
@@ -718,7 +779,7 @@ class App extends Component
                                         onBack={this.onGameScreenClose.bind(this)}
                                         onEndMatch={this.onEndMatch.bind(this)}
                                         onPlayerMove={this.onPlayerMove.bind(this)}
-                                        onPlayerShockwave={this.onPlayerShockwave.bind(this)}
+                                        onPlayerClicked={this.onPlayerClicked.bind(this)}
                                         onToggleReliable={this.onToggleReliable.bind(this)}
                                         onToggleOrdered={this.onToggleOrdered.bind(this)}
                                         onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} /> :

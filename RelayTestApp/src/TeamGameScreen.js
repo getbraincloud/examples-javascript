@@ -37,22 +37,8 @@ class TeamGameScreen extends Component
 
     onMouseClick(e)
     {
-        if(e.button === 0){
-            console.log("Left")
-            // TODO:  send to everyone
-        }
-        else if(e.button === 1){
-            console.log("Mid")
-            // TODO:  send to opponents
-        }
-        else if(e.button === 2){
-            console.log("Right")
-            // TODO:  send to team mates
-        }
-        
-        // TODO:  send to everyone
-        console.log("send to everyone")
-        this.props.onPlayerShockwave(this.mousePos)
+        //this.props.onPlayerShockwave(this.mousePos)
+        this.props.onPlayerClicked(this.mousePos, e.button)
     }
 
     onToggleReliable(e)
