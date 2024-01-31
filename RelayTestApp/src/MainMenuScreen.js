@@ -11,7 +11,6 @@ class MainMenuScreen extends Component
 {
     onPlay()
     {
-        console.log("lobby type = " + this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
         this.props.onPlay(this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
     }
 
@@ -21,9 +20,7 @@ class MainMenuScreen extends Component
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>
-                {/* TODO:  Lobby Options - TITLE */}
                 <label>Choose lobby type:</label>
-                {/* TODO:  Free For All Lobbies - HEADING */}
                 <select name="lobbyTypes" ref="lobbyTypes">
                     <option value="CursorPartyV2">CursorPartyV2</option>
                     <option value="CursorPartyV2Backfill">CursorPartyV2Backfill</option>

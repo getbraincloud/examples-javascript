@@ -31,32 +31,19 @@ class TeamLobbyScreen extends Component {
     }
 
     onTeamChanged(){
-        console.log("change team buttin clicked")
-        // TODO:
-        /**
-         * Update team property to newTeam
-         * Update colorIndex
-         */
         if(this.props.user.team === "alpha"){
-            console.log("team alpha, switch to beta")
             this.props.onTeamChanged("beta")
         }
         else if(this.props.user.team === "beta"){
-            console.log("team beta, switch to alpha")
             this.props.onTeamChanged("alpha")
-        }
-        else{
-            console.log("team uh oh")
         }
     }
 
-    // TODO
     render() {
         return (
             <div className="TeamLobbyScreen">
 
                 <div style={{ display: "flex" }}>
-                    {/**Team Area: Alpha Team, Change Team Button, Beta Team */}
                     <div>
                         <p>Alpha Team</p>
                         <ul>
@@ -83,7 +70,6 @@ class TeamLobbyScreen extends Component {
                 </div>
 
                 <div>
-                    {/**Start Match / Join Match, Leave Lobby */}
                     {
                         this.props.lobby.ownerCxId === this.props.user.cxId && !this.props.user.isReady ? <button className="Button" onClick={this.onStart.bind(this)}>Start</button> : ""
                     }
@@ -96,7 +82,6 @@ class TeamLobbyScreen extends Component {
                 </div>
 
                 <div>
-                    {/**LobbyId */}
                     <p>Lobby ID: {this.props.lobby.lobbyId}</p>
                 </div>
             </div>

@@ -91,7 +91,7 @@ class App extends Component
     // Clicked "Login"
     onLoginClicked(user, pass)
     {
-        // Show "Loging in..." screen
+        // Show "Logging in..." screen
         this.setState({ screen: "loginIn" })
 
         // Connect to braincloud
@@ -151,8 +151,6 @@ class App extends Component
             state.user.cxId = this.bc.rttService.getRTTConnectionId()
             this.setState(state)
 
-            console.log("RTT Enabled");
-
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
@@ -209,7 +207,6 @@ class App extends Component
                     break;
             }
 
-            // Old Money
             // If using gamelift, we will do region pings
             if (lobbyType === "CursorPartyGameLift") {
                 this.bc.lobby.getRegionsForLobbies([lobbyType], (result) => {
@@ -248,7 +245,6 @@ class App extends Component
     // Update events from the lobby Service
     onLobbyEvent(result)
     {
-        console.log("onLobbyEvent function")
         // If there is a lobby object present in the message, update our lobby
         // state with it.
         if (result.data.lobby)
@@ -259,12 +255,7 @@ class App extends Component
             if (teamMode) {
                 let state = this.state
                 state.lobby.members.forEach(member => {
-                    console.log("Checking team...")
-                    console.log("Member " + member.cxId + " is team " + member.team)
-                    
-                    if(member.cxId === this.state.user.cxId){
-                        console.log("this is our user")
-                        
+                    if(member.cxId === this.state.user.cxId){        
                         if(!state.user.team){
                             this.onTeamChanged(member.team)
                         }
@@ -397,8 +388,6 @@ class App extends Component
         this.setState(state)
 
         this.bc.lobby.switchTeam(state.lobby.lobbyId, team, result => {
-            var status = result.status
-            console.log(status + " : " + JSON.stringify(result, null, 2));
 
             // Update the extra information for our player so other lobby members are notified of
             // our color change.
@@ -458,7 +447,6 @@ class App extends Component
         let memberCxId = this.bc.relay.getCxIdForNetId(netId)
         let member = state.lobby.members.find(member => member.cxId === memberCxId)
         let str = data.toString('ascii');
-        console.log(str)
         let json = JSON.parse(str)
 
         switch (json.op)
@@ -536,7 +524,6 @@ class App extends Component
     // Player has clicked to create a shockwave
     onPlayerShockwave(pos)
     {
-        // TODO:  unused now
         // Build player mask.
         let playerMask = this.state.lobby.members.reduce((playerMask, member) =>
         {
@@ -564,8 +551,6 @@ class App extends Component
 
     // Player has clicked to create a shockwave
     onPlayerClicked(pos, mouseButton) {
-        console.log("player clicked!")
-        
         let toNetId = []
         let reliable = true
         let ordered = false
@@ -575,19 +560,17 @@ class App extends Component
         let teamCode = this.state.user.team === "alpha" ? 1 : 2
         let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
 
+        // send [white] shockwave to everyone
         if (mouseButton === 0) {
-            console.log("Left Click - sending to everyone")
-            // TODO:  send to everyone
             this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
 
             this.createShockwave(pos, colors[7])
         }
+        
+        // send shockwave to opposite team
         else if (mouseButton === 1) {
-            console.log("Midle click - sending to opposing team: " + this.state.user.opposingTeam)
-            // TODO:  send to opponents
             this.state.lobby.members.forEach(member => {
                 if (member.team === this.state.user.opposingTeam) {
-                    console.log("found an opp")
                     let netId = this.bc.relay.getNetIdForCxId(member.cxId)
                     toNetId.push(netId)
                 }
@@ -599,12 +582,11 @@ class App extends Component
 
             this.createShockwave(pos, colors[this.state.user.colorIndex])
         }
+        
+        // send shockwave to teammates
         else if (mouseButton === 2) {
-            console.log("Right click - sending to team " + this.state.user.team)
-            // TODO:  send to team mates
             this.state.lobby.members.forEach(member => {
                 if (member.team === this.state.user.team) {
-                    console.log("found a team mate: " + member.name)
                     let netId = this.bc.relay.getNetIdForCxId(member.cxId)
                     toNetId.push(netId)
                 }
@@ -744,9 +726,6 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <p>LOBBY</p>
-                            {
-                                teamMode ? console.log("teammode loading") : console.log("ffa loading")
-                            }
                             {teamMode ? <TeamLobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onTeamChanged={this.onTeamChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/> : <FFALobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/>}
                         </header>
                     </div>
