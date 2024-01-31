@@ -37,7 +37,6 @@ class TeamGameScreen extends Component
 
     onMouseClick(e)
     {
-        //this.props.onPlayerShockwave(this.mousePos)
         this.props.onPlayerClicked(this.mousePos, e.button)
     }
 
@@ -61,12 +60,10 @@ class TeamGameScreen extends Component
         return (
             <div className="TeamGameScreen" style={{display:"flex"}}>
                 <div>
-                    {/** LEFT*/}
                     <p>Player Mask (For shockwaves)</p>
                     <div style={{display:"flex", justifyContent:"space-between"}}>
                         
                         <div>
-                            {/**ALPHA */}
                             <p>Alpha Team</p>
                             {
                                 this.props.lobby.members.map(member => (
@@ -82,7 +79,6 @@ class TeamGameScreen extends Component
                         </div>
 
                         <div>
-                            {/**BETA */}
                             <p>Beta Team</p>
                             {
                                 this.props.lobby.members.map(member => (
@@ -99,7 +95,6 @@ class TeamGameScreen extends Component
                     </div>
 
                     <div>
-                        {/**Options */}
                         <p>Reliable options (For mouse position)</p>
 
                         <input type="checkbox" key="chkReliable" name="chkReliable" onChange={this.onToggleReliable.bind(this)} defaultChecked={this.props.relayOptions.reliable} />
@@ -110,7 +105,6 @@ class TeamGameScreen extends Component
                     </div>
 
                     <div>
-                        {/**Instructions */}
                         <p>Instructions</p>
                         <p>Left Click = Send shockwaves to everybody</p>
                         <p>Right Click = Send shockwaves to team mates</p>
@@ -119,10 +113,7 @@ class TeamGameScreen extends Component
                 </div>
 
                 <div>
-                    {/** RIGHT*/}
-
                     <div>
-                        {/**GAME SHIT */}
                         <div className="GamePlayArea" ref="GamePlayArea" style={{ cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float: "left" }}
                             onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseClick.bind(this)} onContextMenu={(e)=>e.preventDefault()}>
                             {
@@ -144,7 +135,6 @@ class TeamGameScreen extends Component
                     </div>
 
                     <div>
-                        {/** BUTTONS */}
                         <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
 
                         {
