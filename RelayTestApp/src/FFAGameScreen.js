@@ -9,7 +9,7 @@ let colors = require('./Colors').colors
 // relayOptions
 //   reliable
 //   ordered
-class GameScreen extends Component
+class FFAGameScreen extends Component
 {
     constructor()
     {
@@ -20,6 +20,10 @@ class GameScreen extends Component
     onBack()
     {
         this.props.onBack()
+    }
+
+    onEndMatch() {
+        this.props.onEndMatch()
     }
 
     onMouseMove(e)
@@ -54,7 +58,7 @@ class GameScreen extends Component
     render()
     {
         return (
-            <div className="GameScreen">
+            <div className="FFAGameScreen">
                 <div>
                     <div className="OptionPanel" ref="OptionPanel" style={{float:"left", paddingRight:32, textAlign:"left"}}>
                         <p>Player Mask (For shockwaves)</p>
@@ -62,7 +66,9 @@ class GameScreen extends Component
                             this.props.lobby.members.map(member => (
                                 <div key={`${member.cxId}_mask`}>
                                     <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo}/>
-                                    <label htmlFor={`${member.cxId}_mask`}>{member.name}</label>
+                                    {
+                                        member.isReady === true ? <label htmlFor={`${member.cxId}_mask`}>{member.name}</label> : <label htmlFor={`${member.cxId}_mask`}>{member.name + " (in lobby)"}</label>
+                                    }
                                 </div>
                             ))
                         }
@@ -92,9 +98,12 @@ class GameScreen extends Component
                     </div>
                 </div>
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
+                {
+                    this.props.lobby.ownerCxId === this.props.user.cxId ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
+                }
             </div>
         )
     }
 }
 
-export default GameScreen;
+export default FFAGameScreen;
