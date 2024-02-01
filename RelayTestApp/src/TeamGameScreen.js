@@ -69,7 +69,9 @@ class TeamGameScreen extends Component
                                 this.props.lobby.members.map(member => (
                                     <div key={`${member.cxId}_mask`}>
                                         {/** TODO:  This checkbox should ALSO only be visible if member.team === "alpha" */}
-                                        <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo} />
+                                        {
+                                            member.team === "alpha" ? <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo} /> : ""
+                                        }
                                         {
                                             member.team === "alpha" ? member.isReady === true ? <label htmlFor={`${member.cxId}_mask`}>{member.name}</label> : <label htmlFor={`${member.cxId}_mask`}>{member.name + " (in lobby)"}</label> : ""
                                         }
@@ -84,7 +86,9 @@ class TeamGameScreen extends Component
                                 this.props.lobby.members.map(member => (
                                     <div key={`${member.cxId}_mask`}>
                                         {/** TODO:  This checkbox should ALSO only be visible if member.team === "beta" */}
-                                        <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo} />
+                                        {
+                                            member.team === "beta" ? <input type="checkbox" name={`${member.cxId}_mask`} onChange={() => this.onTogglePlayerMask(member.cxId)} defaultChecked={member.allowSendTo} /> : ""
+                                        }
                                         {
                                             member.team === "beta" ? member.isReady === true ? <label htmlFor={`${member.cxId}_mask`}>{member.name}</label> : <label htmlFor={`${member.cxId}_mask`}>{member.name + " (in lobby)"}</label> : ""
                                         }
