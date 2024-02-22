@@ -6,11 +6,26 @@ import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret (and optio
 import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
-import LobbyScreen from './LobbyScreen';
-import GameScreen from './GameScreen';
+import FFALobbyScreen from './FFALobbyScreen';
+import TeamLobbyScreen from './TeamLobbyScreen';
+import FFAGameScreen from './FFAGameScreen';
+import TeamGameScreen from './TeamGameScreen'
 
 let brainCloud = require("braincloud")
 let colors = require('./Colors').colors
+
+let presentWhileStarted = false;
+let server = null;
+let showJoinButton = false;
+let teamMode = false;
+
+export function getShowJoinButton(){
+    return showJoinButton
+}
+
+export function getGameMode(){
+    return teamMode
+}
 
 class App extends Component
 {
@@ -76,7 +91,7 @@ class App extends Component
     // Clicked "Login"
     onLoginClicked(user, pass)
     {
-        // Show "Loging in..." screen
+        // Show "Logging in..." screen
         this.setState({ screen: "loginIn" })
 
         // Connect to braincloud
@@ -111,7 +126,8 @@ class App extends Component
                     cxId: null,
                     name: this.username,
                     colorIndex: parseInt(localStorageColor),
-                    isReady: false
+                    isReady: false,
+                    presentSinceStart: false
                 }
             })
         }
@@ -122,46 +138,92 @@ class App extends Component
     }
 
     // Clicked play from the main menu (Menu shown after authentication)
-    onPlayClicked(lobbyType)
-    {
+    onPlayClicked(lobbyType) {
         this.setState({ screen: "joiningLobby", lobbyType: lobbyType })
 
         // Enable RTT service
-        this.bc.rttService.enableRTT(() =>
-        {
+        this.bc.rttService.enableRTT(() => {
             let state = this.state
+            let extraJson = {
+                colorIndex: this.state.user.colorIndex,
+                presentSinceStart: this.state.user.presentSinceStart
+            }
             state.user.cxId = this.bc.rttService.getRTTConnectionId()
             this.setState(state)
-
-            console.log("RTT Enabled");
 
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
+            switch (lobbyType) {
+                case "CursorPartyV2":
+                case "CursorPartyV2Backfill":
+                    teamMode = false
+
+                    // Find or create a lobby
+                    this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
+                        if (result.status !== 200) {
+                            this.dieWithMessage("Failed to find lobby")
+                        }
+                        // Success of lobby found will be in the event onLobbyEvent
+                    })
+                    break;
+                case "CursorPartyGameLift":
+                    teamMode = false
+
+                        this.bc.lobby.getRegionsForLobbies([lobbyType], (result) => {
+                            if (result.status !== 200) {
+                                this.dieWithMessage("Failed to get regions for lobbies")
+                                return
+                        }
+
+                        this.bc.lobby.pingRegions((result) => {
+                            if (result.status !== 200) {
+                                this.dieWithMessage("Failed to ping regions")
+                                return
+                            }
+
+                            // Find or create a lobby
+                            this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
+                                if (result.status !== 200) {
+                                    this.dieWithMessage("Failed to find lobby")
+                                }
+                                // Success of lobby found will be in the event onLobbyEvent
+                            })
+                        })
+                    })
+                    break;
+                case "TeamCursorPartyV2":
+                case "TeamCursorPartyV2Backfill":
+                    teamMode = true
+                    // Find or create a lobby
+                    this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "", result => {
+                        if (result.status !== 200) {
+                            this.dieWithMessage("Failed to find lobby")
+                        }
+                        // Success of lobby found will be in the event onLobbyEvent
+                    })
+                    break;
+                default:
+                    break;
+            }
+
             // If using gamelift, we will do region pings
-            if (lobbyType == "CursorPartyGameLift")
-            {
-                this.bc.lobby.getRegionsForLobbies([lobbyType], (result) =>
-                {
-                    if (result.status !== 200) 
-                    {
+            if (lobbyType === "CursorPartyGameLift") {
+                this.bc.lobby.getRegionsForLobbies([lobbyType], (result) => {
+                    if (result.status !== 200) {
                         this.dieWithMessage("Failed to get regions for lobbies")
                         return
                     }
 
-                    this.bc.lobby.pingRegions((result) =>
-                    {
-                        if (result.status !== 200) 
-                        {
+                    this.bc.lobby.pingRegions((result) => {
+                        if (result.status !== 200) {
                             this.dieWithMessage("Failed to ping regions")
                             return
                         }
 
                         // Find or create a lobby
-                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
-                        {
-                            if (result.status !== 200)
-                            {
+                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
+                            if (result.status !== 200) {
                                 this.dieWithMessage("Failed to find lobby")
                             }
                             // Success of lobby found will be in the event onLobbyEvent
@@ -169,26 +231,12 @@ class App extends Component
                     })
                 })
             }
-            else
-            {
-                // Find or create a lobby
-                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, {colorIndex:this.state.user.colorIndex}, "all", result =>
-                {
-                    if (result.status !== 200)
-                    {
-                        this.dieWithMessage("Failed to find lobby")
-                    }
-                    // Success of lobby found will be in the event onLobbyEvent
-                })
-            }
-        }, () =>
-        {
-            if (this.state.screen === "joiningLobby")
-            {
+            
+        }, () => {
+            if (this.state.screen === "joiningLobby") {
                 this.dieWithMessage("Failed to enable RTT")
             }
-            else
-            {
+            else {
                 this.dieWithMessage("RTT Disconnected")
             }
         })
@@ -200,8 +248,20 @@ class App extends Component
         // If there is a lobby object present in the message, update our lobby
         // state with it.
         if (result.data.lobby)
-        {
+        {   
             this.setState({lobby: { ...result.data.lobby, lobbyId: result.data.lobbyId }})
+
+            // Display assigned teams
+            if (teamMode) {
+                let state = this.state
+                state.lobby.members.forEach(member => {
+                    if(member.cxId === this.state.user.cxId){        
+                        if(!state.user.team){
+                            this.onTeamChanged(member.team)
+                        }
+                    }
+                })
+            }
 
             // If we were joining lobby, show the lobby screen. We have the information to
             // display now.
@@ -213,7 +273,7 @@ class App extends Component
 
         if (result.operation === "DISBANDED")
         {
-            if (result.data.reason.code != this.bc.reasonCodes.RTT_ROOM_READY)
+            if (result.data.reason.code !== this.bc.reasonCodes.RTT_ROOM_READY)
             {
                 // Disbanded for any other reason than ROOM_READY, means we failed to launch the game.
                 this.onGameScreenClose()
@@ -221,34 +281,30 @@ class App extends Component
         }
         else if (result.operation === "STARTING")
         {
+            presentWhileStarted = true;
+
+            this.updatePresentSinceStart();
+
             // Game is starting, show loading screen
             this.setState({ screen: "connecting" })
         }
         else if (result.operation === "ROOM_READY")
         {
-            let server = result.data;
-
-            // If the lobby is gamelift, the port name will be "gamelift"
-            let wsPort = 0;
-            if (this.state.lobbyType == "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
-            else wsPort = server.connectData.ports.ws;
+            server = result.data;
 
             // Server has been created. Connect to it
-            this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
-            this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
-            this.bc.relay.connect({
-                ssl: false,
-                host: server.connectData.address,
-                port: wsPort,
-                passcode: server.passcode,
-                lobbyId: server.lobbyId
-            }, result =>
-            {
-                let state = this.state
-                state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId))
-                state.screen = "game"
-                this.setState(state)
-            }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
+
+            // Check to see if a user joined the lobby before the match started or after.
+            // If a user joins while match is in progress, you will only receive MEMBER_JOIN & ROOM_READY RTT updates.
+            if (presentWhileStarted) {
+                this.connectRelay();
+            }
+            else{
+                showJoinButton = true;
+
+                // refresh the screen to display join button
+                this.setState({ screen: "lobby" })
+            }
         }
     }
 
@@ -291,6 +347,8 @@ class App extends Component
         state.screen = "mainMenu"
         state.lobby = null
         state.user.isReady = false
+        state.user.presentSinceStart = false
+        showJoinButton = false
         this.setState(state)
     }
 
@@ -299,23 +357,88 @@ class App extends Component
     {
         let state = this.state
         state.user.colorIndex = colorIndex
+        let extraJson = {
+            colorIndex: colorIndex,
+            presentSinceStart: state.user.presentSinceStart
+        }
         this.setState(state)
 
         // Update the extra information for our player so other lobby members are notified of
         // our color change.
-        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, {colorIndex: colorIndex})
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+    }
+
+    onTeamChanged(team) {
+        let state = this.state
+        state.user.team = team
+
+        if (team === "alpha") {
+            state.user.colorIndex = 4
+            state.user.opposingTeam = "beta"
+        }
+        else if (team === "beta") {
+            state.user.colorIndex = 3
+            state.user.opposingTeam = "alpha"
+        }
+        let extraJson = {
+            colorIndex: state.user.colorIndex,
+            presentSinceStart: state.user.presentSinceStart
+        }
+
+        this.setState(state)
+
+        this.bc.lobby.switchTeam(state.lobby.lobbyId, team, result => {
+
+            // Update the extra information for our player so other lobby members are notified of
+            // our color change.
+            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+        })
     }
 
     // Owner of the lobby clicked the "Start" button
     onStart()
     {
         let state = this.state
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
         state.user.isReady = true
         this.setState(state)
 
         // Set our state to ready and notify the lobby Service.
-        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, {colorIndex: this.state.user.colorIndex})
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
     }
+
+    // Player clicked the "Join Match" button, requesting to join a match that had been started prior to them joining the lobby
+    onJoin()
+    {        
+        let state = this.state
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
+        state.user.isReady = true
+        this.setState(state)
+
+        // Set our state to ready and notify the lobby Service.
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+        
+        this.connectRelay();
+    }
+
+    // Return to the lobby with the same players
+    onEndMatch()
+    {
+        let extraJson = {
+            cxId: this.bc.brainCloudClient.getRTTConnectionId(),
+            lobbyId: this.state.lobby.lobbyId,
+            op: "END_MATCH"
+        }
+
+        this.bc.relay.endMatch(extraJson)
+    }
+
 
     // A relay message coming from another player
     onRelayMessage(netId, data)
@@ -324,19 +447,22 @@ class App extends Component
         let memberCxId = this.bc.relay.getCxIdForNetId(netId)
         let member = state.lobby.members.find(member => member.cxId === memberCxId)
         let str = data.toString('ascii');
-        console.log(str)
         let json = JSON.parse(str)
 
         switch (json.op)
         {
             // Player moved the mouse
-            case "move":
+            case "move":   
                 member.pos = {x: json.data.x, y: json.data.y};
                 break
 
             // Player clicked to create a shockwave
-            case "shockwave":
-                this.createShockwave(json.data, colors[member.extra.colorIndex])
+            case "shockwave":   
+            if(json.data.teamCode === 0){
+                this.createShockwave(json.data, colors[7])
+                break
+            }    
+            this.createShockwave(json.data, colors[member.extra.colorIndex])
                 break
 
             default: break;
@@ -354,6 +480,29 @@ class App extends Component
             let member = state.lobby.members.find(member => member.cxId === json.cxId)
             if (member) member.pos = null // This will stop displaying this member
             this.setState(state)
+        }
+        else if(json.op === "CONNECT"){            
+            let state = this.state
+            state.lobby.members.forEach(member => member.allowSendTo = (member.cxId !== state.user.cxId)
+            )
+        }
+        else if(json.op === "END_MATCH")
+        {
+            let state = this.state
+            state.user.isReady = false;
+            state.user.presentSinceStart = false;
+            showJoinButton = false;
+
+            let extraJson = {
+                colorIndex: this.state.user.colorIndex,
+                presentSinceStart: this.state.user.presentSinceStart
+            }
+
+            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson, result => {
+                if(result.status === 200){
+                    this.setState({screen: "lobby"})
+                }
+            })
         }
     }
 
@@ -392,7 +541,7 @@ class App extends Component
                 return playerMask + Math.pow(2, netId)
             }
         }, 0)
-
+        
         // We send the shockewave event as reliable because such action needs to be guaranteed.
         this.bc.relay.sendToPlayers(Buffer.from(JSON.stringify({op:"shockwave",data:pos}), 'ascii'), playerMask, true, false, this.bc.relay.CHANNEL_HIGH_PRIORITY_2);
 
@@ -400,12 +549,113 @@ class App extends Component
         this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
 
-    // Create a shocwave at position and color on the game screen
+    // Player has clicked to create a shockwave
+    onPlayerClicked(pos, mouseButton) {
+        let toNetId = []
+        let reliable = true
+        let ordered = false
+        let channel = this.bc.relay.CHANNEL_HIGH_PRIORITY_2
+
+        // TODO:  TEMPORARY FIX. Get rid of .team and .opposingTeam, and switch to teamCodes everywhere to make this simpler.
+        let teamCode = this.state.user.team === "alpha" ? 1 : 2
+        let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
+
+        // send [white] shockwave to everyone
+        if (mouseButton === 0) {
+            this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
+
+            this.createShockwave(pos, colors[7])
+        }
+        
+        // send shockwave to opposite team
+        else if (mouseButton === 1) {
+            this.state.lobby.members.forEach(member => {
+                if (member.team === this.state.user.opposingTeam) {
+                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                    toNetId.push(netId)
+                }
+            })
+
+            toNetId.forEach(netId => {
+                this.bc.relay.send(this.createShockwaveJSON(pos, opponentCode), netId, reliable, ordered, channel)
+            })
+
+            this.createShockwave(pos, colors[this.state.user.colorIndex])
+        }
+        
+        // send shockwave to teammates
+        else if (mouseButton === 2) {
+            this.state.lobby.members.forEach(member => {
+                if (member.team === this.state.user.team) {
+                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                    toNetId.push(netId)
+                }
+            })
+
+            toNetId.forEach(netId => {
+                this.bc.relay.send(this.createShockwaveJSON(pos, teamCode), netId, reliable, ordered, channel)
+            })
+
+            this.createShockwave(pos, colors[this.state.user.colorIndex])
+        }
+    }
+
+    connectRelay() {
+        
+        // If the lobby is gamelift, the port name will be "gamelift"
+        let wsPort = 0;
+        if (this.state.lobbyType === "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
+        else wsPort = server.connectData.ports.ws;
+        
+        presentWhileStarted = false;
+
+        this.bc.relay.registerRelayCallback(this.onRelayMessage.bind(this))
+        this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
+        this.bc.relay.connect({
+            ssl: false,
+            host: server.connectData.address,
+            port: wsPort,
+            passcode: server.passcode,
+            lobbyId: server.lobbyId
+        }, result => {
+            let state = this.state
+            state.screen = "game"
+            this.setState(state)
+        }, error => this.dieWithMessage("Failed to connect to server, msg: " + error))
+    }
+
+    updatePresentSinceStart()
+    {
+        let state = this.state
+        state.user.presentSinceStart = true;
+        state.user.isReady = true;
+        
+        let extraJson = {
+            colorIndex: this.state.user.colorIndex,
+            presentSinceStart: this.state.user.presentSinceStart
+        }
+        this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+
+    }
+
+    // Create shockwave JSON for to send to lobby members
+    createShockwaveJSON(pos, intendedTeam){
+        let shockwaveData = {
+            x: pos.x,
+            y: pos.y,
+            teamCode: intendedTeam,
+            instigator: this.state.user.team === "alpha" ? 1 : 2
+        }
+        
+        return Buffer.from(JSON.stringify({ op: "shockwave", data: shockwaveData }), 'ascii')
+    }
+
+    // Create a shockwave at position and color on the game screen
     createShockwave(pos, color)
     {
         let shockwaves = this.state.shockwaves;
         let shockwave = {
-            pos: {x: pos.x, y: pos.y},
+            pos: {x: pos.x * 800, y: pos.y * 600},
             color: color,
             id: this.shockwaveNextId++ // This is used to ID the HTML element so the CSS animation doesn't bug.
         }
@@ -470,13 +720,13 @@ class App extends Component
                 )
             }
             case "lobby":
-            {
+            {   
                 return (
                     <div className="App">
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <p>LOBBY</p>
-                            <LobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} />
+                            {teamMode ? <TeamLobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onTeamChanged={this.onTeamChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/> : <FFALobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/>}
                         </header>
                     </div>
                 )
@@ -499,16 +749,32 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <small>Move mouse around and click to create shockwaves.</small>
-                            <GameScreen user={this.state.user} 
-                                        lobby={this.state.lobby} 
-                                        shockwaves={this.state.shockwaves} 
+                            {
+                                teamMode ?
+                                    <TeamGameScreen user={this.state.user}
+                                        lobby={this.state.lobby}
+                                        shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
-                                        onBack={this.onGameScreenClose.bind(this)} 
-                                        onPlayerMove={this.onPlayerMove.bind(this)} 
+                                        onBack={this.onGameScreenClose.bind(this)}
+                                        onEndMatch={this.onEndMatch.bind(this)}
+                                        onPlayerMove={this.onPlayerMove.bind(this)}
+                                        onPlayerClicked={this.onPlayerClicked.bind(this)}
+                                        onToggleReliable={this.onToggleReliable.bind(this)}
+                                        onToggleOrdered={this.onToggleOrdered.bind(this)}
+                                        onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} /> :
+
+                                    <FFAGameScreen user={this.state.user}
+                                        lobby={this.state.lobby}
+                                        shockwaves={this.state.shockwaves}
+                                        relayOptions={this.state.relayOptions}
+                                        onBack={this.onGameScreenClose.bind(this)}
+                                        onEndMatch={this.onEndMatch.bind(this)}
+                                        onPlayerMove={this.onPlayerMove.bind(this)}
                                         onPlayerShockwave={this.onPlayerShockwave.bind(this)}
-                                        onToggleReliable={this.onToggleReliable.bind(this)} 
-                                        onToggleOrdered={this.onToggleOrdered.bind(this)} 
+                                        onToggleReliable={this.onToggleReliable.bind(this)}
+                                        onToggleOrdered={this.onToggleOrdered.bind(this)}
                                         onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
+                            }
                         </header>
                     </div>
                 )

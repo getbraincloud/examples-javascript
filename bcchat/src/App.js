@@ -1060,11 +1060,10 @@ class App extends Component
             appState: AppState.Loading,
             loadingText: "Loging out ..."});
 
-        this.bcWrapper.brainCloudClient.playerState.logout(result =>
-        {
+        this.bcWrapper.logout(true, result => {
             this.setState(this.getDefaultState());
             this.setState({appState: AppState.LogIn});
-        });
+        })
     }
 
     renderChatScreen()
