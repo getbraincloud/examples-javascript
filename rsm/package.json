@@ -1,6 +1,6 @@
 {
   "name": "RSM",
-  "version": "4.11.0",
+  "version": "5.2.0",
   "keywords": [
     "util",
     "functional",
@@ -13,7 +13,7 @@
   "dependencies": {
     "@types/node": "^7.10.1",
     "@types/uuid": "^2.0.29",
-    "brainclouds2s": "^3.9.0",
+    "brainclouds2s": "^5.2.0",
     "carrier": "0.3.0",
     "cross-spawn": "^6.0.5",
     "docker-cli-js": "^2.5.1",
