@@ -1058,7 +1058,7 @@ class App extends Component
     {
         this.setState({
             appState: AppState.Loading,
-            loadingText: "Loging out ..."});
+            loadingText: "Logging out ..."});
 
             this.bcWrapper.rttService.deregisterAllRTTCallbacks()
             this.bcWrapper.rttService.disableRTT()
