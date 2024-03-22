@@ -5,6 +5,7 @@ let colors = require('./Colors').colors
 // Props:
 // user
 // lobby
+// lobby type
 // pings
 // relayOptions
 //   reliable
@@ -55,6 +56,16 @@ class FFAGameScreen extends Component
         this.props.onTogglePlayerMask(cxId)
     }
 
+    showEndMatchButton(){
+        
+        // End match should only be optional to the lobby owner / host. The "CursorPartyGameLift" lobby type is configured to "disband on start" which means END_MATCH is not possible
+        if(this.props.lobby.ownerCxId === this.props.user.cxId && this.props.lobbyType !== "CursorPartyGameLift"){
+            return true
+        }
+
+        return false
+    }
+
     render()
     {
         return (
@@ -99,7 +110,7 @@ class FFAGameScreen extends Component
                 </div>
                 <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
                 {
-                    this.props.lobby.ownerCxId === this.props.user.cxId ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
+                    this.showEndMatchButton() ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
                 }
             </div>
         )
