@@ -489,20 +489,12 @@ class App extends Component
         else if(json.op === "END_MATCH")
         {
             let state = this.state
+            state.screen = "lobby"
             state.user.isReady = false;
             state.user.presentSinceStart = false;
             showJoinButton = false;
 
-            let extraJson = {
-                colorIndex: this.state.user.colorIndex,
-                presentSinceStart: this.state.user.presentSinceStart
-            }
-
-            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson, result => {
-                if(result.status === 200){
-                    this.setState({screen: "lobby"})
-                }
-            })
+            this.setState(state)
         }
     }
 
@@ -753,6 +745,7 @@ class App extends Component
                                 teamMode ?
                                     <TeamGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
+                                        lobbyType={this.state.lobbyType}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
@@ -765,6 +758,7 @@ class App extends Component
 
                                     <FFAGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
+                                        lobbyType={this.state.lobbyType}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
