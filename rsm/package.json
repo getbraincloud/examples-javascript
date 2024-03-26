@@ -17,7 +17,7 @@
     "carrier": "0.3.0",
     "cross-spawn": "^6.0.5",
     "docker-cli-js": "^2.5.1",
-    "express": "^4.16.4",
+    "express": "^4.19.2",
     "net": "^1.0.2",
     "public-ip": "^2.4.0",
     "stream-frame": "0.0.6",
