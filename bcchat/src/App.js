@@ -105,6 +105,12 @@ class App extends Component
 
     componentDidMount()
     {
+        window.addEventListener("beforeunload", (ev) => {
+            this.bcWrapper.logoutOnApplicationClose(false);
+
+            return;
+        });
+
         this.initBC();
         this.bcWrapper.restoreSession(result =>
         {

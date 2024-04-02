@@ -9,6 +9,11 @@ import ids from './ids'
 //  onHowTo
 class MainMenuScreen extends Component
 {
+    onLogout()
+    {
+        this.props.onLogout()
+    }
+    
     onPlay()
     {
         this.props.onPlay(this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
@@ -29,6 +34,7 @@ class MainMenuScreen extends Component
                     <option value="TeamCursorPartyV2Backfill">TeamCursorPartyV2Backfill</option>
                 </select>
                 <div className="btn-frame">
+                    <button className="Button" onClick={this.onLogout.bind(this)}>LOG OUT</button>
                     <button className="Button" onClick={this.onPlay.bind(this)}>PLAY</button>
                 </div>
 
