@@ -16,6 +16,10 @@ class MainMenuScreen extends Component {
         this.props.onHowTo()
     }
 
+    onLogout(){
+        this.props.onLogout()
+    }
+
     render() {
         let versionSuffix = (ids.url) ? " - dev" : " - prod"
         return (
@@ -27,6 +31,10 @@ class MainMenuScreen extends Component {
 
                 <div className="btn-frame">
                     <button className="btn-green-long" onClick={this.onHowTo.bind(this)}>HOW TO PLAY</button>
+                </div>
+
+                <div className="btn-frame">
+                    <button className="btn-green-long" onClick={this.onLogout.bind(this)}>LOG OUT</button>
                 </div>
 
                 <div className="bottomText">

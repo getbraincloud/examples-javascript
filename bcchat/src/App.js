@@ -105,6 +105,12 @@ class App extends Component
 
     componentDidMount()
     {
+        window.addEventListener("beforeunload", (ev) => {
+            this.bcWrapper.logoutOnApplicationClose(false);
+
+            return;
+        });
+
         this.initBC();
         this.bcWrapper.restoreSession(result =>
         {
@@ -1058,7 +1064,10 @@ class App extends Component
     {
         this.setState({
             appState: AppState.Loading,
-            loadingText: "Loging out ..."});
+            loadingText: "Logging out ..."});
+
+            this.bcWrapper.rttService.deregisterAllRTTCallbacks()
+            this.bcWrapper.rttService.disableRTT()
 
         this.bcWrapper.logout(true, result => {
             this.setState(this.getDefaultState());
