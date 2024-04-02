@@ -83,6 +83,8 @@ class App extends Component
     // Reset the app to the login page with an error popup
     dieWithMessage(message)
     {
+        this.bc.logoutOnApplicationClose(false)
+
         // Close Relay/RTT/BC connections
         this.bc.relay.disconnect()
         this.bc.relay.deregisterSystemCallback()
@@ -147,6 +149,23 @@ class App extends Component
         {
             this.dieWithMessage("Failed to login");
         }
+    }
+
+    onLogout() {
+        this.bc.logout(true, () => {
+            // Close Relay/RTT/BC connections
+            this.bc.relay.disconnect()
+            this.bc.relay.deregisterSystemCallback()
+            this.bc.relay.deregisterRelayCallback()
+            this.bc.rttService.deregisterAllRTTCallbacks()
+            this.bc.brainCloudClient.resetCommunication()
+
+            // Initialize BC libs and start over
+            this.initBC()
+
+            // Go back to default login state
+            this.setState(this.makeDefaultState())
+        })
     }
 
     // Clicked play from the main menu (Menu shown after authentication)
@@ -708,6 +727,7 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <MainMenuScreen user={this.state.user}
+                                onLogout={this.onLogout.bind(this)}
                                 onPlay={this.onPlayClicked.bind(this)} />
                         </header>
                     </div>
