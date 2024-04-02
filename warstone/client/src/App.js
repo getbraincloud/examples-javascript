@@ -31,6 +31,15 @@ class App extends Component {
         }
     }
 
+    componentDidMount()
+    {
+        window.addEventListener("beforeunload", (ev) => {
+            this.bc.logoutOnApplicationClose(false);
+
+            return;
+        });
+    }
+
     dieWithMessage(message) {
         // Close RTT connection
         this.bc.rttService.deregisterAllRTTCallbacks()
@@ -131,6 +140,20 @@ class App extends Component {
         this.setState({ screen: "howToPlay" })
     }
 
+    onLogoutClicked() {
+        this.bc.logout(true, () => {
+            // Close RTT connection
+            this.bc.rttService.deregisterAllRTTCallbacks()
+            this.bc.brainCloudClient.resetCommunication()
+
+            // Initialize BC libs and start over
+            this.initBC()
+
+            // Go back to default login state
+            this.setState(this.makeDefaultState())
+        })
+    }
+
     onMainMenu() {
         this.setState({ screen: "mainMenu" })
     }
@@ -207,7 +230,8 @@ class App extends Component {
                             {this.renderTitle()}
                             <MainMenuScreen user={this.state.user}
                                 onPlay={this.onPlayClicked.bind(this)}
-                                onHowTo={this.onHowToClicked.bind(this)} />
+                                onHowTo={this.onHowToClicked.bind(this)}
+                                onLogout={this.onLogoutClicked.bind(this)} />
                         </div>
                     )
                 }

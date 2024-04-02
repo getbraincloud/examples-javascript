@@ -37,6 +37,15 @@ class App extends Component
         this.initBC()
         this.state = this.makeDefaultState()
     }
+
+    componentDidMount()
+    {
+        window.addEventListener("beforeunload", (ev) => {
+            this.bc.logoutOnApplicationClose(false);
+
+            return;
+        });
+    }
     
     // Initialize brainCloud library
     initBC()
@@ -71,6 +80,8 @@ class App extends Component
     // Reset the app to the login page with an error popup
     dieWithMessage(message)
     {
+        this.bc.logoutOnApplicationClose(false)
+
         // Close Relay/RTT/BC connections
         this.bc.relay.disconnect()
         this.bc.relay.deregisterSystemCallback()
@@ -135,6 +146,23 @@ class App extends Component
         {
             this.dieWithMessage("Failed to login");
         }
+    }
+
+    onLogout() {
+        this.bc.logout(true, () => {
+            // Close Relay/RTT/BC connections
+            this.bc.relay.disconnect()
+            this.bc.relay.deregisterSystemCallback()
+            this.bc.relay.deregisterRelayCallback()
+            this.bc.rttService.deregisterAllRTTCallbacks()
+            this.bc.brainCloudClient.resetCommunication()
+
+            // Initialize BC libs and start over
+            this.initBC()
+
+            // Go back to default login state
+            this.setState(this.makeDefaultState())
+        })
     }
 
     // Clicked play from the main menu (Menu shown after authentication)
@@ -489,20 +517,12 @@ class App extends Component
         else if(json.op === "END_MATCH")
         {
             let state = this.state
+            state.screen = "lobby"
             state.user.isReady = false;
             state.user.presentSinceStart = false;
             showJoinButton = false;
 
-            let extraJson = {
-                colorIndex: this.state.user.colorIndex,
-                presentSinceStart: this.state.user.presentSinceStart
-            }
-
-            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson, result => {
-                if(result.status === 200){
-                    this.setState({screen: "lobby"})
-                }
-            })
+            this.setState(state)
         }
     }
 
@@ -704,6 +724,7 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <MainMenuScreen user={this.state.user}
+                                onLogout={this.onLogout.bind(this)}
                                 onPlay={this.onPlayClicked.bind(this)} />
                         </header>
                     </div>
@@ -753,6 +774,7 @@ class App extends Component
                                 teamMode ?
                                     <TeamGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
+                                        lobbyType={this.state.lobbyType}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
@@ -765,6 +787,7 @@ class App extends Component
 
                                     <FFAGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
+                                        lobbyType={this.state.lobbyType}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
