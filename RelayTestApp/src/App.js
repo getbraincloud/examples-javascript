@@ -37,6 +37,18 @@ class App extends Component
         this.initBC()
         this.state = this.makeDefaultState()
     }
+
+    componentDidMount()
+    {
+        console.log("componentDidMount")
+        window.addEventListener("beforeunload", (ev) => {
+            console.log("beforeunload")
+            
+            this.bc.logoutOnApplicationClose(false);
+
+            return;
+        });
+    }
     
     // Initialize brainCloud library
     initBC()

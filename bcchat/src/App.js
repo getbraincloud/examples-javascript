@@ -106,7 +106,7 @@ class App extends Component
     componentDidMount()
     {
         window.addEventListener("beforeunload", (ev) => {
-            this.bcWrapper.runScriptAndLogoutOnApplicationClose(false);
+            this.bcWrapper.logoutOnApplicationClose(false);
 
             return;
         });
