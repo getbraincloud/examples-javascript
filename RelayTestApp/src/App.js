@@ -40,10 +40,7 @@ class App extends Component
 
     componentDidMount()
     {
-        console.log("componentDidMount")
         window.addEventListener("beforeunload", (ev) => {
-            console.log("beforeunload")
-            
             this.bc.logoutOnApplicationClose(false);
 
             return;
