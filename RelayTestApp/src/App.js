@@ -11,6 +11,8 @@ import TeamLobbyScreen from './TeamLobbyScreen';
 import FFAGameScreen from './FFAGameScreen';
 import TeamGameScreen from './TeamGameScreen'
 
+var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
+
 let brainCloud = require("braincloud")
 let colors = require('./Colors').colors
 
