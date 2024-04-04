@@ -19,6 +19,8 @@ let server = null;
 let showJoinButton = false;
 let teamMode = false;
 
+let lobbyTypes = []
+
 export function getShowJoinButton(){
     return showJoinButton
 }
@@ -130,15 +132,31 @@ class App extends Component
             // color pick from last time.
             let localStorageColor = localStorage.getItem("color")
             if (localStorageColor == null) localStorageColor = "7" // Default to white
-            this.setState({
-                screen: "mainMenu",
-                user: {
-                    id: result.data.profileId,
-                    cxId: null,
-                    name: this.username,
-                    colorIndex: parseInt(localStorageColor),
-                    isReady: false,
-                    presentSinceStart: false
+
+            // Get app's lobby types
+            this.bc.globalApp.readProperties((readPropertiesResponse) => {
+                if(readPropertiesResponse.status === 200){
+                    var parsedValue = JSON.parse(readPropertiesResponse.data.AllLobbyTypes.value)
+                    var values = Object.values(parsedValue)
+                    
+                    for(let i = 0; i < values.length; i++){
+                        lobbyTypes[i] = values[i].lobby
+                    }
+
+                    this.setState({
+                        screen: "mainMenu",
+                        user: {
+                            id: result.data.profileId,
+                            cxId: null,
+                            name: this.username,
+                            colorIndex: parseInt(localStorageColor),
+                            isReady: false,
+                            presentSinceStart: false
+                        }
+                    })
+                }
+                else{
+                    console.log("globalApp.readProperties failed")
                 }
             })
         }
@@ -723,7 +741,9 @@ class App extends Component
                     <div className="App">
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
-                            <MainMenuScreen user={this.state.user}
+                            <MainMenuScreen 
+                                user={this.state.user}
+                                lobbyTypes={this.lobbyTypes}
                                 onLogout={this.onLogout.bind(this)}
                                 onPlay={this.onPlayClicked.bind(this)} />
                         </header>
