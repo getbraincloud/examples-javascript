@@ -28,8 +28,8 @@ class MainMenuScreen extends Component
                 <label>Choose lobby type:</label>
                 <select name="lobbyTypes" ref="lobbyTypes">
                     {
-                        this.props.appLobbies.map((lobby) =>
-                            <option value={lobby}>{lobby}</option>
+                        this.props.appLobbies.map((lobby, index) =>
+                            <option key={index} value={lobby}>{lobby}</option>
                         )
                     }
                 </select>
