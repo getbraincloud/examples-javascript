@@ -27,11 +27,11 @@ class MainMenuScreen extends Component
                 <p className="text-small">Logged in as {this.props.user.name}</p>
                 <label>Choose lobby type:</label>
                 <select name="lobbyTypes" ref="lobbyTypes">
-                    <option value="CursorPartyV2">CursorPartyV2</option>
-                    <option value="CursorPartyV2Backfill">CursorPartyV2Backfill</option>
-                    <option value="CursorPartyGameLift">CursorPartyGameLift</option>
-                    <option value="TeamCursorPartyV2">TeamCursorPartyV2</option>
-                    <option value="TeamCursorPartyV2Backfill">TeamCursorPartyV2Backfill</option>
+                    {
+                        this.props.appLobbies.map((lobby) =>
+                            <option value={lobby}>{lobby}</option>
+                        )
+                    }
                 </select>
                 <div className="btn-frame">
                     <button className="Button" onClick={this.onLogout.bind(this)}>LOG OUT</button>

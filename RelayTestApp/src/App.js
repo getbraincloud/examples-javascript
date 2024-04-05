@@ -21,8 +21,6 @@ let server = null;
 let showJoinButton = false;
 let teamMode = false;
 
-let lobbyTypes = []
-
 export function getShowJoinButton(){
     return showJoinButton
 }
@@ -71,6 +69,7 @@ class App extends Component
         return {
             screen: "login",    // Current screen we are on
             user: null,         // Our user
+            appLobbies: [],     // List of lobbies setup for the app
             lobby: null,        // Lobby with its members as received from brainCloud Lobby Service
             server: null,       // Server info (IP, port, protocol, passcode)
             shockwaves: [],     // Players' created shockwaves
@@ -140,9 +139,10 @@ class App extends Component
                 if(readPropertiesResponse.status === 200){
                     var parsedValue = JSON.parse(readPropertiesResponse.data.AllLobbyTypes.value)
                     var values = Object.values(parsedValue)
+                    var allLobbyTypes = []
                     
                     for(let i = 0; i < values.length; i++){
-                        lobbyTypes[i] = values[i].lobby
+                        allLobbyTypes[i] = values[i].lobby
                     }
 
                     this.setState({
@@ -154,7 +154,8 @@ class App extends Component
                             colorIndex: parseInt(localStorageColor),
                             isReady: false,
                             presentSinceStart: false
-                        }
+                        },
+                        appLobbies: allLobbyTypes
                     })
                 }
                 else{
@@ -745,7 +746,7 @@ class App extends Component
                             <p>Relay Server Test App.</p>
                             <MainMenuScreen 
                                 user={this.state.user}
-                                lobbyTypes={this.lobbyTypes}
+                                appLobbies={this.state.appLobbies}
                                 onLogout={this.onLogout.bind(this)}
                                 onPlay={this.onPlayClicked.bind(this)} />
                         </header>
