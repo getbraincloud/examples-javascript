@@ -203,84 +203,48 @@ class App extends Component
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
-            switch (lobbyType) {
-                case "CursorPartyV2":
-                case "CursorPartyV2Backfill":
-                    teamMode = false
-
-                    // Find or create a lobby
-                    this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
-                        if (result.status !== 200) {
-                            this.dieWithMessage("Failed to find lobby")
-                        }
-                        // Success of lobby found will be in the event onLobbyEvent
-                    })
-                    break;
-                case "CursorPartyGameLift":
-                    teamMode = false
-
-                        this.bc.lobby.getRegionsForLobbies([lobbyType], (result) => {
-                            if (result.status !== 200) {
-                                this.dieWithMessage("Failed to get regions for lobbies")
-                                return
-                        }
-
-                        this.bc.lobby.pingRegions((result) => {
-                            if (result.status !== 200) {
-                                this.dieWithMessage("Failed to ping regions")
-                                return
-                            }
-
-                            // Find or create a lobby
-                            this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
-                                if (result.status !== 200) {
-                                    this.dieWithMessage("Failed to find lobby")
-                                }
-                                // Success of lobby found will be in the event onLobbyEvent
-                            })
-                        })
-                    })
-                    break;
-                case "TeamCursorPartyV2":
-                case "TeamCursorPartyV2Backfill":
-                    teamMode = true
-                    // Find or create a lobby
-                    this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "", result => {
-                        if (result.status !== 200) {
-                            this.dieWithMessage("Failed to find lobby")
-                        }
-                        // Success of lobby found will be in the event onLobbyEvent
-                    })
-                    break;
-                default:
-                    break;
+            // Lobby name/id should include "team" when created to designate game mode            
+            if(lobbyType.toLowerCase().includes("team")){
+                teamMode = true
+            }
+            else{
+                teamMode = false
             }
 
             // If using gamelift, we will do region pings
-            if (lobbyType === "CursorPartyGameLift") {
+            if(lobbyType.toLowerCase().includes("gamelift")){
+                console.log("GameLift Lobby")
+
                 this.bc.lobby.getRegionsForLobbies([lobbyType], (result) => {
                     if (result.status !== 200) {
                         this.dieWithMessage("Failed to get regions for lobbies")
                         return
+                }
+
+                this.bc.lobby.pingRegions((result) => {
+                    if (result.status !== 200) {
+                        this.dieWithMessage("Failed to ping regions")
+                        return
                     }
 
-                    this.bc.lobby.pingRegions((result) => {
+                    this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "", result => {
                         if (result.status !== 200) {
-                            this.dieWithMessage("Failed to ping regions")
-                            return
+                            this.dieWithMessage("Failed to find lobby")
                         }
-
-                        // Find or create a lobby
-                        this.bc.lobby.findOrCreateLobbyWithPingData(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "all", result => {
-                            if (result.status !== 200) {
-                                this.dieWithMessage("Failed to find lobby")
-                            }
-                            // Success of lobby found will be in the event onLobbyEvent
-                        })
+                        // Success of lobby found will be in the event onLobbyEvent
                     })
                 })
+            })                
             }
-            
+
+            else{
+                this.bc.lobby.findOrCreateLobby(lobbyType, 0, 1, { strategy: "ranged-absolute", alignment: "center", ranges: [1000] }, {}, null, {}, false, extraJson, "", result => {
+                    if (result.status !== 200) {
+                        this.dieWithMessage("Failed to find lobby")
+                    }
+                    // Success of lobby found will be in the event onLobbyEvent
+                })
+            }
         }, () => {
             if (this.state.screen === "joiningLobby") {
                 this.dieWithMessage("Failed to enable RTT")
@@ -645,7 +609,7 @@ class App extends Component
         
         // If the lobby is gamelift, the port name will be "gamelift"
         let wsPort = 0;
-        if (this.state.lobbyType === "CursorPartyGameLift") wsPort = server.connectData.ports.gamelift;
+        if (this.state.lobbyType.toLowerCase().includes("gamelift")) wsPort = server.connectData.ports.gamelift;
         else wsPort = server.connectData.ports.ws;
         
         presentWhileStarted = false;

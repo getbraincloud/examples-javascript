@@ -32,6 +32,9 @@ class MainMenuScreen extends Component
                             <option key={index} value={lobby}>{lobby}</option>
                         )
                     }
+                    
+                    {/** Game Lift usage requires additional configuration (i.e. using pings/regions) that has not yet been added to the other versions, so this lobby type is added manually */}
+                    <option value="CursorPartyGameLift">CursorPartyGameLift</option>
                 </select>
                 <div className="btn-frame">
                     <button className="Button" onClick={this.onLogout.bind(this)}>LOG OUT</button>

@@ -59,11 +59,11 @@ class FFAGameScreen extends Component
     showEndMatchButton(){
         
         // End match should only be optional to the lobby owner / host. The "CursorPartyGameLift" lobby type is configured to "disband on start" which means END_MATCH is not possible
-        if(this.props.lobby.ownerCxId === this.props.user.cxId && this.props.lobbyType !== "CursorPartyGameLift"){
-            return true
+        if(this.props.lobby.ownerCxId !== this.props.user.cxId && this.props.lobbyType.toLowerCase().includes("gamelift")){
+            return false
         }
 
-        return false
+        return true
     }
 
     render()
