@@ -67,12 +67,13 @@ class App extends Component
     makeDefaultState()
     {
         return {
-            screen: "login",    // Current screen we are on
-            user: null,         // Our user
-            appLobbies: [],     // List of lobbies setup for the app
-            lobby: null,        // Lobby with its members as received from brainCloud Lobby Service
-            server: null,       // Server info (IP, port, protocol, passcode)
-            shockwaves: [],     // Players' created shockwaves
+            screen: "login",        // Current screen we are on
+            user: null,             // Our user
+            appLobbies: [],         // List of lobbies setup for the app
+            lobby: null,            // Lobby with its members as received from brainCloud Lobby Service
+            disbandOnStart: false,  // Lobby Rule defined in the brainCloud portal. If false, users can join in-progress matches
+            server: null,           // Server info (IP, port, protocol, passcode)
+            shockwaves: [],         // Players' created shockwaves
             relayOptions: {
                 reliable: false,
                 ordered: true
@@ -142,7 +143,7 @@ class App extends Component
                     var allLobbyTypes = []
                     
                     for(let i = 0; i < values.length; i++){
-                        allLobbyTypes[i] = values[i].lobby
+                        allLobbyTypes[i] = values[i]
                     }
 
                     this.setState({
@@ -198,6 +199,9 @@ class App extends Component
                 presentSinceStart: this.state.user.presentSinceStart
             }
             state.user.cxId = this.bc.rttService.getRTTConnectionId()
+            var selectedLobby = state.appLobbies.find(lobby => lobby.lobby === lobbyType)
+            console.log("Selected lobby is " + selectedLobby.lobby + " and disbandOnStart is " + selectedLobby.disbandOnStart)
+            state.disbandOnStart = selectedLobby.disbandOnStart
             this.setState(state)
 
             // Register lobby callback
@@ -762,6 +766,7 @@ class App extends Component
                                     <TeamGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
                                         lobbyType={this.state.lobbyType}
+                                        disbandOnStart={this.state.disbandOnStart}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
@@ -775,6 +780,7 @@ class App extends Component
                                     <FFAGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
                                         lobbyType={this.state.lobbyType}
+                                        disbandOnStart={this.state.disbandOnStart}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}

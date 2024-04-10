@@ -59,11 +59,11 @@ class TeamGameScreen extends Component
     showEndMatchButton(){
         
         // End match should only be optional to the lobby owner / host. The "CursorPartyGameLift" lobby type is configured to "disband on start" which means END_MATCH is not possible
-        if(this.props.lobby.ownerCxId !== this.props.user.cxId && this.props.lobbyType.toLowerCase().includes("gamelift")){
-            return false
+        if(this.props.lobby.ownerCxId === this.props.user.cxId && !this.props.disbandOnStart){
+            return true
         }
 
-        return true
+        return false
     }
 
     render()
