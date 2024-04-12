@@ -6,7 +6,7 @@ import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret (and optio
 import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
-import FFALobbyScreen from './FFALobbyScreen';
+import LobbyScreen from './LobbyScreen';
 import TeamLobbyScreen from './TeamLobbyScreen';
 import FFAGameScreen from './FFAGameScreen';
 import TeamGameScreen from './TeamGameScreen'
@@ -71,7 +71,8 @@ class App extends Component
             user: null,             // Our user
             appLobbies: [],         // List of lobbies setup for the app
             lobby: null,            // Lobby with its members as received from brainCloud Lobby Service
-            disbandOnStart: false,  // Lobby Rule defined in the brainCloud portal. If false, users can join in-progress matches
+            disbandOnStart: false,  // Lobby Rule. When false, the lobby will remain once a match has started, enabling users to join in-progress games
+            teams: [],              // Teams set up for a given lobby type
             server: null,           // Server info (IP, port, protocol, passcode)
             shockwaves: [],         // Players' created shockwaves
             relayOptions: {
@@ -199,9 +200,6 @@ class App extends Component
                 presentSinceStart: this.state.user.presentSinceStart
             }
             state.user.cxId = this.bc.rttService.getRTTConnectionId()
-            var selectedLobby = state.appLobbies.find(lobby => lobby.lobby === lobbyType)
-            console.log("Selected lobby is " + selectedLobby.lobby + " and disbandOnStart is " + selectedLobby.disbandOnStart)
-            state.disbandOnStart = selectedLobby.disbandOnStart
             this.setState(state)
 
             // Register lobby callback
@@ -267,6 +265,36 @@ class App extends Component
         if (result.data.lobby)
         {   
             this.setState({lobby: { ...result.data.lobby, lobbyId: result.data.lobbyId }})
+
+            this.bc.lobby.getLobbyData(this.state.lobby.lobbyId, response => {
+                var status = response.status
+                if(status === 200){
+                    let state = this.state
+                    state.disbandOnStart = response.data.lobbyTypeDef.rules.disbandOnStart
+
+                    // Sort lobby members by team
+                    var lobbyTeams = Object.keys(response.data.lobbyTypeDef.teams)
+                    
+                    var teams = []
+                    lobbyTeams.forEach(lobbyTeam => {
+                        var team = {
+                            name: lobbyTeam,
+                            members: []
+                        }
+                        state.lobby.members.forEach(member => {
+                            if(member.team === lobbyTeam){
+                                team.members.push(member)
+                            }
+                        })
+                        
+                        teams.push(team)
+                    })
+                    state.teams = teams
+                    console.log("updated teams " + JSON.stringify(teams))
+
+                    this.setState(state)
+                }
+            })
 
             // Display assigned teams
             if (teamMode) {
@@ -738,7 +766,14 @@ class App extends Component
                         <header className="App-header">
                             <p>Relay Server Test App.</p>
                             <p>LOBBY</p>
-                            {teamMode ? <TeamLobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onTeamChanged={this.onTeamChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/> : <FFALobbyScreen user={this.state.user} lobby={this.state.lobby} onBack={this.onGameScreenClose.bind(this)} onColorChanged={this.onColorChanged.bind(this)} onStart={this.onStart.bind(this)} onJoin={this.onJoin.bind(this)}/>}
+                            <LobbyScreen 
+                                user={this.state.user}
+                                lobby={this.state.lobby}
+                                teams={this.state.teams}
+                                onBack={this.onGameScreenClose.bind(this)}
+                                onColorChanged={this.onColorChanged.bind(this)}
+                                onStart={this.onStart.bind(this)}
+                                onJoin={this.onJoin.bind(this)}/>
                         </header>
                     </div>
                 )
@@ -767,6 +802,7 @@ class App extends Component
                                         lobby={this.state.lobby}
                                         lobbyType={this.state.lobbyType}
                                         disbandOnStart={this.state.disbandOnStart}
+                                        teams={this.state.teams}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
@@ -781,6 +817,7 @@ class App extends Component
                                         lobby={this.state.lobby}
                                         lobbyType={this.state.lobbyType}
                                         disbandOnStart={this.state.disbandOnStart}
+                                        teams={this.state.teams}
                                         shockwaves={this.state.shockwaves}
                                         relayOptions={this.state.relayOptions}
                                         onBack={this.onGameScreenClose.bind(this)}
