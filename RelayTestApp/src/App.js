@@ -8,7 +8,7 @@ import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
 import LobbyScreen from './LobbyScreen';
 import TeamLobbyScreen from './TeamLobbyScreen';
-import FFAGameScreen from './FFAGameScreen';
+import GameScreen from './GameScreen';
 import TeamGameScreen from './TeamGameScreen'
 
 var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
@@ -19,15 +19,15 @@ let colors = require('./Colors').colors
 let presentWhileStarted = false;
 let server = null;
 let showJoinButton = false;
-let teamMode = false;
+//let teamMode = false;
 
 export function getShowJoinButton(){
     return showJoinButton
 }
 
-export function getGameMode(){
-    return teamMode
-}
+// export function getGameMode(){
+//     return teamMode
+// }
 
 class App extends Component
 {
@@ -206,12 +206,12 @@ class App extends Component
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
             // Lobby name/id should include "team" when created to designate game mode            
-            if(lobbyType.toLowerCase().includes("team")){
-                teamMode = true
-            }
-            else{
-                teamMode = false
-            }
+            // if(lobbyType.toLowerCase().includes("team")){
+            //     teamMode = true
+            // }
+            // else{
+            //     teamMode = false
+            // }
 
             // If using gamelift, we will do region pings
             if(lobbyType.toLowerCase().includes("gamelift")){
@@ -282,8 +282,16 @@ class App extends Component
                             members: []
                         }
                         state.lobby.members.forEach(member => {
-                            if(member.team === lobbyTeam){
+                            if (member.team === lobbyTeam) {
                                 team.members.push(member)
+
+                                // TODO:  set the user's colour
+                                console.log("onLobbyEvent set team")
+                                if (member.cxId === this.state.user.cxId) {
+                                    if (!state.user.team) {
+                                        this.onTeamChanged(member.team)
+                                    }
+                                }
                             }
                         })
                         
@@ -297,16 +305,16 @@ class App extends Component
             })
 
             // Display assigned teams
-            if (teamMode) {
-                let state = this.state
-                state.lobby.members.forEach(member => {
-                    if(member.cxId === this.state.user.cxId){        
-                        if(!state.user.team){
-                            this.onTeamChanged(member.team)
-                        }
-                    }
-                })
-            }
+            // if (teamMode) {
+            //     let state = this.state
+            //     state.lobby.members.forEach(member => {
+            //         if(member.cxId === this.state.user.cxId){        
+            //             if(!state.user.team){
+            //                 this.onTeamChanged(member.team)
+            //             }
+            //         }
+            //     })
+            // }
 
             // If we were joining lobby, show the lobby screen. We have the information to
             // display now.
@@ -414,6 +422,7 @@ class App extends Component
     }
 
     onTeamChanged(team) {
+        console.log("onTeamChanged()")
         let state = this.state
         state.user.team = team
 
@@ -430,12 +439,16 @@ class App extends Component
             presentSinceStart: state.user.presentSinceStart
         }
 
+        console.log("setting state after setting team/colour")
         this.setState(state)
 
+        console.log("switchTeam()")
         this.bc.lobby.switchTeam(state.lobby.lobbyId, team, result => {
 
             // Update the extra information for our player so other lobby members are notified of
             // our color change.
+            
+            console.log("updateReady")
             this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
         })
     }
@@ -718,7 +731,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <p>Relay Server Test App.</p>
+                            <h1>Relay Server Test App</h1>
                             <LoginScreen onLogin={this.onLoginClicked.bind(this)}/>
                         </header>
                     </div>
@@ -739,7 +752,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <p>Relay Server Test App.</p>
+                            <h1>Relay Server Test App</h1>
                             <MainMenuScreen 
                                 user={this.state.user}
                                 appLobbies={this.state.appLobbies}
@@ -764,14 +777,14 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <p>Relay Server Test App.</p>
-                            <p>LOBBY</p>
+                            <h1>Relay Server Test App</h1>
                             <LobbyScreen 
                                 user={this.state.user}
                                 lobby={this.state.lobby}
                                 teams={this.state.teams}
                                 onBack={this.onGameScreenClose.bind(this)}
                                 onColorChanged={this.onColorChanged.bind(this)}
+                                onTeamChanged={this.onTeamChanged.bind(this)}
                                 onStart={this.onStart.bind(this)}
                                 onJoin={this.onJoin.bind(this)}/>
                         </header>
@@ -794,9 +807,23 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <p>Relay Server Test App.</p>
+                            <h1>Relay Server Test App</h1>
                             <small>Move mouse around and click to create shockwaves.</small>
-                            {
+                            <GameScreen
+                                lobby={this.state.lobby}
+                                lobbyType={this.state.lobbyType}
+                                disbandOnStart={this.state.disbandOnStart}
+                                teams={this.state.teams}
+                                shockwaves={this.state.shockwaves}
+                                relayOptions={this.state.relayOptions}
+                                onBack={this.onGameScreenClose.bind(this)}
+                                onEndMatch={this.onEndMatch.bind(this)}
+                                onPlayerMove={this.onPlayerMove.bind(this)}
+                                onPlayerClicked={this.onPlayerClicked.bind(this)}
+                                onToggleReliable={this.onToggleReliable.bind(this)}
+                                onToggleOrdered={this.onToggleOrdered.bind(this)}
+                                onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
+                            {/* {
                                 teamMode ?
                                     <TeamGameScreen user={this.state.user}
                                         lobby={this.state.lobby}
@@ -827,7 +854,7 @@ class App extends Component
                                         onToggleReliable={this.onToggleReliable.bind(this)}
                                         onToggleOrdered={this.onToggleOrdered.bind(this)}
                                         onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
-                            }
+                            } */}
                         </header>
                     </div>
                 )
