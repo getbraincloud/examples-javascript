@@ -50,7 +50,9 @@ class LobbyScreen extends Component {
                     {
                         this.props.teams.map((team, index) => (
                             <div key={team.name}>
-                                <button key={index} className="teamBtn" onClick={this.onTeamSelected.bind(this, team.name)}>Join Team {team.name}</button>
+                                {
+                                    this.props.teams.length > 1 ? <button key={index} className="teamBtn" onClick={this.onTeamSelected.bind(this, team.name)}>Join Team {team.name}</button> : ""
+                                }
                                 <ul>
                                     {
                                         team.members.map(member => (

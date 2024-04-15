@@ -36,9 +36,9 @@ class GameScreen extends Component
         this.props.onPlayerMove(this.mousePos)
     }
 
-    onShockwave(e)
+    onMouseClick(e)
     {
-        this.props.onPlayerShockwave(this.mousePos)
+        this.props.onPlayerClicked(this.mousePos, e.button)
     }
 
     onToggleReliable(e)
@@ -90,7 +90,7 @@ class GameScreen extends Component
                         <label htmlFor="chkOrdered">Ordered</label>
                     </div>
                     <div className="GamePlayArea" ref="GamePlayArea" style={{cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float:"left"}} 
-                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onShockwave.bind(this)}>
+                        onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseClick.bind(this)}>
                         {
                             this.props.shockwaves.map(shockwave => (
                                 <div key={`${shockwave.id}`} className="Entity" style={{left: `${shockwave.pos.x-64}px`, top: `${shockwave.pos.y-64}px`}}>

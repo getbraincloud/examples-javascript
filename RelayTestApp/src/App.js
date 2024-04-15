@@ -7,9 +7,7 @@ import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
 import LobbyScreen from './LobbyScreen';
-import TeamLobbyScreen from './TeamLobbyScreen';
 import GameScreen from './GameScreen';
-import TeamGameScreen from './TeamGameScreen'
 
 var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
 
@@ -37,6 +35,7 @@ class App extends Component
 
         this.shockwaveNextId = 0
         this.initBC()
+
         this.state = this.makeDefaultState()
     }
 
@@ -68,6 +67,7 @@ class App extends Component
     {
         return {
             screen: "login",        // Current screen we are on
+            storedProfileID: null,
             user: null,             // Our user
             appLobbies: [],         // List of lobbies setup for the app
             lobby: null,            // Lobby with its members as received from brainCloud Lobby Service
@@ -85,7 +85,7 @@ class App extends Component
     // Reset the app to the login page with an error popup
     dieWithMessage(message)
     {
-        this.bc.logoutOnApplicationClose(false)
+        this.bc.logoutOnApplicationClose()
 
         // Close Relay/RTT/BC connections
         this.bc.relay.disconnect()
@@ -172,7 +172,7 @@ class App extends Component
     }
 
     onLogout() {
-        this.bc.logout(true, () => {
+        this.bc.logout(false, () => {
             // Close Relay/RTT/BC connections
             this.bc.relay.disconnect()
             this.bc.relay.deregisterSystemCallback()
@@ -185,6 +185,10 @@ class App extends Component
 
             // Go back to default login state
             this.setState(this.makeDefaultState())
+
+            //
+            console.log("stored profile ID: " + this.bc.getStoredProfileId())
+            console.log("authentication profile ID: " + this.bc.brainCloudClient.authentication.profileId)
         })
     }
 
@@ -299,8 +303,10 @@ class App extends Component
                     })
                     state.teams = teams
                     console.log("updated teams " + JSON.stringify(teams))
+                    console.log("updated user: " + JSON.stringify(this.state.user))
 
-                    this.setState(state)
+                    //this.setState(state)
+                    console.log("state set")
                 }
             })
 
@@ -448,8 +454,8 @@ class App extends Component
             // Update the extra information for our player so other lobby members are notified of
             // our color change.
             
-            console.log("updateReady")
-            this.bc.lobby.updateReady(this.state.lobby.lobbyId, this.state.user.isReady, extraJson)
+            console.log("onColorChanged")
+            this.onColorChanged(state.user.colorIndex)
         })
     }
 
@@ -601,6 +607,11 @@ class App extends Component
 
     // Player has clicked to create a shockwave
     onPlayerClicked(pos, mouseButton) {
+        
+        // TODO:  FFA mode
+        this.onPlayerShockwave(pos)
+        
+        // TODO:  Team mode
         let toNetId = []
         let reliable = true
         let ordered = false
@@ -610,14 +621,14 @@ class App extends Component
         let teamCode = this.state.user.team === "alpha" ? 1 : 2
         let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
 
-        // send [white] shockwave to everyone
+        // Left click. Send [white] shockwave to everyone
         if (mouseButton === 0) {
             this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
 
             this.createShockwave(pos, colors[7])
         }
         
-        // send shockwave to opposite team
+        // Middle click. Send shockwave to opposite team
         else if (mouseButton === 1) {
             this.state.lobby.members.forEach(member => {
                 if (member.team === this.state.user.opposingTeam) {
@@ -633,7 +644,7 @@ class App extends Component
             this.createShockwave(pos, colors[this.state.user.colorIndex])
         }
         
-        // send shockwave to teammates
+        // Right click. Send shockwave to teammates
         else if (mouseButton === 2) {
             this.state.lobby.members.forEach(member => {
                 if (member.team === this.state.user.team) {
@@ -810,6 +821,7 @@ class App extends Component
                             <h1>Relay Server Test App</h1>
                             <small>Move mouse around and click to create shockwaves.</small>
                             <GameScreen
+                                user={this.state.user}
                                 lobby={this.state.lobby}
                                 lobbyType={this.state.lobbyType}
                                 disbandOnStart={this.state.disbandOnStart}
