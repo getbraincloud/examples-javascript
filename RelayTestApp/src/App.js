@@ -11,23 +11,16 @@ import GameScreen from './GameScreen';
 
 var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
 
-var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
-
 let brainCloud = require("braincloud")
 let colors = require('./Colors').colors
 
 let presentWhileStarted = false;
 let server = null;
 let showJoinButton = false;
-//let teamMode = false;
 
 export function getShowJoinButton(){
     return showJoinButton
 }
-
-// export function getGameMode(){
-//     return teamMode
-// }
 
 class App extends Component
 {
@@ -207,14 +200,6 @@ class App extends Component
             // Register lobby callback
             this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
-            // Lobby name/id should include "team" when created to designate game mode            
-            // if(lobbyType.toLowerCase().includes("team")){
-            //     teamMode = true
-            // }
-            // else{
-            //     teamMode = false
-            // }
-
             // If using gamelift, we will do region pings
             if(lobbyType.toLowerCase().includes("gamelift")){
                 console.log("GameLift Lobby")
@@ -390,6 +375,7 @@ class App extends Component
         state.lobby = null
         state.user.isReady = false
         state.user.presentSinceStart = false
+        state.user.team = null
         showJoinButton = false
         this.setState(state)
     }
@@ -411,7 +397,6 @@ class App extends Component
     }
 
     onTeamChanged(team) {
-        console.log("onTeamChanged()")
         let state = this.state
         state.user.team = team
 
@@ -423,22 +408,16 @@ class App extends Component
             state.user.colorIndex = 3
             state.user.opposingTeam = "alpha"
         }
-        let extraJson = {
-            colorIndex: state.user.colorIndex,
-            presentSinceStart: state.user.presentSinceStart
-        }
 
-        console.log("setting state after setting team/colour")
         this.setState(state)
 
-        console.log("switchTeam()")
         this.bc.lobby.switchTeam(state.lobby.lobbyId, team, result => {
 
             // Update the extra information for our player so other lobby members are notified of
             // our color change.
-            
-            console.log("onColorChanged")
-            this.onColorChanged(state.user.colorIndex)
+            if(result.status === 200){
+                this.onColorChanged(state.user.colorIndex)
+            }            
         })
     }
 
