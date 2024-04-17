@@ -80,7 +80,7 @@ class App extends Component
     // Reset the app to the login page with an error popup
     dieWithMessage(message)
     {
-        this.bc.logoutOnApplicationClose()
+        this.bc.logoutOnApplicationClose(false)
 
         // Close Relay/RTT/BC connections
         this.bc.relay.disconnect()

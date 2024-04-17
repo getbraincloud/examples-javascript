@@ -65,7 +65,6 @@ class GameScreen extends Component
 
         return false
     }
-
     render() {
         return (
             <div className="GameScreen" style={{ display: "flex" }}>
@@ -138,8 +137,11 @@ class GameScreen extends Component
                         }
                     </div>
                 </div>
-                
-                
+
+                <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
+                {
+                    this.showEndMatchButton() ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
+                }
             </div>
         )
     }
