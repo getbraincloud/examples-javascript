@@ -821,38 +821,6 @@ class App extends Component
                                 onToggleReliable={this.onToggleReliable.bind(this)}
                                 onToggleOrdered={this.onToggleOrdered.bind(this)}
                                 onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
-                            {/* {
-                                teamMode ?
-                                    <TeamGameScreen user={this.state.user}
-                                        lobby={this.state.lobby}
-                                        lobbyType={this.state.lobbyType}
-                                        disbandOnStart={this.state.disbandOnStart}
-                                        teams={this.state.teams}
-                                        shockwaves={this.state.shockwaves}
-                                        relayOptions={this.state.relayOptions}
-                                        onBack={this.onGameScreenClose.bind(this)}
-                                        onEndMatch={this.onEndMatch.bind(this)}
-                                        onPlayerMove={this.onPlayerMove.bind(this)}
-                                        onPlayerClicked={this.onPlayerClicked.bind(this)}
-                                        onToggleReliable={this.onToggleReliable.bind(this)}
-                                        onToggleOrdered={this.onToggleOrdered.bind(this)}
-                                        onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} /> :
-
-                                    <FFAGameScreen user={this.state.user}
-                                        lobby={this.state.lobby}
-                                        lobbyType={this.state.lobbyType}
-                                        disbandOnStart={this.state.disbandOnStart}
-                                        teams={this.state.teams}
-                                        shockwaves={this.state.shockwaves}
-                                        relayOptions={this.state.relayOptions}
-                                        onBack={this.onGameScreenClose.bind(this)}
-                                        onEndMatch={this.onEndMatch.bind(this)}
-                                        onPlayerMove={this.onPlayerMove.bind(this)}
-                                        onPlayerShockwave={this.onPlayerShockwave.bind(this)}
-                                        onToggleReliable={this.onToggleReliable.bind(this)}
-                                        onToggleOrdered={this.onToggleOrdered.bind(this)}
-                                        onTogglePlayerMask={this.onTogglePlayerMask.bind(this)} />
-                            } */}
                         </header>
                     </div>
                 )
