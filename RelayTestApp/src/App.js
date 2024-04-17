@@ -172,7 +172,7 @@ class App extends Component
     }
 
     onLogout() {
-        this.bc.logout(false, () => {
+        this.bc.logout(true, () => {
             // Close Relay/RTT/BC connections
             this.bc.relay.disconnect()
             this.bc.relay.deregisterSystemCallback()
@@ -185,10 +185,6 @@ class App extends Component
 
             // Go back to default login state
             this.setState(this.makeDefaultState())
-
-            //
-            console.log("stored profile ID: " + this.bc.getStoredProfileId())
-            console.log("authentication profile ID: " + this.bc.brainCloudClient.authentication.profileId)
         })
     }
 
@@ -288,9 +284,6 @@ class App extends Component
                         state.lobby.members.forEach(member => {
                             if (member.team === lobbyTeam) {
                                 team.members.push(member)
-
-                                // TODO:  set the user's colour
-                                console.log("onLobbyEvent set team")
                                 if (member.cxId === this.state.user.cxId) {
                                     if (!state.user.team) {
                                         this.onTeamChanged(member.team)
@@ -305,22 +298,10 @@ class App extends Component
                     console.log("updated teams " + JSON.stringify(teams))
                     console.log("updated user: " + JSON.stringify(this.state.user))
 
-                    //this.setState(state)
+                    this.setState(state)
                     console.log("state set")
                 }
             })
-
-            // Display assigned teams
-            // if (teamMode) {
-            //     let state = this.state
-            //     state.lobby.members.forEach(member => {
-            //         if(member.cxId === this.state.user.cxId){        
-            //             if(!state.user.team){
-            //                 this.onTeamChanged(member.team)
-            //             }
-            //         }
-            //     })
-            // }
 
             // If we were joining lobby, show the lobby screen. We have the information to
             // display now.
@@ -607,58 +588,63 @@ class App extends Component
 
     // Player has clicked to create a shockwave
     onPlayerClicked(pos, mouseButton) {
-        
+
         // TODO:  FFA mode
-        this.onPlayerShockwave(pos)
-        
+        if (this.state.teams.length === 1) {
+            this.onPlayerShockwave(pos)
+        }
+
         // TODO:  Team mode
-        let toNetId = []
-        let reliable = true
-        let ordered = false
-        let channel = this.bc.relay.CHANNEL_HIGH_PRIORITY_2
+        else {
+            let toNetId = []
+            let reliable = true
+            let ordered = false
+            let channel = this.bc.relay.CHANNEL_HIGH_PRIORITY_2
 
-        // TODO:  TEMPORARY FIX. Get rid of .team and .opposingTeam, and switch to teamCodes everywhere to make this simpler.
-        let teamCode = this.state.user.team === "alpha" ? 1 : 2
-        let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
+            // TODO:  TEMPORARY FIX. Get rid of .team and .opposingTeam, and switch to teamCodes everywhere to make this simpler.
+            let teamCode = this.state.user.team === "alpha" ? 1 : 2
+            let opponentCode = this.state.user.opposingTeam === "alpha" ? 2 : 1
 
-        // Left click. Send [white] shockwave to everyone
-        if (mouseButton === 0) {
-            this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
+            // Left click. Send [white] shockwave to everyone
+            if (mouseButton === 0) {
+                this.bc.relay.send(this.createShockwaveJSON(pos, 0), this.bc.relay.TO_ALL_PLAYERS, reliable, ordered, channel)
 
-            this.createShockwave(pos, colors[7])
+                this.createShockwave(pos, colors[7])
+            }
+
+            // Middle click. Send shockwave to opposite team
+            else if (mouseButton === 1) {
+                this.state.lobby.members.forEach(member => {
+                    if (member.team === this.state.user.opposingTeam) {
+                        let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                        toNetId.push(netId)
+                    }
+                })
+
+                toNetId.forEach(netId => {
+                    this.bc.relay.send(this.createShockwaveJSON(pos, opponentCode), netId, reliable, ordered, channel)
+                })
+
+                this.createShockwave(pos, colors[this.state.user.colorIndex])
+            }
+
+            // Right click. Send shockwave to teammates
+            else if (mouseButton === 2) {
+                this.state.lobby.members.forEach(member => {
+                    if (member.team === this.state.user.team) {
+                        let netId = this.bc.relay.getNetIdForCxId(member.cxId)
+                        toNetId.push(netId)
+                    }
+                })
+
+                toNetId.forEach(netId => {
+                    this.bc.relay.send(this.createShockwaveJSON(pos, teamCode), netId, reliable, ordered, channel)
+                })
+
+                this.createShockwave(pos, colors[this.state.user.colorIndex])
+            }
         }
-        
-        // Middle click. Send shockwave to opposite team
-        else if (mouseButton === 1) {
-            this.state.lobby.members.forEach(member => {
-                if (member.team === this.state.user.opposingTeam) {
-                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
-                    toNetId.push(netId)
-                }
-            })
 
-            toNetId.forEach(netId => {
-                this.bc.relay.send(this.createShockwaveJSON(pos, opponentCode), netId, reliable, ordered, channel)
-            })
-
-            this.createShockwave(pos, colors[this.state.user.colorIndex])
-        }
-        
-        // Right click. Send shockwave to teammates
-        else if (mouseButton === 2) {
-            this.state.lobby.members.forEach(member => {
-                if (member.team === this.state.user.team) {
-                    let netId = this.bc.relay.getNetIdForCxId(member.cxId)
-                    toNetId.push(netId)
-                }
-            })
-
-            toNetId.forEach(netId => {
-                this.bc.relay.send(this.createShockwaveJSON(pos, teamCode), netId, reliable, ordered, channel)
-            })
-
-            this.createShockwave(pos, colors[this.state.user.colorIndex])
-        }
     }
 
     connectRelay() {
