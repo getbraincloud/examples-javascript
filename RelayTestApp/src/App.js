@@ -32,7 +32,19 @@ class App extends Component
         this.initBC()
 
         let state = {
-            screen: "reconnecting"
+            screen: "reconnecting",
+            storedProfileID: null,
+            user: null,             
+            appLobbies: [],         
+            lobby: null,            
+            disbandOnStart: false,  
+            teams: [],              
+            server: null,           
+            shockwaves: [],         
+            relayOptions: {
+                reliable: false,
+                ordered: true
+            }
         }
 
         this.state = state
