@@ -120,9 +120,29 @@ class App extends Component
             }
             else
             {
-                this.setState({appState: AppState.LogIn});
+                this.attemptReconnect()
             }
         });
+    }
+
+    attemptReconnect() {
+        let state = this.state;
+        state.appState = AppState.Loading;
+        state.loadingText = "Reconnecting ...";
+        this.setState(state);
+
+        console.log("Checking if reconnect is possible . . .")
+        if (this.bcWrapper.canReconnect()) {
+            console.log("Attempting reconnect . . .")
+            this.bcWrapper.reconnect(this.handlePlayerState.bind(this), error => {
+                console.log("Reconnect failed, displaying login screen. Error: " + error)
+                this.state = this.makeDefaultState()
+            })
+        }
+        else {
+            console.log("No saved profile ID. Welcome new user")
+            this.setState({appState: AppState.LogIn})
+        }
     }
 
     handlePlayerState(result)
