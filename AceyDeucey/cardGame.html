@@ -131,6 +131,12 @@
                         <label>Password</label>
                         <input ng-model="password" type="password" required>
                     </md-input-container>
+                    
+                    <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
+                        <label style="color:gray"><i>If there’s no account tied to the given email, a new one will be auto-created using the password you enter.</i></label>
+                    </div>
+
+                    <br>
 
                     <md-input-container>
                         <md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Login</md-button>
