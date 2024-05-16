@@ -136,12 +136,7 @@ class GameScreen extends Component
                             this.showEndMatchButton() ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
                         }
                     </div>
-                </div>
-
-                <button className="Button" onClick={this.onBack.bind(this)}>Leave Game</button>
-                {
-                    this.showEndMatchButton() ? <button className="Button" onClick={this.onEndMatch.bind(this)}>End Match</button> : ""
-                }
+                </div>                
             </div>
         )
     }

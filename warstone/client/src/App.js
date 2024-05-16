@@ -18,7 +18,43 @@ class App extends Component {
         super()
 
         this.initBC()
-        this.state = this.makeDefaultState()
+
+        let state = {
+
+            screen: "reconnecting",
+            joiningState: "",
+            user: null,
+            lobby: null,
+            server: null
+        }
+
+        this.state = state
+
+        console.log("Checking if reconnect is possible . . .")
+        if (this.bc.canReconnect()) {
+            console.log("Attempting reconnect . . .")
+            this.bc.reconnect(response => {
+                console.log("Reconnect success")
+                if (response.data.playerName) {
+
+                    // Connect to braincloud
+                    this.username = response.data.playerName
+
+                    this.onLoggedIn(response)
+                }
+                else {
+                    // TODO:  should be impossible since universal authentication is only option for new users
+                    this.dieWithMessage("No player name")
+                }
+            }, error => {
+                console.log("Reconnect failed, displaying login screen. Error: " + error)
+                this.state = this.makeDefaultState()
+            })
+        }
+        else {
+            console.log("No saved profile ID. Welcome new user")
+            this.state = this.makeDefaultState()
+        }
     }
 
     makeDefaultState() {
@@ -204,6 +240,15 @@ class App extends Component {
 
     render() {
         switch (this.state.screen) {
+            case "reconnecting":
+                {
+                    return (
+                        <div className="App">
+                            {this.renderTitle}
+                            <LoadingScreen text="Reconnecting..."/>
+                        </div>
+                    )
+                }
             case "login":
                 {
                     return (
