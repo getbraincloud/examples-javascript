@@ -157,7 +157,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(true);
 
-			_bc.product.awardCurrency(
+			_bc.virtualCurrency.awardCurrency(
 				"bucks",
 				$scope.bet,
 				function (result) {
@@ -178,7 +178,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			_bc.product.consumeCurrency(
+			_bc.virtualCurrency.consumeCurrency(
 				"bucks",
 				$scope.bet * 2,
 				function (result) {
@@ -198,7 +198,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			_bc.product.consumeCurrency(
+			_bc.virtualCurrency.consumeCurrency(
 				"bucks",
 				$scope.bet,
 				function (result) {
@@ -231,7 +231,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.longestStreak = longestStreak;
 		}
 
-		_bc.playerStatistics.incrementPlayerStats(
+		_bc.playerStatistics.incrementUserStats(
 			incrementData,
 			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
@@ -319,7 +319,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 				} else {
 
-					_bc.product.awardCurrency(
+					_bc.virtualCurrency.awardCurrency(
 						"bucks",
 						100,
 						function (result) {
@@ -391,7 +391,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			0
 		);
 
-		_bc.product.awardCurrency(
+		_bc.virtualCurrency.awardCurrency(
 			"bucks",
 			100,
 			function (result) {
