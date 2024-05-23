@@ -357,8 +357,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.setUsername = function () {
 
-		_bc.playerState.updatePlayerName($scope.username, function (result) {
-			console.log(true, "updatePlayerName");
+		_bc.playerState.updateUserName($scope.username, function (result) {
+			console.log(true, "updateUserName");
 			console.log(result);
 
 		}

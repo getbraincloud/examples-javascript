@@ -110,6 +110,9 @@
 
         </md-button>
 
+        <!-- TODO:  Authenticated User's Name Label-->
+        <h3>{{username}}</h3>
+
         <h1>{{title}}</h1>
 
     </md-toolbar>
@@ -191,6 +194,7 @@
         </div>
     </form>
 
+    <!-- TODO: between login and game -->
     <form name="usernameForm" ng-submit="setUsername()" ng-show="showUsername" class="animate-show">
 
         <div layout="row">
@@ -224,7 +228,7 @@
 
     </form>
 
-
+    <!-- TODO:  Options Sidebar -->
     <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 64px">
         <md-toolbar class="md-theme-indigo">
             <h1 class="md-toolbar-tools">Options</h1>
