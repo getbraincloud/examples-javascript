@@ -85,10 +85,6 @@
             height: 172px;
         }
     
-        md-slider.md-min .md-thumb:after {
-            background-color: rgb(63, 81, 181) !important;
-        }
-    
         .leaderboard-badge {
             background: rgb(63, 81, 181);
             border-radius: 28px;
@@ -310,6 +306,25 @@
 
                 </div>
 
+                <!-- TODO:  Flip Card / Next Hand Section -->
+                <div layout="column" layout-align="space-between center" style="margin-top: 20px; margin-bottom: 20px;">
+                        
+                    <!-- TODO:  Flip Card / Next Round Button -->
+                    <div layout="row">
+                        <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
+                            <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon"
+                                style="width: 24px; height: 24px;" />
+                            <img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon"
+                                style="width: 24px; height: 24px;" />
+                        </md-button>
+                    </div>
+            
+                    <!-- TODO:  Flip Card / Next Round Indicator -->
+                    <div layout="row">
+                        <h2>{{state | stateLabel}}</h2>
+                    </div>
+                </div>
+
                 <!-- TODO:  Game Options Area -->
                 <div layout="row" layout-align="space-around center">
                 
@@ -361,26 +376,6 @@
                         </div>
                     </div>
                 
-                
-                    <!-- TODO:  Flip Card / Next Hand Section -->
-                    <div layout="column" layout-align="space-around center">
-                        
-                        <!-- TODO:  Flip Card / Next Round Button -->
-                        <div layout="row">
-                            <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
-                                <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon"
-                                    style="width: 24px; height: 24px;" />
-                                <img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon"
-                                    style="width: 24px; height: 24px;" />
-                            </md-button>
-                        </div>
-                
-                        <!-- TODO:  Flip Card / Next Round Indicator -->
-                        <div layout="row">
-                            <h2>{{state | stateLabel}}</h2>
-                        </div>
-                    </div>
-                
                     <!-- TODO:  Outcome Section -->
                     <div layout="column" layout-align="space-around center">
 
@@ -400,7 +395,7 @@
 
                         <!-- TODO:  STREAK HEADER -->
                         <div>
-                            <h2>WIN STREAK</h2>
+                            <h2>WIN RATE</h2>
                         </div>
 
                         <div>
