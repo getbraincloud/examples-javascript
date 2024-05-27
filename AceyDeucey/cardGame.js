@@ -413,8 +413,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	};
 
-
-
 	$scope.resetPassword = function () {
 		_bc.brainCloudClient.authentication.resetEmailPassword(
 			$scope.email,
@@ -435,7 +433,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.showLogin = true;
 
 	};
-
 
 	$scope.showLeaderboards = function () {
 		$scope.showGame = false;
@@ -523,6 +520,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				console.debug("toggle left is done");
 			});
 	};
+
+	$scope.customBetClick = function (customBet) {
+		$scope.bet = customBet
+	}
 
 	// Initialize game
 	$scope.dispatchButtonPress();

@@ -6,97 +6,115 @@
 
 	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
 
-	<style>
-
-		md-toolbar h1 {
-      font-size: 1.250em;
-      font-weight: 400;
-      margin: auto;
-      }
-
-      md-list .md-button {
-      color: inherit;
-      font-weight: 500;
-      text-align: left;
-      width: 100%;
-      }
-
-      .visuallyhidden {
-      border: 0;
-      clip: rect(0 0 0 0);
-      height: 1px;
-      margin: -1px;
-      overflow: hidden;
-      padding: 0;
-      position: absolute;
-      width: 1px;
-      }
-
-      .animate-show {
-      line-height: 20px;
-      opacity: 1;
-      background: white;
-      }
-
-      .animate-show.ng-hide-add.ng-hide-add-active,
-      .animate-show.ng-hide-remove.ng-hide-remove-active {
-      -webkit-transition: all linear 0.5s;
-      transition: all linear 0.5s;
-      }
-
-      .animate-show.ng-hide {
-      opacity: 0;
-      padding: 0 10px;
-      }
-
-      [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
-      display: none !important;
-      }
-
-      .card-class {
-        /*height: 100px;
-        width: 100px;*/
-      }
-
-      .card-back {
-      background-color: rgb(19, 110, 181)
-      }
-      .card {
-        border-radius: 5px !important;
-        box-shadow: 0 2px 5px 0 rgb(126, 127, 127);
-        border: 2px solid rgb(57, 58, 142);
-        height: 170px;
-        width: 160px;
-      }
-
-      .number {
-      font-size: 75px;
-      text-align: center;
-      color: rgb(19, 110, 181);
-      }
-
-      md-card-content {
-        height: 172px;
-      }
-
-      md-slider.md-min .md-thumb:after {
-        background-color: rgb(63,81,181) !important;
-      }
-
-      .leaderboard-badge {
-      background: rgb(63,81,181);
-      border-radius: 28px;
-      text-align: center;
-      height: 56px;
-      line-height: 56px;
-      width: 38px;
-      color: white;
-      }
-
-      .sidenav-link {
-      cursor: pointer;
-      font-variant: small-caps;
-      }
+    <style>
+        md-toolbar h1 {
+            font-size: 1.250em;
+            font-weight: 400;
+            margin: auto;
+        }
+    
+        md-list .md-button {
+            color: inherit;
+            font-size: 24;
+            font-weight: 500;
+            text-align: left;
+            width: 100%;
+        }
+    
+        .visuallyhidden {
+            border: 0;
+            clip: rect(0 0 0 0);
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute;
+            width: 1px;
+        }
+    
+        .animate-show {
+            line-height: 20px;
+            opacity: 1;
+            background: white;
+        }
+    
+        .animate-show.ng-hide-add.ng-hide-add-active,
+        .animate-show.ng-hide-remove.ng-hide-remove-active {
+            -webkit-transition: all linear 0.5s;
+            transition: all linear 0.5s;
+        }
+    
+        .animate-show.ng-hide {
+            opacity: 0;
+            padding: 0 10px;
+        }
+    
+        [ng\:cloak],
+        [ng-cloak],
+        [data-ng-cloak],
+        [x-ng-cloak],
+        .ng-cloak,
+        .x-ng-cloak {
+            display: none !important;
+        }
+    
+        .card-class {
+            /*height: 100px;
+                            width: 100px;*/
+        }
+    
+        .card-back {
+            background-color: rgb(19, 110, 181)
+        }
+    
+        .card {
+            border-radius: 5px !important;
+            box-shadow: 0 2px 5px 0 rgb(126, 127, 127);
+            border: 2px solid rgb(57, 58, 142);
+            height: 170px;
+            width: 160px;
+        }
+    
+        .number {
+            font-size: 75px;
+            text-align: center;
+            color: rgb(19, 110, 181);
+        }
+    
+        md-card-content {
+            height: 172px;
+        }
+    
+        md-slider.md-min .md-thumb:after {
+            background-color: rgb(63, 81, 181) !important;
+        }
+    
+        .leaderboard-badge {
+            background: rgb(63, 81, 181);
+            border-radius: 28px;
+            text-align: center;
+            height: 56px;
+            line-height: 56px;
+            width: 38px;
+            color: white;
+        }
+    
+        .sidenav-link {
+            cursor: pointer;
+            font-variant: small-caps;
+        }
+    
+        md-radio-button.md-default-theme .md-off {
+            border-color: rgb(63, 81, 181);
+        }
+    
+        md-radio-button.md-default-theme.md-checked .md-off {
+            border-color: rgb(63, 81, 181);
+        }
+    
+        md-radio-button.md-default-theme .md-on {
+            background-color: rgb(63, 81, 181);
+        }
     </style>
 </head>
 
@@ -267,36 +285,14 @@
         </md-content>
     </md-sidenav>
 
-
+    <!-- TODO:  Game Area -->
     <div layout="row" flex ng-show="showGame" class="animate-show">
 
 
         <div layout="column" flex id="content">
             <md-content layout="column" flex class="md-padding" style="overflow-x: hidden;">
-                <md-list>
-                    <md-item>
-                        <md-item-content>
-                            <div class="md-tile-content">
-                                <div layout="row" layout-align="space-around">
-                                    <h3>${{money}}</h3>
-                                </div>
-                            </div>
-                        </md-item-content>
-                        <md-divider></md-divider>
-                    </md-item>
-                    <md-item>
-                        <md-item-content>
-                            <div class="md-tile-content">
-                                <div layout="row" layout-align="space-around">
-                                    <h3 ng-show="username">{{username}}, you've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</h3>
-                                </div>
-                            </div>
-                        </md-item-content>
-                        <md-divider></md-divider>
-                    </md-item>
-                </md-list>
 
-
+                <!-- TODO:  Game Cards In Play Area -->
                 <div layout="row" layout-align="center">
 
                     <md-card class="card">
@@ -324,48 +320,120 @@
 
                 </div>
 
-                <div layout="row">
+                <!-- TODO:  Game Options Area -->
+                <div layout="row" layout-align="space-around center">
+                
+                    <!-- TODO:  Balance Section -->
+                    <div layout="column" layout-align="space-around center">
+                
+                        <!-- BALANCE SECTION HEADER-->
+                        <div>
+                            <h2>BALANCE</h2>
+                        </div>
+                
+                        <div>
+                            <div layout="row" layout-align="space-around">
+                                <h2>${{money}}</h2>
+                            </div>
+                        </div>
 
-                    <div flex="10" layout layout-align="center center">
-                        <span>My Bet</span>
+                        <!-- TODO:  Free Money Button -->
+                        <div layout="row" layout-align="space-around">
+                            <md-button class="md-raised md-primary" ng-click="freeMoney()">ADD VIRTUAL MONEY</md-button>
+                        </div>
                     </div>
+                
+                    <!-- TODO:  Bet Section -->
+                    <div layout="column" layout-align="space-around center">
+                        
+                        <!-- ROUND BET HEADER -->
+                        <div>
+                            <h2>THIS ROUND'S BET</h2>
+                        </div>
+                
+                        <!-- TODO:  Bet Placing -->
+                        <div layout="row">
+                
+                            <!-- TODO:  Custom Bet Buttons -->
+                            <!-- <div>
+                                <md-radio-group layout="row" md-discrete ng-model="bet" aria-label="bet"
+                                    ng-disabled=" state !== 'NEW_HAND' ">
+                                    <md-radio-button ng-value="1">$1</md-radio-button>
+                                    <md-radio-button ng-value="5">$5</md-radio-button>
+                                    <md-radio-button ng-value="10">$10</md-radio-button>
+                                    <md-radio-button ng-value="25">$25</md-radio-button>
+                                    <md-radio-button ng-value="50">$50 - MAX</md-radio-button>
+                                </md-radio-group>
+                            </div> -->
 
-                    <div flex="80">
-                        <md-slider md-discrete ng-model="bet" step="1" min="1" max="50" aria-label="bet" ng-disabled=" state !== 'NEW_HAND' ">
-                        </md-slider>
+                            <div>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(1)">$1</md-button>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(5)">$5</md-button>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(10)">$10</md-button>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(25)">$25</md-button>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(50)">$50</md-button>
+                            </div>
+                
+                        </div>
+                
+                        <!-- TODO:  Bet Amount -->
+                        <div layout="row">
+                            <h2>{{bet | currency}}</h2>
+                        </div>
                     </div>
+                
+                
+                    <!-- TODO:  Flip Card / Next Hand Section -->
+                    <div layout="column" layout-align="space-around center">
+                        <!-- TODO:  Flip Card / Next Round Button -->
+                        <div layout="row">
+                            <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
+                                <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon"
+                                    style="width: 24px; height: 24px;" />
+                                <img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon"
+                                    style="width: 24px; height: 24px;" />
+                            </md-button>
+                        </div>
+                
+                        <!-- TODO:  Flip Card / Next Round Indicator -->
+                        <div layout="row">
+                            <h2>{{state | stateLabel}}</h2>
+                        </div>
+                    </div>
+                
+                    <!-- TODO:  Outcome Section -->
+                    <div layout="column" layout-align="space-around center">
 
+                        <!-- ROUND OUTCOME HEADER -->
+                        <div>
+                            <h2>THIS ROUND'S OUTCOME</h2>
+                        </div>
+
+                        <!-- TODO:  W/L/P Outcome Indicator -->
+                        <div layout="row">
+                            <h2>{{gameStatusMsg}}</h2>
+                        </div>
+                    </div>
+                
+                    <!-- TODO:  Session Streak Section -->
+                    <div layout="column" layout-align="space-around center">
+
+                        <!-- TODO:  STREAK HEADER -->
+                        <div>
+                            <h2>CURRENT SESSION RESULTS</h2>
+                        </div>
+
+                        <div>
+                            <div layout="row">
+                                <h2>You've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</h2>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div layout="row" layout-align="space-around">
-                    <h3>{{bet | currency}}</h3>
-                </div>
+                
 
-
-                <div layout="row" layout-align="space-around" style="min-height: 60px;">
-                    <h3>{{gameStatusMsg}}</h3>
-                </div>
-
-                <div layout="row" layout-align="space-around">
-                    <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
-                        <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon" style="width: 24px; height: 24px;" />
-                        <img ng-show="state === 'DEAL' " src="Icon_Next.svg" alt="Next Icon" style="width: 24px; height: 24px;" />
-                    </md-button>
-                </div>
-
-
-                <div layout="row" layout-align="space-around">
-                    <h3>{{state | stateLabel}}</h3>
-                </div>
-
-
-                <div layout="row" layout-align="space-around">
-                    <md-button class="md-raised md-primary" ng-click="freeMoney()">Free Money</md-button>
-
-                </div>
-
-
-
+                <!-- DED-->
             </md-content>
         </div>
     </div>
