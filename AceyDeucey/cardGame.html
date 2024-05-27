@@ -104,17 +104,7 @@
             font-variant: small-caps;
         }
     
-        md-radio-button.md-default-theme .md-off {
-            border-color: rgb(63, 81, 181);
-        }
-    
-        md-radio-button.md-default-theme.md-checked .md-off {
-            border-color: rgb(63, 81, 181);
-        }
-    
-        md-radio-button.md-default-theme .md-on {
-            background-color: rgb(63, 81, 181);
-        }
+        
     </style>
 </head>
 
@@ -355,23 +345,12 @@
                         <div layout="row">
                 
                             <!-- TODO:  Custom Bet Buttons -->
-                            <!-- <div>
-                                <md-radio-group layout="row" md-discrete ng-model="bet" aria-label="bet"
-                                    ng-disabled=" state !== 'NEW_HAND' ">
-                                    <md-radio-button ng-value="1">$1</md-radio-button>
-                                    <md-radio-button ng-value="5">$5</md-radio-button>
-                                    <md-radio-button ng-value="10">$10</md-radio-button>
-                                    <md-radio-button ng-value="25">$25</md-radio-button>
-                                    <md-radio-button ng-value="50">$50 - MAX</md-radio-button>
-                                </md-radio-group>
-                            </div> -->
-
                             <div>
                                 <md-button class="md-raised md-primary" ng-click="customBetClick(1)">$1</md-button>
                                 <md-button class="md-raised md-primary" ng-click="customBetClick(5)">$5</md-button>
                                 <md-button class="md-raised md-primary" ng-click="customBetClick(10)">$10</md-button>
                                 <md-button class="md-raised md-primary" ng-click="customBetClick(25)">$25</md-button>
-                                <md-button class="md-raised md-primary" ng-click="customBetClick(50)">$50</md-button>
+                                <md-button class="md-raised md-primary" ng-click="customBetClick(50)">MAX</md-button>
                             </div>
                 
                         </div>
@@ -385,6 +364,7 @@
                 
                     <!-- TODO:  Flip Card / Next Hand Section -->
                     <div layout="column" layout-align="space-around center">
+                        
                         <!-- TODO:  Flip Card / Next Round Button -->
                         <div layout="row">
                             <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
@@ -406,7 +386,7 @@
 
                         <!-- ROUND OUTCOME HEADER -->
                         <div>
-                            <h2>THIS ROUND'S OUTCOME</h2>
+                            <h2>RESULT</h2>
                         </div>
 
                         <!-- TODO:  W/L/P Outcome Indicator -->
@@ -420,7 +400,7 @@
 
                         <!-- TODO:  STREAK HEADER -->
                         <div>
-                            <h2>CURRENT SESSION RESULTS</h2>
+                            <h2>WIN STREAK</h2>
                         </div>
 
                         <div>
