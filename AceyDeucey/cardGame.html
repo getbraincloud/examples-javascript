@@ -121,6 +121,17 @@
         .grid-item {
             margin: auto;
         }
+
+        .toolbar-header {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .toolbar-title {
+            font-size: 30px;
+            font-weight: bolder;
+        }
+        
     </style>
 </head>
 
@@ -128,20 +139,28 @@
 
     <md-toolbar layout="row">
 
-        <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()" ng-show="showGame || showLeaderboard" style="margin-left: 5px; min-width: 40px;">
-
-            <img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
-
-        </md-button>
-
-        <!-- TODO:  Authenticated User's Name Label-->
-        <h3>{{username}}</h3>
+        <!-- TODO:  Sidebar menu and username-->
+        <div layout="row" style="width: 33%; text-align: center; vertical-align: middle;">
+            <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()" ng-show="showGame || showLeaderboard"
+                style="margin-left: 5px; min-width: 40px;">
+        
+                <img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
+        
+            </md-button>
+        
+            <!-- TODO:  Authenticated User's Name Label-->
+            <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
+        </div>
 
         <!-- Game Title -->
-        <h1>{{title}}</h1>
+        <div class="toolbar-header" style="width: 33%; text-align: center; vertical-align: middle;">
+            <p>{{title}}</p>
+        </div>
 
         <!-- TODO:  Help section-->
-        <h3 ng-click="showHelp()">HOW TO PLAY</h3>
+        <div class="toolbar-header" ng-click="showHelp()" style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;" >
+            <p>How to Play</p>
+        </div>
 
     </md-toolbar>
 
@@ -253,7 +272,7 @@
     </form>
 
     <!-- TODO:  Options Sidebar -->
-    <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 64px">
+    <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 90px">
         <md-toolbar class="md-theme-indigo">
             <h1 class="md-toolbar-tools">Options</h1>
         </md-toolbar>
