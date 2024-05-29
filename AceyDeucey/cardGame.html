@@ -164,7 +164,7 @@
 
     </md-toolbar>
 
-    <form name="loginForm" ng-submit="login()" ng-show="showLogin">
+    <form name="loginForm" ng-submit="onLogin()" ng-show="showLogin">
 
         <div layout="row">
 
@@ -183,7 +183,7 @@
                     </md-input-container>
                     
                     <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                        <label style="color:gray"><i>If there’s no account tied to the given email, a new one will be auto-created using the password you enter.</i></label>
+                        <label style="color:gray"><i>If there is no account tied to the given email, a new one will be auto-created using the password you enter.</i></label>
                     </div>
 
                     <br>
@@ -211,7 +211,7 @@
         </div>
     </form>
 
-    <form name="forgotPasswordForm" ng-submit="login()" ng-show="showForgotPassword" class="animate-show">
+    <form name="forgotPasswordForm" ng-submit="onLogin()" ng-show="showForgotPassword" class="animate-show">
 
         <div layout="row">
 
@@ -304,6 +304,14 @@
                         </md-item-content>
                     </md-item>
 
+                    <md-item>
+                        <md-item-content ng-click="logout()" class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Log Out</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+
                 </md-list>
             </md-content>
 
@@ -375,7 +383,7 @@
                     <div class="grid-item game-data-label">{{gameStatusMsg}}</div>
                     <div class="grid-item game-data-label">You've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</div>
                     <div class="grid-item game-data-button">
-                        <md-button class="game-data-button">ADD VIRTUAL MONEY</md-button>
+                        <md-button class="game-data-button" ng-click="freeMoney()">ADD VIRTUAL MONEY</md-button>
                     </div>
                     <div class="grid-item game-data-label">
                         <md-button class="game-data-button" ng-click="customBetClick(1)">$1</md-button>

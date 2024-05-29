@@ -57,40 +57,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	});
 
 	$scope.title = "Acey Deucey";
-
-	$scope.userId = null;
-
-	$scope.showLogin = true;
-	$scope.showGame = false;
-	$scope.showLeaderboard = false;
-
-	$scope.cards = [];
+	
 	$scope.card1;
 	$scope.card2;
 	$scope.card3;
 
-	$scope.money = 0;
-	$scope.bet = 1;
-	$scope.gamesLost = 0;
-	$scope.gamesWon = 0;
-	$scope.dollarsWon = 0;
-
-	$scope.gameResults = [];
-	$scope.longestStreak = 0;
-	$scope.refills = 0;
-
-	$scope.leaderboard = [];
-
-	$scope.leaderboardRank = 0;
-
-	$scope.leaderboardPageOffset = 0;
-
 	const leaderBoardAround = 5;
-
-	$scope.disablePrev = false;
-	$scope.disableNext = false;
-
-	$scope.state = "DEAL";
 
 	$scope.message = "You're a Winner!";
 
@@ -112,6 +84,39 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.newHand();
 		}
 	};
+
+	$scope.goToLoginMenu = function () {
+		$scope.userId = null;
+
+		$scope.showLogin = true;
+		$scope.showGame = false;
+		$scope.showLeaderboard = false;
+
+		$scope.cards = [];
+
+		$scope.money = 0;
+		$scope.bet = 1;
+		$scope.gamesLost = 0;
+		$scope.gamesWon = 0;
+		$scope.dollarsWon = 0;
+
+		$scope.gameResults = [];
+		$scope.longestStreak = 0;
+		$scope.refills = 0;
+
+		$scope.leaderboard = [];
+
+		$scope.leaderboardRank = 0;
+
+		$scope.leaderboardPageOffset = 0;
+
+		$scope.disablePrev = false;
+		$scope.disableNext = false;
+
+		$scope.state = "DEAL";
+
+		$scope.dispatchButtonPress()
+	}
 
 	$scope.randomCard = function () {
 		var position = Math.floor(Math.random() * $scope.cards.length);
@@ -253,7 +258,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	};
 
-	$scope.login = function () {
+	$scope.onLogin = function () {
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
 		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;
@@ -262,6 +267,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.loggingIn = true;
 
 		var loginCallback = function (result) {
+			$scope.email = ""
+			$scope.password = ""
 			$scope.loggingIn = false;
 
 			console.log("authenticationCallback");
@@ -525,6 +532,21 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.bet = customBet
 	}
 
+	$scope.logout = function () {
+		
+		// When true- the profileId is cleared on logout. 
+		// This prevents Reconnect Authentication as there will be no saved profile ID to reference.
+		var forgetUser = true
+
+		$mdSidenav('left').close();
+		
+		_bc.logout(forgetUser, response => {
+			$scope.goToLoginMenu()
+			console.log("Logout Response: " + response)
+		})
+	}
+
 	// Initialize game
-	$scope.dispatchButtonPress();
+	$scope.goToLoginMenu()
+	
 }]);
