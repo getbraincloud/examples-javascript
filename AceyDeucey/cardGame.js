@@ -87,6 +87,92 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		_bc.logoutOnApplicationClose(forgetUser)
 	})
 
+	var loginCallback = function (result) {
+		$scope.loggingIn = false;
+
+		console.log("authenticationCallback");
+		console.log(result);
+
+		if (result.status === 200) {
+			try {
+				$scope.money = result.data.rewards.currency.bucks.balance;
+			} catch (e) {
+				$scope.money = 0;
+			}
+
+			$scope.userId = result.data.id;
+
+			if (result.data && result.data.newUser === "false") {
+				_bc.playerStatistics.readAllUserStats(
+					function (result) {
+						console.log(true, "readPlayerStatisticsCallback");
+						console.log(result);
+
+						$scope.$apply(function () {
+							if (result.data && result.data.statistics) {
+								$scope.gamesWon = result.data.statistics.Wins;
+								$scope.gamesLost = result.data.statistics.Losses;
+								$scope.refills = result.data.statistics.Refills;
+								$scope.dollarsWon = result.data.statistics.DollarsWon;
+							}
+						});
+
+					}
+				);
+
+				_bc.entity.getEntitiesByType(
+					'congratsMessage',
+					function (result) {
+						console.log(true, "readEntityByType");
+						console.log(result);
+
+						if (result.data && result.data.entities && result.data.entities.length > 0) {
+							$scope.$apply(function () {
+								if (result.data.entities[0].data['msg']) {
+									$scope.message = result.data.entities[0].data['msg'];
+								}
+							});
+						}
+					}
+				);
+
+
+				// Hide login section and display the gameplay
+				$scope.$apply(function () {
+					$scope.showLogin = false;
+					$scope.showGame = true;
+				});
+
+			} else {
+
+				_bc.virtualCurrency.awardCurrency(
+					"bucks",
+					100,
+					function (result) {
+						$scope.$apply(function () {
+							$scope.money = result.data.currencyMap.bucks.balance;
+						});
+					}
+				);
+
+
+				// Hide login section and display the user name config
+				$scope.$apply(function () {
+					$scope.showLogin = false;
+					$scope.showUsername = true;
+				});
+
+			}
+
+		} else {
+			$mdDialog.show(
+				$mdDialog.alert()
+					.content('The password you entered was incorrect')
+					.ok('Okay')
+			);
+		}
+	}
+
 	$scope.dispatchButtonPress = function () {
 		if ($scope.state === "NEW_HAND") {
 			$scope.state = "DEAL";
@@ -98,14 +184,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	/**
-	 * Resets game (cards, stats, etc.) and displays login menu.
+	 * Resets game (cards, stats, etc.).
 	 */
-	$scope.goToLoginMenu = function () {
+	$scope.initializeGame = function () {
 		$scope.userId = null;
-
-		$scope.showLogin = true;
-		$scope.showGame = false;
-		$scope.showLeaderboard = false;
 
 		$scope.cards = [];
 
@@ -131,6 +213,33 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.state = "DEAL";
 
 		$scope.dispatchButtonPress()
+	}
+
+	/**
+	 * Resets game (cards, stats, etc.) and displays login menu.
+	 */
+	$scope.goToLoginMenu = function () {
+		$scope.initializeGame()
+
+		$scope.showLogin = true;
+		$scope.showGame = false;
+		$scope.showLeaderboard = false;
+	}
+
+	/**
+	 * Checks for saved Profile/Anonymous IDs.
+	 */
+	$scope.reconnectUser = function () {
+		console.log("Looking for saved IDs to see if Reconnect Authentication is possible . . .")
+
+		if(_bc.canReconnect()){
+			console.log("Profile and Anonymous IDs found. Attempting Reconnect Authentication . . .")
+			_bc.reconnect(loginCallback)
+		}
+		else{
+			console.log("Profile and/or Anonymous IDs were not found. Going to login screen . . .")
+			$scope.goToLoginMenu()
+		}
 	}
 
 	$scope.randomCard = function () {
@@ -280,94 +389,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 
 		$scope.loggingIn = true;
-
-		var loginCallback = function (result) {
-			$scope.email = ""
-			$scope.password = ""
-			$scope.loggingIn = false;
-
-			console.log("authenticationCallback");
-			console.log(result);
-
-			if (result.status === 200) {
-				try {
-					$scope.money = result.data.rewards.currency.bucks.balance;
-				} catch (e) {
-					$scope.money = 0;
-				}
-
-				$scope.userId = result.data.id;
-
-				if (result.data && result.data.newUser === "false") {
-					_bc.playerStatistics.readAllUserStats(
-						function (result) {
-							console.log(true, "readPlayerStatisticsCallback");
-							console.log(result);
-
-							$scope.$apply(function () {
-								if (result.data && result.data.statistics) {
-									$scope.gamesWon = result.data.statistics.Wins;
-									$scope.gamesLost = result.data.statistics.Losses;
-									$scope.refills = result.data.statistics.Refills;
-									$scope.dollarsWon = result.data.statistics.DollarsWon;
-								}
-							});
-
-						}
-					);
-
-					_bc.entity.getEntitiesByType(
-						'congratsMessage',
-						function (result) {
-							console.log(true, "readEntityByType");
-							console.log(result);
-
-							if (result.data && result.data.entities && result.data.entities.length > 0) {
-								$scope.$apply(function () {
-									if (result.data.entities[0].data['msg']) {
-										$scope.message = result.data.entities[0].data['msg'];
-									}
-								});
-							}
-						}
-					);
-
-
-					// Hide login section and display the gameplay
-					$scope.$apply(function () {
-						$scope.showLogin = false;
-						$scope.showGame = true;
-					});
-
-				} else {
-
-					_bc.virtualCurrency.awardCurrency(
-						"bucks",
-						100,
-						function (result) {
-							$scope.$apply(function () {
-								$scope.money = result.data.currencyMap.bucks.balance;
-							});
-						}
-					);
-
-
-					// Hide login section and display the user name config
-					$scope.$apply(function () {
-						$scope.showLogin = false;
-						$scope.showUsername = true;
-					});
-
-				}
-
-			} else {
-				$mdDialog.show(
-					$mdDialog.alert()
-						.content('The password you entered was incorrect')
-						.ok('Okay')
-				);
-			}
-		}
 
 		_bc.authenticateEmailPassword(
 			$scope.email,
@@ -568,7 +589,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		})
 	}
 
-	// Initialize game
-	$scope.goToLoginMenu()
+	$scope.initializeGame()
+	$scope.reconnectUser()
 
 }]);
