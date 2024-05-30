@@ -2,4 +2,6 @@
 
 Card game example.
 
-Additional information can be found here: https://getbraincloud.com/apidocs/tutorials/javascript-tutorials/javascript-example-game/
+![](Screenshots/AceyDeucey-GamePlay.png)
+
+Additional information can be found here: https://docs.braincloudservers.com/learn/sdk-tutorials/javascript-tutorials/javascript-example-game/

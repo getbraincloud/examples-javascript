@@ -2,7 +2,7 @@
 # Warstone
 Warstone is a turn-based card game built using the brainCloud real-time Matchmaking facilities.
 
-![](screenshots/warstone.png)
+![](Screenshots/warstone-GamePlay.png)
 
 Of note, there are 2 versions of the server-side source for this game: a Room Server (RS) based approach and a Room Server Manager (RSM) based approach. 
 
@@ -22,11 +22,11 @@ Assuming a player (or players) have been assigned to a lobby instance (typically
 
 In our Warstone example, our lobby type is called "unranked" and it maps to a Server type called appropriately enough... "WarStone":
 
-![](screenshots/unranked_lobby_type.png)
+![](Screenshots/unranked_lobby_type.png)
 
 The definition of the "WarStone" server type looks like this:
 
-![](screenshots/warstone_rs_settings.png)
+![](Screenshots/warstone_rs_settings.png)
 
 The significant setting for our purposes here is that of the "WarStone" Server Type. It is set to *Room Server (hosted)*. This corresponds to the RS approach of matchmaking. (If the type were *Room Server Manager* then that would correspond to the RSM approach of launching room server instances.)
 
@@ -56,7 +56,7 @@ The following environment variables are set for each RS instance:
 
 In addition to these values, any custom values defined in the "Custom Environment" section of the "My Servers" section for this server type will also be set.
 
-![](screenshots/warstone_rs_custom_env.png)
+![](Screenshots/warstone_rs_custom_env.png)
 
 
 ## Room Server instance development
