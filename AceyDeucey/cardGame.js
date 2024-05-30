@@ -250,14 +250,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.newHand = function () {
 
-		// Draw cards until they have different values
+		// Draw cards until there is a gap of at least 1 between them
 		do {
 			angular.copy(deck, $scope.cards);
 
 			var t1 = $scope.randomCard();
 			var t2 = $scope.randomCard();
 
-		} while (t1.value === t2.value);
+		} while ((t1.value === t2.value) || (Math.abs(t1.value - t2.value) === 1));
 
 		// Determine which one is low and which is high
 		var sorted = [t1, t2].sort(function compareNumbers(a, b) {
@@ -299,7 +299,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Same as high or low card
 		} else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
-			$scope.gameStatusMsg = "You Posted. You lose $" + $scope.bet * 2;
+			$scope.gameStatusMsg = "You Posted. You lost $" + $scope.bet * 2;
 			$scope.gamesLost++;
 
 			incrementData["Posts"] = 1;

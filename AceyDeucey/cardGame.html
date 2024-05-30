@@ -158,7 +158,7 @@
         </div>
 
         <!-- TODO:  Help section-->
-        <div class="toolbar-header" ng-click="showHelp()" style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;" >
+        <div class="toolbar-header" ng-click="showHelp()" style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;" ng-show="showGame">
             <p>How to Play</p>
         </div>
 
@@ -308,6 +308,14 @@
                         <md-item-content ng-click="logout()" class="sidenav-link">
                             <div class="md-tile-content">
                                 <h3>Log Out</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+
+                    <md-item>
+                        <md-item-content class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Version: x.x.x.PROD</h3>
                             </div>
                         </md-item-content>
                     </md-item>
