@@ -75,6 +75,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// change this url if you want to point to another brainCloud server
 	// brainCloudManager.setDispatcherURL("https://api.braincloudservers.com/dispatcher");
 
+	/**
+	 * Logout automatically whenever the user refreshes or closes the application.
+	 */
+	window.addEventListener("beforeunload", (ev) => {
+		
+		// When false- the profileId is not cleared on logout. 
+		// This allows Reconnect Authentication as there will be a saved profile ID to reference when the user returns.
+		var forgetUser = false
+		
+		_bc.logoutOnApplicationClose(forgetUser)
+	})
+
 	$scope.dispatchButtonPress = function () {
 		if ($scope.state === "NEW_HAND") {
 			$scope.state = "DEAL";
@@ -85,6 +97,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 	};
 
+	/**
+	 * Resets game (cards, stats, etc.) and displays login menu.
+	 */
 	$scope.goToLoginMenu = function () {
 		$scope.userId = null;
 
@@ -528,10 +543,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			});
 	};
 
+	/**
+	 * Listener for custom bet button click. Set the bet for the next hand.
+	 * @param {number} customBet The bet amount.
+	 */
 	$scope.customBetClick = function (customBet) {
 		$scope.bet = customBet
 	}
 
+	/**
+	 * Logs user out of brainCloud and returns to login screen.
+	 */
 	$scope.logout = function () {
 		
 		// When true- the profileId is cleared on logout. 
@@ -548,5 +570,5 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	// Initialize game
 	$scope.goToLoginMenu()
-	
+
 }]);
