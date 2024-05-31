@@ -370,6 +370,16 @@
                     <div layout="row">
                         <h2>{{state | stateLabel}}</h2>
                     </div>
+
+                    <dialog id="insufficientFundsDialog">
+                        <p class="game-data-label" style="font-weight: bold; text-decoration: underline; margin-top: 0;">Insufficient Funds</p>
+                        <p>Would you like to add more funds to your balance?</p>
+                        <p style="font-weight: lighter; font-style: italic;">This is a virtual transaction, no real money will be charged</p>
+                        <div float="right">
+                            <button id="cancel" class="game-data-label">Cancel</button>
+                            <button id="addFunds" class="game-data-button">Add $500</button>
+                        </div>
+                    </dialog>
                 </div>
 
                 <!-- GRID -->
@@ -383,7 +393,7 @@
                     <div class="grid-item game-data-label">{{gameStatusMsg}}</div>
                     <div class="grid-item game-data-label">You've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</div>
                     <div class="grid-item game-data-button">
-                        <md-button class="game-data-button" ng-click="freeMoney()">ADD VIRTUAL MONEY</md-button>
+                        <md-button class="game-data-button" ng-click="freeMoney(100)">ADD VIRTUAL MONEY</md-button>
                     </div>
                     <div class="grid-item game-data-label">
                         <md-button class="game-data-button" ng-click="customBetClick(1)" ng-disabled="canBet()">$1</md-button>

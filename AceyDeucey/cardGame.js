@@ -4,9 +4,11 @@ app.filter('stateLabel', function () {
 	return function (state) {
 		if ((state == undefined || state == null)) {
 			return state;
-		} else if (state === "NEW_HAND") {
+		} 
+		else if (state === "NEW_HAND") {
 			return "Flip";
-		} else if (state === "DEAL") {
+		} 
+		else if (state === "DEAL") {
 			return "Next Round";
 		}
 	}
@@ -42,13 +44,20 @@ app.filter('card', function () {
 });
 
 
+
 var _bc = new BrainCloudWrapper("_mainWrapper");
+
+
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
 	const cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 	const suits = ["Diamonds", "Hearts", "Clubs", "Spades"];
 	const deck = [];
+
+	const insufficientFundsDialog = document.getElementById("insufficientFundsDialog")
+	const addFundsButton = document.getElementById("addFunds")
+	const cancelAddFundsButton = document.getElementById("cancel")
 
 	angular.forEach(suits, function (suit) {
 		angular.forEach(cards, function (card) {
@@ -194,9 +203,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.dispatchButtonPress = function () {
 		if ($scope.state === "NEW_HAND") {
-			$scope.state = "DEAL";
-			$scope.deal();
-		} else if ($scope.state === "DEAL") {
+
+			// Prompt the user to add more funds if they don't have enough money to play
+			// TODO:
+			if ($scope.bet > $scope.money) {
+				insufficientFundsDialog.showModal()
+			}
+			else {
+				$scope.state = "DEAL";
+				$scope.deal();
+			}
+		} 
+		else if ($scope.state === "DEAL") {
 			$scope.state = "NEW_HAND";
 			$scope.newHand();
 		}
@@ -443,7 +461,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		);
 	};
 
-	$scope.freeMoney = function () {
+	$scope.freeMoney = function (amount) {
 
 		var incrementData = { Refills: 1 };
 
@@ -456,7 +474,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		_bc.virtualCurrency.awardCurrency(
 			"bucks",
-			100,
+			amount,
 			function (result) {
 				$scope.$apply(function () {
 					$scope.money = result.data.currencyMap.bucks.balance;
@@ -465,6 +483,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		);
 
 	};
+
+	addFundsButton.addEventListener("click", () => {
+	
+		// Increase balance by 500
+		// TODO:
+		$scope.freeMoney(500)
+		console.log("Increased balance by $500")
+	})
+	
+	cancelAddFundsButton.addEventListener("click", () => {
+		insufficientFundsDialog.close()
+	})
 
 	$scope.showHelp = function () {
 		$mdDialog.show(
