@@ -312,14 +312,6 @@
                         </md-item-content>
                     </md-item>
 
-                    <md-item>
-                        <md-item-content class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Version: x.x.x.PROD</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-
                 </md-list>
             </md-content>
 
@@ -394,11 +386,11 @@
                         <md-button class="game-data-button" ng-click="freeMoney()">ADD VIRTUAL MONEY</md-button>
                     </div>
                     <div class="grid-item game-data-label">
-                        <md-button class="game-data-button" ng-click="customBetClick(1)">$1</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(5)">$5</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(10)">$10</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(25)">$25</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(50)">MAX</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(1)" ng-disabled="canBet()">$1</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(5)" ng-disabled="canBet()">$5</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(10)" ng-disabled="canBet()">$10</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(25)" ng-disabled="canBet()">$25</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(50)" ng-disabled="canBet()">MAX</md-button>
                     </div>
                 </div>
                 <!-- DED-->

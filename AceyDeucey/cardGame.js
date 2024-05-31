@@ -95,7 +95,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		if (result.status === 200) {
 			try {
-				$scope.money = result.data.rewards.currency.bucks.balance;
+				$scope.money = result.data.currency.bucks.balance;
 			} catch (e) {
 				$scope.money = 0;
 			}
@@ -103,6 +103,27 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.userId = result.data.id;
 
 			if (result.data && result.data.newUser === "false") {
+				
+				// Display user's playerName or prompt them to add one
+				if (result.data.playerName === null || result.data.playerName === 'undefined' || result.data.playerName === "") {
+					
+					// Hide login section and display the user name config
+					$scope.$apply(function () {
+						$scope.showLogin = false;
+						$scope.showGame = false
+						$scope.showUsername = true;
+					});
+				}
+				else{
+					$scope.username = result.data.playerName
+
+					// Hide login section and display the gameplay
+					$scope.$apply(function () {
+						$scope.showLogin = false;
+						$scope.showGame = true;
+					});
+				}
+				
 				_bc.playerStatistics.readAllUserStats(
 					function (result) {
 						console.log(true, "readPlayerStatisticsCallback");
@@ -137,13 +158,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				);
 
 
-				// Hide login section and display the gameplay
-				$scope.$apply(function () {
-					$scope.showLogin = false;
-					$scope.showGame = true;
-				});
+				
 
-			} else {
+			} 
+			else {
 
 				_bc.virtualCurrency.awardCurrency(
 					"bucks",
@@ -164,7 +182,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			}
 
-		} else {
+		} 
+		else {
 			$mdDialog.show(
 				$mdDialog.alert()
 					.content('The password you entered was incorrect')
@@ -188,6 +207,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.initializeGame = function () {
 		$scope.userId = null;
+		$scope.username = null
 
 		$scope.cards = [];
 
@@ -570,6 +590,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.customBetClick = function (customBet) {
 		$scope.bet = customBet
+	}
+
+	/**
+	 * Checks the current state- the user can only bet at the start of a new hand.
+	 * @returns True if a new hand is ready and the user can place a bet.
+	 */
+	$scope.canBet = function () {
+		if($scope.state === "DEAL"){
+			return true
+		}
+		
+		return false
 	}
 
 	/**
