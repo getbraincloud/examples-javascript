@@ -1,3 +1,4 @@
+
 var app = angular.module('CardGame', ['ngMaterial', 'ngSanitize']);
 
 app.filter('stateLabel', function () {
@@ -43,11 +44,12 @@ app.filter('card', function () {
 	}
 });
 
-
+// Application IDs defined in PortalX: App > Design > Core App Info
+let appId = "yourAppId"
+let appSecret = "yourAppSecret"
+let url = "yourServerURL"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
-
-
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
@@ -75,14 +77,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.message = "You're a Winner!";
 
+	// change this url if you want to point to another brainCloud server
+	_bc.brainCloudClient.setServerUrl(url);
+
 	// we initialize the brainCloud client library here with our game id, secret, and game version
-	_bc.initialize("10129", "b983ec3d-208d-4ea3-be89-27e5acc7a3c0", "1.0.0");
+	_bc.initialize(appId, appSecret, "1.0.0");
 
 	// to spit json requests/responses to the console
-	//_bc.enableLogging(true);
-
-	// change this url if you want to point to another brainCloud server
-	// brainCloudManager.setDispatcherURL("https://api.braincloudservers.com/dispatcher");
+	_bc.brainCloudClient.enableLogging(true);
 
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
@@ -490,6 +492,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// TODO:
 		$scope.freeMoney(500)
 		console.log("Increased balance by $500")
+		insufficientFundsDialog.close()
 	})
 	
 	cancelAddFundsButton.addEventListener("click", () => {
@@ -652,6 +655,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	$scope.initializeGame()
+	//$scope.goToLoginMenu()
 	$scope.reconnectUser()
 
 }]);
