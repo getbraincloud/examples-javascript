@@ -66,8 +66,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			deck.push({ value: card, suit: suit });
 		});
 	});
-
-	$scope.title = "Acey Deucey";
 	
 	$scope.card1;
 	$scope.card2;
@@ -168,9 +166,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					}
 				);
 
-
-				
-
 			} 
 			else {
 
@@ -226,7 +221,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Resets game (cards, stats, etc.).
 	 */
 	$scope.initializeGame = function () {
-		$scope.userId = null;
+		$scope.title = "Acey Deucey";
+		
+		$scope.userId = null
 		$scope.username = null
 
 		$scope.cards = [];
