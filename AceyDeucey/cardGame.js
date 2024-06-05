@@ -77,28 +77,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.message = "You're a Winner!";
 
-	// change this url if you want to point to another brainCloud server
-	_bc.brainCloudClient.setServerUrl(url);
-
-	// we initialize the brainCloud client library here with our game id, secret, and game version
-	_bc.initialize(appId, appSecret, "1.0.0");
-	if(_bc.brainCloudClient.isInitialized()){
-		console.log("Initialized brainCloud Client: " + _bc.brainCloudClient.version)
-	}
-	else{
-		console.log("Failed to initialize brainCloud Client")
-	}
-	$scope.brainCloudClientVersion = _bc.brainCloudClient.version
-	if(url.includes("internal")){
-		$scope.brainCloudClientVersion += " - dev"
-	}
-	else{
-		$scope.brainCloudClientVersion += " - prod"
-	}
-
-	// to spit json requests/responses to the console
-	_bc.brainCloudClient.enableLogging(true);
-
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
 	 */
@@ -236,6 +214,26 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Resets game (cards, stats, etc.).
 	 */
 	$scope.initializeGame = function () {
+		if (!_bc.brainCloudClient.isInitialized()) {
+			
+			// change this url if you want to point to another brainCloud server
+			_bc.brainCloudClient.setServerUrl(url);
+
+			// we initialize the brainCloud client library here with our game id, secret, and game version
+			_bc.initialize(appId, appSecret, "1.0.0");
+			console.log("Initialized brainCloud Client: " + _bc.brainCloudClient.version)
+			$scope.brainCloudClientVersion = _bc.brainCloudClient.version
+			if (url.includes("internal")) {
+				$scope.brainCloudClientVersion += " - dev"
+			}
+			else {
+				$scope.brainCloudClientVersion += " - prod"
+			}
+
+			// to spit json requests/responses to the console
+			_bc.brainCloudClient.enableLogging(true);
+		}
+		
 		$scope.title = "Acey Deucey";
 		
 		$scope.userId = null
