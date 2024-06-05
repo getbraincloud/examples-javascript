@@ -82,6 +82,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	// we initialize the brainCloud client library here with our game id, secret, and game version
 	_bc.initialize(appId, appSecret, "1.0.0");
+	if(_bc.brainCloudClient.isInitialized()){
+		console.log("Initialized brainCloud Client: " + _bc.brainCloudClient.version)
+	}
+	else{
+		console.log("Failed to initialize brainCloud Client")
+	}
 	$scope.brainCloudClientVersion = _bc.brainCloudClient.version
 	if(url.includes("internal")){
 		$scope.brainCloudClientVersion += " - dev"
