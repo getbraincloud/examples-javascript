@@ -49,6 +49,9 @@ let appId = "yourAppId"
 let appSecret = "yourAppSecret"
 let url = "yourServerURL"
 
+console.log("App IDs:")
+console.log("appId: " + appId + "\nsecret: " + appSecret + "\nurl: " + url)
+
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
