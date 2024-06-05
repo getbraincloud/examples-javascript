@@ -45,9 +45,9 @@ app.filter('card', function () {
 });
 
 // Application IDs defined in PortalX: App > Design > Core App Info
-var appId = "yourAppId"
-var appSecret = "yourAppSecret"
-var url = "yourServerURL"
+var appId = "39480"
+var appSecret = "7091f81e-3d1e-40b9-9ed0-271f90836d48"
+var url = "https://api.internal.braincloudservers.com"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
@@ -71,6 +71,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.card2;
 	$scope.card3;
 
+	$scope.brainCloudClientVersion = "Failed to initialize. Check App IDs."
+
 	const leaderBoardAround = 5;
 
 	$scope.message = "You're a Winner!";
@@ -80,6 +82,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	// we initialize the brainCloud client library here with our game id, secret, and game version
 	_bc.initialize(appId, appSecret, "1.0.0");
+	$scope.brainCloudClientVersion = _bc.brainCloudClient.version
 
 	// to spit json requests/responses to the console
 	_bc.brainCloudClient.enableLogging(true);
