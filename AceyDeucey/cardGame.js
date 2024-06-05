@@ -50,7 +50,9 @@ let appSecret = "yourAppSecret"
 let url = "yourServerURL"
 
 console.log("App IDs:")
-console.log("appId: " + appId + "\nsecret: " + appSecret + "\nurl: " + url)
+console.log("appId: " + appId)
+console.log("secret: " + appSecret)
+console.log("url: " + url)
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
