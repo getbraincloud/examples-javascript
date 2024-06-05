@@ -45,14 +45,9 @@ app.filter('card', function () {
 });
 
 // Application IDs defined in PortalX: App > Design > Core App Info
-let appId = "yourAppId"
-let appSecret = "yourAppSecret"
-let url = "yourServerURL"
-
-console.log("App IDs:")
-console.log("appId: " + appId)
-console.log("secret: " + appSecret)
-console.log("url: " + url)
+var appId = "yourAppId"
+var appSecret = "yourAppSecret"
+var url = "yourServerURL"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
@@ -105,7 +100,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.loggingIn = false;
 
 		console.log("authenticationCallback");
-		console.log(result);
+		console.log(JSON.stringify(result));
 
 		if (result.status === 200) {
 			try {
