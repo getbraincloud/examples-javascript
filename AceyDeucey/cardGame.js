@@ -83,6 +83,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// we initialize the brainCloud client library here with our game id, secret, and game version
 	_bc.initialize(appId, appSecret, "1.0.0");
 	$scope.brainCloudClientVersion = _bc.brainCloudClient.version
+	if(url.includes("internal")){
+		$scope.brainCloudClientVersion += " - dev"
+	}
+	else{
+		$scope.brainCloudClientVersion += " - prod"
+	}
 
 	// to spit json requests/responses to the console
 	_bc.brainCloudClient.enableLogging(true);
@@ -232,7 +238,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.cards = [];
 
 		$scope.money = 0;
-		$scope.bet = 1;
+		$scope.bet = 2;
 		$scope.gamesLost = 0;
 		$scope.gamesWon = 0;
 		$scope.dollarsWon = 0;
@@ -316,9 +322,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		var incrementData = {};
 
-		// In between
+		// Win - In between the cards
 		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
-			$scope.gameStatusMsg = $scope.message + " You Won $" + $scope.bet;
+			$scope.gameStatusMsg = $scope.message + " You Won $" + $scope.bet * 1.5;
 			$scope.gamesWon++;
 			$scope.dollarsWon += $scope.bet;
 			incrementData["Wins"] = 1;
@@ -328,18 +334,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			_bc.virtualCurrency.awardCurrency(
 				"bucks",
-				$scope.bet,
+				$scope.bet * 1.5,
 				function (result) {
 					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
 					});
 				}
 			);
-
-
-			// Same as high or low card
-		} else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
-			$scope.gameStatusMsg = "You Posted. You lost $" + $scope.bet * 2;
+		}
+		// Loss - Same as high or low card (i.e. "post")
+		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
+			$scope.gameStatusMsg = "You Posted. You lost $" + $scope.bet;
 			$scope.gamesLost++;
 
 			incrementData["Posts"] = 1;
@@ -349,18 +354,21 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			_bc.virtualCurrency.consumeCurrency(
 				"bucks",
-				$scope.bet * 2,
+				$scope.bet,
 				function (result) {
 					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
+
+						if($scope.money === 0){
+							console.log("Busted!")
+						}
 					});
 				}
 			);
-
-
-			// Outside the middle
-		} else {
-			$scope.gameStatusMsg = "You Lost $" + $scope.bet;
+		}
+		// Loss - Outside the cards
+		else {
+			$scope.gameStatusMsg = "You Lost $" + $scope.bet * 0.5;
 			$scope.gamesLost++;
 
 			incrementData["Losses"] = 1;
@@ -369,14 +377,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			_bc.virtualCurrency.consumeCurrency(
 				"bucks",
-				$scope.bet,
+				$scope.bet * 0.5,
 				function (result) {
 					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
+
+						if($scope.money === 0){
+							console.log("Busted!")
+						}
 					});
 				}
 			);
-
 		}
 
 		// Calculate the longest winning streak for current session
