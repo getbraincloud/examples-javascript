@@ -347,7 +347,7 @@
                 <div layout="row" layout-align="space-around">
 
                     <!-- Card 3 -->
-                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}">
+                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}" ng-click="dispatchButtonPress()">
                         <md-card-content style="min-height: 100px">
                             <div ng-bind-html="card3 | card"></div>
                         </md-card-content>
