@@ -71,6 +71,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.card2;
 	$scope.card3;
 
+	/**
+	 * TODO:  Used to indicate $scope.deal() results
+	 * DEFAULT (blue)
+	 * WIN (green) - Card 3 is between Cards 1 and 2
+	 * LOSS (black) - Card 3 is outside Cards 1 and 2
+	 * POST (red) - Card 3 is the same as Card 1 or 2
+	 */
+	$scope.defaultBorder = '2px solid black'
+	$scope.winBorder = '3px solid rgb(50,205,50)'
+	$scope.lossBorder = '3px solid rgb(63,81,181)'
+	$scope.postBorder = '3px solid red'
+
 	$scope.brainCloudClientVersion = "Failed to initialize. Check App IDs."
 
 	const leaderBoardAround = 5;
@@ -211,6 +223,15 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	/**
+	 * Set card borders back to default (i.e. remove hand result indicators)
+	 */
+	$scope.resetCardBorders = function () {
+		$scope.card1Border = $scope.defaultBorder
+		$scope.card2Border = $scope.defaultBorder
+		$scope.card3Border = $scope.defaultBorder
+	}
+
+	/**
 	 * Resets game (cards, stats, etc.).
 	 */
 	$scope.initializeGame = function () {
@@ -240,6 +261,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.username = null
 
 		$scope.cards = [];
+
+		$scope.resetCardBorders()
 
 		$scope.money = 0;
 		$scope.bet = 2;
@@ -300,6 +323,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.newHand = function () {
 
+		// Reset card borders
+		$scope.resetCardBorders()
+
 		// Draw cards until there is a gap of at least 1 between them
 		do {
 			angular.copy(deck, $scope.cards);
@@ -328,7 +354,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// Win - In between the cards
 		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
-			$scope.gameStatusMsg = $scope.message + " You Won $" + $scope.bet * 1.5;
+			$scope.gameStatusMsg = "You Won $" + $scope.bet * 1.5;
+
+			// Set card border / result indicator
+			$scope.card3Border = $scope.winBorder
+
 			$scope.gamesWon++;
 			$scope.dollarsWon += $scope.bet;
 			incrementData["Wins"] = 1;
@@ -349,6 +379,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// Loss - Same as high or low card (i.e. "post")
 		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
 			$scope.gameStatusMsg = "You Posted. You lost $" + $scope.bet;
+
+			// Set card borders / result indicators
+			$scope.card3Border = $scope.postBorder
+			if($scope.card1.value === $scope.card3.value){
+				$scope.card1Border = $scope.postBorder
+			}
+			else{
+				$scope.card2Border = $scope.postBorder
+			}
+
 			$scope.gamesLost++;
 
 			incrementData["Posts"] = 1;
@@ -372,10 +412,15 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 		// Loss - Outside the cards
 		else {
-			$scope.gameStatusMsg = "You Lost $" + $scope.bet * 0.5;
-			$scope.gamesLost++;
+			$scope.gameStatusMsg = "You Won $" + $scope.bet * 0.5;
 
-			incrementData["Losses"] = 1;
+			// Set card border / result indicator
+			$scope.card3Border = $scope.lossBorder
+
+			$scope.gamesWon++;
+			$scope.dollarsWon += $scope.bet * 0.5;
+			incrementData["Wins"] = 1;
+			incrementData["DollarsWon"] = $scope.bet * 0.5;
 
 			$scope.gameResults.push(false);
 

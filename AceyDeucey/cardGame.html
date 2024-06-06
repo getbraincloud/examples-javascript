@@ -70,7 +70,6 @@
         .card {
             border-radius: 5px !important;
             box-shadow: 0 2px 5px 0 rgb(126, 127, 127);
-            border: 2px solid rgb(57, 58, 142);
             height: 170px;
             width: 160px;
         }
@@ -328,13 +327,15 @@
                 <!-- TODO:  Game Cards In Play Area -->
                 <div layout="row" layout-align="center">
 
-                    <md-card class="card">
+                    <!-- TODO:  Card 1 -->
+                    <md-card class="card" ng-style="{'border': card1Border}">
                         <md-card-content>
                             <div ng-bind-html="card1 | card"></div>
                         </md-card-content>
                     </md-card>
 
-                    <md-card class="card">
+                    <!-- TODO:  Card 2 -->
+                    <md-card class="card" ng-style="{'border': card2Border}">
                         <md-card-content>
                             <div ng-bind-html="card2 | card"></div>
 
@@ -345,7 +346,8 @@
 
                 <div layout="row" layout-align="space-around">
 
-                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }">
+                    <!-- Card 3 -->
+                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}">
                         <md-card-content style="min-height: 100px">
                             <div ng-bind-html="card3 | card"></div>
                         </md-card-content>
