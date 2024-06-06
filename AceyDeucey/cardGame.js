@@ -264,7 +264,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.resetCardBorders()
 
-		$scope.money = 0;
 		$scope.bet = 2;
 		$scope.gamesLost = 0;
 		$scope.gamesWon = 0;
@@ -325,6 +324,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// Reset card borders
 		$scope.resetCardBorders()
+
+		if($scope.money === 0){
+			insufficientFundsDialog.showModal()
+		}
 
 		// Draw cards until there is a gap of at least 1 between them
 		do {
@@ -402,10 +405,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				function (result) {
 					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
-
-						if($scope.money === 0){
-							console.log("Busted!")
-						}
 					});
 				}
 			);
@@ -430,10 +429,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				function (result) {
 					$scope.$apply(function () {
 						$scope.money = result.data.currencyMap.bucks.balance;
-
-						if($scope.money === 0){
-							console.log("Busted!")
-						}
 					});
 				}
 			);
