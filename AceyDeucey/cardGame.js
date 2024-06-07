@@ -485,8 +485,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.loggingIn = true;
 
-		_bc.authenticateEmailPassword(
-			$scope.email,
+		_bc.authenticateUniversal(
+			$scope.universalId,
 			$scope.password,
 			true,
 			loginCallback
@@ -561,27 +561,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				.content('Two cards are shown to the player. They are then able to bet on whether or not the third card will be between the two. If it is, they win their bet. If it is equal to either of the cards, they lose double their bet.')
 				.ok('Close')
 		);
-
-	};
-
-	$scope.resetPassword = function () {
-		_bc.brainCloudClient.authentication.resetEmailPassword(
-			$scope.email,
-			function (result) {
-				console.log(result);
-
-				$mdDialog.show(
-					$mdDialog.alert()
-						.content("E-mail sent")
-						.ok('Ok')
-				);
-
-			}
-		);
-
-
-		$scope.showForgotPassword = false;
-		$scope.showLogin = true;
 
 	};
 
