@@ -101,6 +101,45 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		_bc.logoutOnApplicationClose(forgetUser)
 	})
 
+	$scope.updateJackpot = function () {
+		// TODO:  
+	}
+
+	$scope.updateUserBalance = function () {
+		var vcId = "bucks"
+		
+		_bc.virtualCurrency.getCurrency(vcId, (getCurrencyResponse) => {
+			var newBalance = getCurrencyResponse.data.currencyMap.bucks.balance
+			$scope.$apply(function () {
+				$scope.money = newBalance
+			});
+		})		
+	}
+
+	$scope.awardCurrency = function (amountToAward) {
+		var scriptName = "AwardCurrency"
+		var vcAmount = amountToAward
+		var scriptData = {
+			"vcAmount" : vcAmount
+		}
+
+		_bc.script.runScript(scriptName, scriptData, () => {
+			$scope.updateUserBalance()
+		})
+	}
+
+	$scope.consumeCurrency = function (amountToConsume) {
+		var scriptName = "ConsumeCurrency"
+		var vcAmount = amountToConsume
+		var scriptData = {
+			"vcAmount" : vcAmount
+		}
+
+		_bc.script.runScript(scriptName, scriptData, (runScriptResponse) => {
+			$scope.updateUserBalance()
+		})
+	}
+
 	var loginCallback = function (result) {
 		$scope.loggingIn = false;
 
@@ -108,6 +147,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		console.log(JSON.stringify(result));
 
 		if (result.status === 200) {
+			
+			// Sync the user's balance
 			try {
 				$scope.money = result.data.currency.bucks.balance;
 			} catch (e) {
@@ -116,6 +157,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.userId = result.data.id;
 
+			// Read info from existing/returning user
 			if (result.data && result.data.newUser === "false") {
 				
 				// Display user's playerName or prompt them to add one
@@ -172,17 +214,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				);
 
 			} 
+			
+			// Setup new user
 			else {
 
-				_bc.virtualCurrency.awardCurrency(
-					"bucks",
-					100,
-					function (result) {
-						$scope.$apply(function () {
-							$scope.money = result.data.currencyMap.bucks.balance;
-						});
-					}
-				);
+				// Give the user bonus money to start
+				$scope.awardCurrency(100)
 
 
 				// Hide login section and display the user name config
@@ -192,8 +229,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				});
 
 			}
-
-		} 
+		}
+		
+		// TODO:  Read game info from Global Stats and Global Props
+		// TODO:  Read "StreakToWinJackpot" Global Property and display it
+		// TODO:  Read "JackpotCut" to determine what percent of money lost by user (AKA won by "the House") goes toward the Jackpot
+		// TODO:  
+		
 		else {
 			$mdDialog.show(
 				$mdDialog.alert()
@@ -270,7 +312,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.dollarsWon = 0;
 
 		$scope.gameResults = [];
-		$scope.longestStreak = 0;
 		$scope.refills = 0;
 
 		$scope.leaderboard = [];
@@ -283,6 +324,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.disableNext = false;
 
 		$scope.state = "DEAL";
+
+		// Amount to be won when Jackpot is collected. *Hopefully* real-time- dependant on how polling is implemented
+		$scope.currentJackpot = 0
+
+		// How many wins since the last loss. Right now, only a "POST" would count as a loss.
+		$scope.currentWinStreak = 0
+
+		// Percent of bet that goes to the Jackpot. Both "POST" and "LOSS" contribute to this, but only "POST" counts as a loss for the Win Streak.
+		$scope.jackpotCut = 0
+
+		// Number of wins in a row required to collect the Jackpot. Both "POST" and "WIN" contribute to the streak.
+		$scope.streakToWinJackpot = 0
 
 		$scope.dispatchButtonPress()
 	}
@@ -369,15 +422,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(true);
 
-			_bc.virtualCurrency.awardCurrency(
-				"bucks",
-				$scope.bet * 1.5,
-				function (result) {
-					$scope.$apply(function () {
-						$scope.money = result.data.currencyMap.bucks.balance;
-					});
-				}
-			);
+			$scope.awardCurrency($scope.bet * 1.5)
 		}
 		// Loss - Same as high or low card (i.e. "post")
 		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
@@ -399,15 +444,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			_bc.virtualCurrency.consumeCurrency(
-				"bucks",
-				$scope.bet,
-				function (result) {
-					$scope.$apply(function () {
-						$scope.money = result.data.currencyMap.bucks.balance;
-					});
-				}
-			);
+			$scope.consumeCurrency($scope.bet)
 		}
 		// Loss - Outside the cards
 		else {
@@ -423,43 +460,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			_bc.virtualCurrency.consumeCurrency(
-				"bucks",
-				$scope.bet * 0.5,
-				function (result) {
-					$scope.$apply(function () {
-						$scope.money = result.data.currencyMap.bucks.balance;
-					});
-				}
-			);
+			$scope.consumeCurrency($scope.bet * 0.5)
 		}
-
-		// Calculate the longest winning streak for current session
-		var longestStreak = 0;
-		var counter = 0;
-		angular.forEach($scope.gameResults, function (gameResult) {
-			if (gameResult === false) {
-				if (counter > longestStreak) {
-					longestStreak = counter;
-				}
-				counter = 0;
-			}
-			else {
-				counter++;
-			}
-		});
-
-		// And update the streak stat if it's larger
-		if (longestStreak > $scope.longestStreak) {
-			incrementData["WinsInARow"] = longestStreak - $scope.longestStreak;
-			$scope.longestStreak = longestStreak;
-		}
-
-		_bc.playerStatistics.incrementUserStats(
-			incrementData,
-			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
-			0
-		);
 
 		_bc.globalStatistics.incrementGlobalStats(
 			{ GamesPlayed: 1 },
@@ -529,15 +531,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			0
 		);
 
-		_bc.virtualCurrency.awardCurrency(
-			"bucks",
-			amount,
-			function (result) {
-				$scope.$apply(function () {
-					$scope.money = result.data.currencyMap.bucks.balance;
-				});
-			}
-		);
+		$scope.awardCurrency(amount)
+
+		$scope.updateUserBalance()
 
 	};
 
