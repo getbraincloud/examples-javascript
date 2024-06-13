@@ -353,6 +353,7 @@
                         <h2>{{state | stateLabel}}</h2>
                     </div>
 
+                    <!-- Modal to display when the user's balance is lower than their desired bet -->
                     <dialog id="insufficientFundsDialog">
                         <p class="game-data-label" style="font-weight: bold; text-decoration: underline; margin-top: 0;">Insufficient Funds</p>
                         <p>Would you like to add more funds to your balance?</p>
@@ -360,6 +361,15 @@
                         <div float="right">
                             <button id="cancel" class="game-data-label">Cancel</button>
                             <button id="addFunds" class="game-data-button">Add $500</button>
+                        </div>
+                    </dialog>
+
+                    <!-- Modal to display when the user wins the Jackpot -->
+                    <dialog id="collectJackpotDialog">
+                        <p class="game-data-label" style="font-weight: bold; text-decoration: underline; margin-top: 0;">Congratulations</p>
+                        <p>You won the jackpot!</p>
+                        <div float="right">
+                            <button id="collectJackpotButton" class="game-data-button">Collect ${{currentJackpot}}</button>
                         </div>
                     </dialog>
                 </div>

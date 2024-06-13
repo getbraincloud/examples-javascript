@@ -61,6 +61,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	const addFundsButton = document.getElementById("addFunds")
 	const cancelAddFundsButton = document.getElementById("cancel")
 
+	const collectJackpotDialog = document.getElementById("collectJackpotDialog")
+	const collectJackpotButton = document.getElementById("collectJackpotButton")
+
 	angular.forEach(suits, function (suit) {
 		angular.forEach(cards, function (card) {
 			deck.push({ value: card, suit: suit });
@@ -92,7 +95,71 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// APP_ID:CHANNEL_TYPE:CHANNEL_ID
 	$scope.channelId = appId + ":gl:jackpot"
 
-	$scope.currentWinStreak
+	$scope.currentJackpot = 0
+
+	$scope.currentWinStreak = 0
+
+	/**
+	 * Refresh the displayed jackpot value.
+	 * TODO:
+	 * @param {number} newJackpotAmount 
+	 */
+	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
+		console.log("refreshing jack")
+		
+		$scope.$apply(function () {
+			$scope.currentJackpot = newJackpotAmount
+		});
+	}
+
+	/**
+	 * Increment the Jackpot if a user loses money, or "RESET" it if the user collects it.
+	 * @param {number} amount 
+	 */
+	$scope.updateJackpot = function (amount) {
+		var statistics = {
+			"Jackpot": amount
+		};
+
+		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+			var newJackpotAmount = result.data.statistics.Jackpot
+			console.log("New Jackpot Amount is " + newJackpotAmount)
+
+			// Send updated Jackpot amount through Chat Channel
+			var content = {
+				jackpotAmount: newJackpotAmount
+			}
+			var recordInHistory = true;
+
+			_bc.chat.postChatMessage($scope.channelId, content, recordInHistory, result => {
+				var status = result.status;
+				console.log(status + "Post Chat Message Success : " + JSON.stringify(result, null, 2));
+			});
+		});
+	}
+
+	/** Event listeners for Insufficient Funds and Collect Jackpot modals */
+	addFundsButton.addEventListener("click", () => {
+	
+		// Increase balance by 500
+		$scope.freeMoney(500)
+		console.log("Increased balance by $500")
+		insufficientFundsDialog.close()
+	})
+	
+	cancelAddFundsButton.addEventListener("click", () => {
+		insufficientFundsDialog.close()
+	})
+
+	collectJackpotButton.addEventListener("click", () => {
+		console.log("adding " + $scope.currentJackpot + " dollars")
+		
+		$scope.awardCurrency($scope.currentJackpot)
+
+		$scope.updateJackpot("RESET")
+		
+		collectJackpotDialog.close()
+	})
 
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
@@ -141,47 +208,23 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		})
 
 		// User lost money, so Jackpot increases
-		var statistics = {
-			"Jackpot": amountToConsume
-		};
-		
-		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
-
-			// TODO:  temp log
-			console.log("Jackpot updated" + " : " + JSON.stringify(result, null, 2));
-
-			var newJackpotAmount = result.data.statistics.Jackpot
-			console.log("New Jackpot Amount is " + newJackpotAmount)
-
-			// Send updated Jackpot amount through Chat Channel
-			var content = {
-				jackpotAmount : newJackpotAmount
-			}
-			var recordInHistory = true;
-
-			_bc.chat.postChatMessage($scope.channelId, content, recordInHistory, result => {
-				var status = result.status;
-				console.log(status + "Post Chat Message Success : " + JSON.stringify(result, null, 2));
-			});
-		});
-	}
-
-	/**
-	 * Refresh the displayed jackpot value.
-	 * TODO:
-	 * @param {number} newJackpotAmount 
-	 */
-	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
-		$scope.$apply(function () {
-			$scope.currentJackpot = newJackpotAmount
-		});
+		$scope.updateJackpot(amountToConsume)
 	}
 
 	/**
 	 * Increment the number of wins since last loss (only a "POST" counts as a loss)
 	 */
-	$scope.updateCurrentWinStreak = function () {
+	$scope.updateCurrentWinStreak = function () {		
 		$scope.currentWinStreak++
+
+		if($scope.currentWinStreak == $scope.streakToWinJackpot){
+			console.log("YOU WON THE JACKPOT!")
+
+			collectJackpotDialog.showModal()
+		}
+		else{
+			console.log("not. yet. you are at " + $scope.currentWinStreak + "but you need " + $scope.streakToWinJackpot)
+		}
 	}
 
 	/**
@@ -451,11 +494,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.state = "DEAL";
 
+		$scope.currentWinStreak = 0
+
 		// Amount to be won when Jackpot is collected. *Hopefully* real-time- dependant on how polling is implemented
 		$scope.currentJackpot = 0
-
-		// How many wins since the last loss. Right now, only a "POST" would count as a loss.
-		$scope.currentWinStreak = 0
 
 		// Percent of bet that goes to the Jackpot. Both "POST" and "LOSS" contribute to this, but only "POST" counts as a loss for the Win Streak.
 		$scope.jackpotCut = 0
@@ -668,18 +710,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.updateUserBalance()
 
 	};
-
-	addFundsButton.addEventListener("click", () => {
-	
-		// Increase balance by 500
-		$scope.freeMoney(500)
-		console.log("Increased balance by $500")
-		insufficientFundsDialog.close()
-	})
-	
-	cancelAddFundsButton.addEventListener("click", () => {
-		insufficientFundsDialog.close()
-	})
 
 	$scope.showHelp = function () {
 		$mdDialog.show(
