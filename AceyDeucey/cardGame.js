@@ -89,6 +89,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.message = "You're a Winner!";
 
+	// APP_ID:CHANNEL_TYPE:CHANNEL_ID
+	$scope.channelId = appId + ":gl:jackpot"
+
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
 	 */
@@ -135,9 +138,93 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			"vcAmount" : vcAmount
 		}
 
-		_bc.script.runScript(scriptName, scriptData, (runScriptResponse) => {
+		_bc.script.runScript(scriptName, scriptData, () => {
 			$scope.updateUserBalance()
 		})
+
+		// User lost money, so Jackpot increases
+		var statistics = {
+			"Jackpot": amountToConsume
+		};
+		
+		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+			var status = result.status;
+			console.log("Jackpot updated" + " : " + JSON.stringify(result, null, 2));
+
+			var newJackpotAmount = result.data.statistics.Jackpot
+			console.log("New Jackpot Amount is " + newJackpotAmount)
+
+			// TODO:  send new current Jackpot through chat channel?
+			var content = {
+				jackpotAmount : newJackpotAmount
+			}
+			var recordInHistory = true;
+
+			_bc.chat.postChatMessage($scope.channelId, content, recordInHistory, result => {
+				var status = result.status;
+				console.log(status + "Post Chat Message Success : " + JSON.stringify(result, null, 2));
+			});
+		});
+	}
+
+	/**
+	 * RTT Chat callback handler.
+	 * @param {*} rttMessage RTT Chat update message
+	 */
+	var rttCallback = function (rttMessage) {
+		// TODO:
+		console.log("rttCallback - rttMessage: " + JSON.stringify(rttMessage))
+		if(rttMessage.data.content.jackpotAmount){
+			var newJackpotAmount = rttMessage.data.content.jackpotAmount
+			console.log("Jackpot Amount: " + newJackpotAmount)
+			$scope.$apply(function () {
+				$scope.currentJackpot = newJackpotAmount
+			});
+		}
+	}
+
+	/**
+	 * Retrieve and connect to the app's chat channels (created in Design > Messaging > Chat Channels).
+	 */
+	$scope.connectToGlobalChannels = function () {
+		var maxReturn = 0
+		
+		_bc.chat.channelConnect($scope.channelId, maxReturn, channelConnectResponse => {
+			var status = channelConnectResponse.status
+			
+			if(status === 200) {
+				console.log("Connected to Jackpot Updates channel")
+			}
+			else{
+				
+				// TODO:  what do we do if we fail to connect to one of the channels?
+				console.log("Failed to connect to " + channel.name + " channel (ID: " + $scope.channelId + ")")
+			}
+		})
+	}
+
+	$scope.onRTTEnabled = function () {
+		console.log("RTT Connected!")
+
+		// Connect to default channels
+		$scope.connectToGlobalChannels();
+	}
+
+	$scope.enableRTT = function () {
+
+		// TODO:  temp log
+		console.log("Setting up RTT . . .")
+
+		// Register a callback for RTT Chat Channel updates
+		_bc.rttService.registerRTTChatCallback(rttCallback);
+
+		// Real-time Tech (RTT) must be checked on the dashboard, under Design | Core App Info | Advanced Settings.
+		_bc.rttService.enableRTT(enableRTTSuccess => {
+			console.log("enableRTT Response: " + JSON.stringify(enableRTTSuccess));
+			$scope.onRTTEnabled()
+		}, error => {
+			console.log("enableRTT Error: " + JSON.stringify(error));
+		});
 	}
 
 	var loginCallback = function (result) {
@@ -147,7 +234,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		console.log(JSON.stringify(result));
 
 		if (result.status === 200) {
-			
+
 			// Sync the user's balance
 			try {
 				$scope.money = result.data.currency.bucks.balance;
@@ -159,10 +246,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Read info from existing/returning user
 			if (result.data && result.data.newUser === "false") {
-				
+
 				// Display user's playerName or prompt them to add one
 				if (result.data.playerName === null || result.data.playerName === 'undefined' || result.data.playerName === "") {
-					
+
 					// Hide login section and display the user name config
 					$scope.$apply(function () {
 						$scope.showLogin = false;
@@ -170,7 +257,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						$scope.showUsername = true;
 					});
 				}
-				else{
+				else {
 					$scope.username = result.data.playerName
 
 					// Hide login section and display the gameplay
@@ -179,7 +266,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						$scope.showGame = true;
 					});
 				}
-				
+
 				_bc.playerStatistics.readAllUserStats(
 					function (result) {
 						console.log(true, "readPlayerStatisticsCallback");
@@ -212,9 +299,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						}
 					}
 				);
+			}
 
-			} 
-			
 			// Setup new user
 			else {
 
@@ -229,16 +315,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				});
 
 			}
+
+			// TODO:  In BCChat, we start the RTT shtuff onLoggedIn()
+			$scope.enableRTT()
 		}
-		
-		// TODO:  Read game info from Global Stats and Global Props
-		// TODO:  Read "StreakToWinJackpot" Global Property and display it
-		// TODO:  Read "JackpotCut" to determine what percent of money lost by user (AKA won by "the House") goes toward the Jackpot
-		// TODO:  
-		
+
+		// TODO:  authentication request failed
 		else {
 			$mdDialog.show(
 				$mdDialog.alert()
+
+					// TODO:  authentication failing is not necessarily due to an incorrect password...
 					.content('The password you entered was incorrect')
 					.ok('Okay')
 			);
