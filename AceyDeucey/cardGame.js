@@ -105,7 +105,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * @param {number} newJackpotAmount 
 	 */
 	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
-		console.log("refreshing jack")
+		console.log("refreshing jack to: " + newJackpotAmount)
 		
 		$scope.$apply(function () {
 			$scope.currentJackpot = newJackpotAmount
@@ -237,10 +237,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		console.log("rttCallback - rttMessage: " + JSON.stringify(rttMessage))
 		
 		// Update Jackpot with value received from Chat message
-		if(rttMessage.data.content.jackpotAmount){
+		if(rttMessage.data.content.jackpotAmount >= 0){
 			var newJackpotAmount = rttMessage.data.content.jackpotAmount
 			console.log("Jackpot Amount: " + newJackpotAmount)
 			$scope.updateDisplayedJackpot(newJackpotAmount)
+		}
+		else{
+			console.log("not")
 		}
 	}
 
