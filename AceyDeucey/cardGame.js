@@ -92,6 +92,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// APP_ID:CHANNEL_TYPE:CHANNEL_ID
 	$scope.channelId = appId + ":gl:jackpot"
 
+	$scope.currentWinStreak
+
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
 	 */
@@ -103,10 +105,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		
 		_bc.logoutOnApplicationClose(forgetUser)
 	})
-
-	$scope.updateJackpot = function () {
-		// TODO:  
-	}
 
 	$scope.updateUserBalance = function () {
 		var vcId = "bucks"
@@ -148,13 +146,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		};
 		
 		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
-			var status = result.status;
+
+			// TODO:  temp log
 			console.log("Jackpot updated" + " : " + JSON.stringify(result, null, 2));
 
 			var newJackpotAmount = result.data.statistics.Jackpot
 			console.log("New Jackpot Amount is " + newJackpotAmount)
 
-			// TODO:  send new current Jackpot through chat channel?
+			// Send updated Jackpot amount through Chat Channel
 			var content = {
 				jackpotAmount : newJackpotAmount
 			}
@@ -168,18 +167,37 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	/**
+	 * Refresh the displayed jackpot value.
+	 * TODO:
+	 * @param {number} newJackpotAmount 
+	 */
+	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
+		$scope.$apply(function () {
+			$scope.currentJackpot = newJackpotAmount
+		});
+	}
+
+	/**
+	 * Increment the number of wins since last loss (only a "POST" counts as a loss)
+	 */
+	$scope.updateCurrentWinStreak = function () {
+		$scope.currentWinStreak++
+	}
+
+	/**
 	 * RTT Chat callback handler.
 	 * @param {*} rttMessage RTT Chat update message
 	 */
 	var rttCallback = function (rttMessage) {
-		// TODO:
+		
+		// TODO: temp log
 		console.log("rttCallback - rttMessage: " + JSON.stringify(rttMessage))
+		
+		// Update Jackpot with value received from Chat message
 		if(rttMessage.data.content.jackpotAmount){
 			var newJackpotAmount = rttMessage.data.content.jackpotAmount
 			console.log("Jackpot Amount: " + newJackpotAmount)
-			$scope.$apply(function () {
-				$scope.currentJackpot = newJackpotAmount
-			});
+			$scope.updateDisplayedJackpot(newJackpotAmount)
 		}
 	}
 
@@ -316,7 +334,29 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			}
 
-			// TODO:  In BCChat, we start the RTT shtuff onLoggedIn()
+			// Read Global Statistics to get current Jackpot amount
+			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
+				if(readAllGlobalStatsResponse.data.statistics.Jackpot){
+					var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
+
+					$scope.updateDisplayedJackpot(currentJackpot)
+				}
+			});
+
+			// Read Global Properties to get number of wins in a row required to collect the Jackpot
+			_bc.globalApp.readProperties(readPropertiesResponse => {
+				if(readPropertiesResponse.data.StreakToWinJackpot){
+					console.log(JSON.stringify(readPropertiesResponse))
+					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
+
+					$scope.$apply(function () {
+						$scope.streakToWinJackpot = streakToWinJackpot
+					});
+
+				}
+			});
+
+			// Upon login, enable RTT to connect to Chat Channel to listen for Jackpot updates
 			$scope.enableRTT()
 		}
 
@@ -336,7 +376,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		if ($scope.state === "NEW_HAND") {
 
 			// Prompt the user to add more funds if they don't have enough money to play
-			// TODO:
 			if ($scope.bet > $scope.money) {
 				insufficientFundsDialog.showModal()
 			}
@@ -510,6 +549,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.gameResults.push(true);
 
 			$scope.awardCurrency($scope.bet * 1.5)
+
+			$scope.updateCurrentWinStreak()
 		}
 		// Loss - Same as high or low card (i.e. "post")
 		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
@@ -532,6 +573,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.gameResults.push(false);
 
 			$scope.consumeCurrency($scope.bet)
+
+			$scope.currentWinStreak = 0
 		}
 		// Loss - Outside the cards
 		else {
@@ -548,6 +591,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.gameResults.push(false);
 
 			$scope.consumeCurrency($scope.bet * 0.5)
+
+			$scope.updateCurrentWinStreak()
 		}
 
 		_bc.globalStatistics.incrementGlobalStats(
@@ -627,7 +672,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	addFundsButton.addEventListener("click", () => {
 	
 		// Increase balance by 500
-		// TODO:
 		$scope.freeMoney(500)
 		console.log("Increased balance by $500")
 		insufficientFundsDialog.close()
