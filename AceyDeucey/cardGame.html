@@ -138,7 +138,7 @@
 
     <md-toolbar layout="row">
 
-        <!-- TODO:  Sidebar menu and username-->
+        <!-- Sidebar menu and username-->
         <div layout="row" style="width: 33%; text-align: center; vertical-align: middle;">
             <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()" ng-show="showGame || showLeaderboard"
                 style="margin-left: 5px; min-width: 40px;">
@@ -147,7 +147,7 @@
         
             </md-button>
         
-            <!-- TODO:  Authenticated User's Name Label-->
+            <!-- Authenticated User's Name Label-->
             <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
         </div>
 
@@ -156,7 +156,7 @@
             <p>{{title}}</p>
         </div>
 
-        <!-- TODO:  Help section-->
+        <!-- Help section-->
         <div class="toolbar-header" ng-click="showHelp()" style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;" ng-show="showGame">
             <p>How to Play</p>
         </div>
@@ -210,7 +210,7 @@
         </div>
     </form>
 
-    <!-- TODO: between login and game -->
+    <!-- Between login and game -->
     <form name="usernameForm" ng-submit="setUsername()" ng-show="showUsername" class="animate-show">
 
         <div layout="row">
@@ -240,7 +240,7 @@
         </div>
     </form>
 
-    <!-- TODO:  Options Sidebar -->
+    <!-- Options Sidebar -->
     <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 90px">
         <md-toolbar class="md-theme-indigo">
             <h1 class="md-toolbar-tools">Options</h1>
@@ -287,7 +287,7 @@
         </md-content>
     </md-sidenav>
 
-    <!-- TODO:  Game Area -->
+    <!-- Game Area -->
     <div layout="row" flex ng-show="showGame" class="animate-show">
 
 
@@ -304,17 +304,18 @@
                     <p>Current Streak: {{currentWinStreak}}</p>
                 </div>
                 <md-divider></md-divider>
-                <!-- TODO:  Game Cards In Play Area -->
+
+                <!-- Game Cards In Play Area -->
                 <div layout="row" layout-align="center">
 
-                    <!-- TODO:  Card 1 -->
+                    <!-- Card 1 -->
                     <md-card class="card" ng-style="{'border': card1Border}">
                         <md-card-content>
                             <div ng-bind-html="card1 | card"></div>
                         </md-card-content>
                     </md-card>
 
-                    <!-- TODO:  Card 2 -->
+                    <!-- Card 2 -->
                     <md-card class="card" ng-style="{'border': card2Border}">
                         <md-card-content>
                             <div ng-bind-html="card2 | card"></div>
@@ -326,19 +327,18 @@
 
                 <div layout="row" layout-align="space-around">
 
-                    <!-- Card 3 -->
+                    <!-- Card 3 (flipped card) -->
                     <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}" ng-click="dispatchButtonPress()">
                         <md-card-content style="min-height: 100px">
                             <div ng-bind-html="card3 | card"></div>
                         </md-card-content>
                     </md-card>
-
                 </div>
 
-                <!-- TODO:  Flip Card / Next Hand Section -->
+                <!-- Flip Card / Next Hand Section -->
                 <div layout="column" layout-align="space-between center" style="margin-top: 20px; margin-bottom: 20px;">
                         
-                    <!-- TODO:  Flip Card / Next Round Button -->
+                    <!-- Flip Card / Next Round Button -->
                     <div layout="row">
                         <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
                             <img ng-show="state === 'NEW_HAND' " src="Icon_Deck.svg" alt="Deck Icon"
@@ -348,7 +348,7 @@
                         </md-button>
                     </div>
             
-                    <!-- TODO:  Flip Card / Next Round Indicator -->
+                    <!-- Flip Card / Next Round Indicator -->
                     <div layout="row">
                         <h2>{{state | stateLabel}}</h2>
                     </div>

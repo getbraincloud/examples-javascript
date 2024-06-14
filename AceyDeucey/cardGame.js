@@ -75,7 +75,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.card3;
 
 	/**
-	 * TODO:  Used to indicate $scope.deal() results
+	 * Used to indicate $scope.deal() results
 	 * DEFAULT (blue)
 	 * WIN (green) - Card 3 is between Cards 1 and 2
 	 * LOSS (black) - Card 3 is outside Cards 1 and 2
@@ -99,9 +99,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.currentWinStreak = 0
 
+	$scope.jackpotDefaultValue = 0
+
 	/**
 	 * Refresh the displayed jackpot value.
-	 * TODO:
 	 * @param {number} newJackpotAmount 
 	 */
 	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
@@ -123,7 +124,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
 			var newJackpotAmount = result.data.statistics.Jackpot
-			console.log("New Jackpot Amount is " + newJackpotAmount)
+
+			// Jackpot should never be zero. When a player collects the jackpot, reset it to a default value (defined in Design > Cloud Data > Global Properties)
+			if(newJackpotAmount === 0){
+				$scope.updateJackpot($scope.jackpotDefaultValue)
+			}
 
 			// Send updated Jackpot amount through Chat Channel
 			var content = {
@@ -233,9 +238,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	var rttCallback = function (rttMessage) {
 		
-		// TODO: temp log
-		console.log("rttCallback - rttMessage: " + JSON.stringify(rttMessage))
-		
 		// Update Jackpot with value received from Chat message
 		if(rttMessage.data.content.jackpotAmount >= 0){
 			var newJackpotAmount = rttMessage.data.content.jackpotAmount
@@ -275,9 +277,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	$scope.enableRTT = function () {
-
-		// TODO:  temp log
-		console.log("Setting up RTT . . .")
 
 		// Register a callback for RTT Chat Channel updates
 		_bc.rttService.registerRTTChatCallback(rttCallback);
@@ -392,13 +391,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			// Read Global Properties to get number of wins in a row required to collect the Jackpot
 			_bc.globalApp.readProperties(readPropertiesResponse => {
 				if(readPropertiesResponse.data.StreakToWinJackpot){
-					console.log(JSON.stringify(readPropertiesResponse))
 					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
 
 					$scope.$apply(function () {
 						$scope.streakToWinJackpot = streakToWinJackpot
 					});
+				}
 
+				if(readPropertiesResponse.data.JackpotDefaultValue){
+					var jackpotDefaultValue = readPropertiesResponse.data.JackpotDefaultValue.value
+
+					$scope.jackpotDefaultValue = jackpotDefaultValue
 				}
 			});
 
