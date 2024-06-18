@@ -407,15 +407,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			}
 
-			// Read Global Statistics to get current Jackpot amount
-			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
-				if(readAllGlobalStatsResponse.data.statistics.Jackpot){
-					var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
-
-					$scope.updateDisplayedJackpot(currentJackpot)
-				}
-			});
-
 			// Read Global Properties to get number of wins in a row required to collect the Jackpot
 			_bc.globalApp.readProperties(readPropertiesResponse => {
 				if(readPropertiesResponse.data.StreakToWinJackpot){
@@ -429,7 +420,20 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				if(readPropertiesResponse.data.JackpotDefaultValue){
 					var jackpotDefaultValue = readPropertiesResponse.data.JackpotDefaultValue.value
 
-					$scope.jackpotDefaultValue = jackpotDefaultValue
+					$scope.jackpotDefaultValue = jackpotDefaultValue				}
+			});
+
+			// Read Global Statistics to get current Jackpot amount
+			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
+				if(readAllGlobalStatsResponse.data.statistics.Jackpot){
+					var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
+
+					if(currentJackpot < $scope.jackpotDefaultValue){
+						$scope.updateJackpot($scope.jackpotDefaultValue)
+					}
+					else{
+						$scope.updateDisplayedJackpot(currentJackpot)
+					}
 				}
 			});
 
