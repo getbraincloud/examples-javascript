@@ -45,9 +45,9 @@ app.filter('card', function () {
 });
 
 // Application IDs defined in PortalX: App > Design > Core App Info
-var appId = "yourAppId"
-var appSecret = "yourAppSecret"
-var url = "yourServerURL"
+var appId = "10129"
+var appSecret = "b983ec3d-208d-4ea3-be89-27e5acc7a3c0"
+var url = "https://api.braincloudservers.com"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
@@ -425,15 +425,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Read Global Statistics to get current Jackpot amount
 			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
-				if(readAllGlobalStatsResponse.data.statistics.Jackpot){
+				if (readAllGlobalStatsResponse.data.statistics.Jackpot < $scope.jackpotDefaultValue) {
+					$scope.updateJackpot($scope.jackpotDefaultValue)
+				}
+				else {
 					var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
-
-					if(currentJackpot < $scope.jackpotDefaultValue){
-						$scope.updateJackpot($scope.jackpotDefaultValue)
-					}
-					else{
-						$scope.updateDisplayedJackpot(currentJackpot)
-					}
+					$scope.updateDisplayedJackpot(currentJackpot)
 				}
 			});
 
