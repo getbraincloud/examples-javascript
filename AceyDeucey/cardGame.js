@@ -143,6 +143,29 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		});
 	}
 
+	/**
+	 * Increment the Global Stat for the current win streak and then reset the streak counter to zero.
+	 * Only the stat of the current streak is incremented: 3 wins in a row increments ONLY "StreakOf3", not "StreakOf1" and "StreakOf2" as well.
+	 */
+	$scope.resetStreak = function () {
+		var streakStat = "StreakOf"
+		if($scope.currentWinStreak < 10){
+			streakStat += "0"
+		}
+		streakStat += $scope.currentWinStreak
+		
+		var statistics = {
+			[streakStat]: 1
+		};
+
+		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+			var status = result.status;
+			console.log(status + " : " + JSON.stringify(result, null, 2));
+		});
+
+		$scope.currentWinStreak = 0
+	}
+
 	/** Event listeners for Insufficient Funds and Collect Jackpot modals */
 	addFundsButton.addEventListener("click", () => {
 	
@@ -162,6 +185,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.awardCurrency($scope.currentJackpot)
 
 		$scope.updateJackpot("RESET")
+
+		// Reset win streak and update global stats (track average streak achieved by user)
+		$scope.resetStreak()
 		
 		collectJackpotDialog.close()
 	})
@@ -224,6 +250,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		if($scope.currentWinStreak == $scope.streakToWinJackpot){
 			console.log("YOU WON THE JACKPOT!")
+
+			// TODO:  modal
 
 			collectJackpotDialog.showModal()
 		}
@@ -622,7 +650,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.consumeCurrency($scope.bet)
 
-			$scope.currentWinStreak = 0
+			// Reset win streak and update global stats (track average streak achieved by user)
+			$scope.resetStreak()
 		}
 		// Loss - Outside the cards
 		else {
@@ -660,6 +689,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	$scope.onLogin = function () {
+		
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
 		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;

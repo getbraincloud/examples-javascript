@@ -98,6 +98,36 @@
             cursor: pointer;
             font-variant: small-caps;
         }
+
+        .modal {
+            position: relative;
+            bottom: 20%;
+            width: 40%;
+            height: 40%;
+        }
+
+        .modal-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-top: 0;
+        }
+
+        .modal-text {
+            font-size: 24px;
+        }
+
+        .jackpot-header {
+            font-size: 50px;
+            font-weight: bold;
+            color: rgb(63, 81, 181);
+        }
+
+        .jackpot-streak {
+            font-size: 30;
+            font-style: italic;
+            font-weight: bold;
+            margin-top: -15;
+        }
     
         .game-data-label {
             font-size: 24px;
@@ -288,22 +318,22 @@
     </md-sidenav>
 
     <!-- Game Area -->
-    <div layout="row" flex ng-show="showGame" class="animate-show">
+    <div layout="row" flex ng-show="showGame" class="animate-show" >
 
-
+        <!-- Jackpot Info -->
         <div layout="column" flex id="content">
             <md-content layout="column" flex class="md-padding" style="overflow-x: hidden;">
-                <div layout="row">
-                    <h3>Jackpot:</h3>
-                    <h3>{{currentJackpot}}</h3>
+                <div layout="column" layout-align="end end">
+                    <div layout="column" layout-align="center center">
+                        <div layout="row">
+                            <h3 class="jackpot-header" layout-align="end">JACKPOT:</h3>
+                            <h3 class="jackpot-header" style="margin-left: 20;">${{currentJackpot}}</h3>
+                        </div>
+                        <div layout="row" layout-align="center center">
+                            <p class="jackpot-streak">{{streakToWinJackpot}}-Streak to Win!</p>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <p>Win {{streakToWinJackpot}} games in a row to collect the Jackpot</p>
-                </div>
-                <div>
-                    <p>Current Streak: {{currentWinStreak}}</p>
-                </div>
-                <md-divider></md-divider>
 
                 <!-- Game Cards In Play Area -->
                 <div layout="row" layout-align="center">
@@ -354,22 +384,26 @@
                     </div>
 
                     <!-- Modal to display when the user's balance is lower than their desired bet -->
-                    <dialog id="insufficientFundsDialog">
-                        <p class="game-data-label" style="font-weight: bold; text-decoration: underline; margin-top: 0;">Insufficient Funds</p>
-                        <p>Would you like to add more funds to your balance?</p>
-                        <p style="font-weight: lighter; font-style: italic;">This is a virtual transaction, no real money will be charged</p>
-                        <div float="right">
-                            <button id="cancel" class="game-data-label">Cancel</button>
-                            <button id="addFunds" class="game-data-button">Add $500</button>
+                    <dialog id="insufficientFundsDialog" class="modal">
+                        <p class="modal-title">Insufficient Funds</p>
+                        <p class="modal-text">Would you like to add more funds to your balance?</p>
+                        <p class="modal-text" style="font-weight: lighter; font-style: italic;">This is a virtual transaction, no real money will be charged</p>
+                        <div style="position: absolute; bottom: 10; right: 10;">
+                            <button id="cancel" class="game-data-label" style="font-size: 36px;">Cancel</button>
+                            <button id="addFunds" class="game-data-button" style="font-size: 36px;">Add $500</button>
                         </div>
                     </dialog>
 
                     <!-- Modal to display when the user wins the Jackpot -->
-                    <dialog id="collectJackpotDialog">
-                        <p class="game-data-label" style="font-weight: bold; text-decoration: underline; margin-top: 0;">Congratulations</p>
-                        <p>You won the jackpot!</p>
-                        <div float="right">
-                            <button id="collectJackpotButton" class="game-data-button">Collect ${{currentJackpot}}</button>
+                    <dialog id="collectJackpotDialog" class="modal">
+                        <div style="text-align: center;">
+                            <p class="jackpot-header" style="font-size: 65px; font-weight: bold; margin-bottom: 0;">
+                                JACKPOT WINNER!</p>
+                            <p style="font-size: 30px; margin-top: 0;">{{streakToWinJackpot}} GAMES IN A ROW!</p>
+                            <div style="position: absolute; left: 0; right: 0; margin-top: 50;">
+                                <button id="collectJackpotButton" class="game-data-button" style="font-size: 75px;">Collect
+                                    ${{currentJackpot}}</button>
+                            </div>
                         </div>
                     </dialog>
                 </div>
@@ -379,11 +413,11 @@
                     <div class="grid-item game-data-label">BALANCE</div>
                     <div class="grid-item game-data-label">BET</div>
                     <div class="grid-item game-data-label">RESULT</div>
-                    <div class="grid-item game-data-label">WIN RATE</div>
+                    <div class="grid-item game-data-label">CURRENT STREAK</div>
                     <div class="grid-item game-data-label">${{money}}</div>
                     <div class="grid-item game-data-label">{{bet | currency}}</div>
                     <div class="grid-item game-data-label">{{gameStatusMsg}}</div>
-                    <div class="grid-item game-data-label">You've won {{gamesWon}} of the last {{gamesWon + gamesLost}} games</div>
+                     <div class="grid-item game-data-label">{{currentWinStreak}}</div>
                     <div class="grid-item game-data-button">
                         <md-button class="game-data-button" ng-click="freeMoney(100)">ADD VIRTUAL MONEY</md-button>
                     </div>
@@ -407,10 +441,7 @@
 
 
         <div flex>
-
             <md-content>
-
-
                 <md-list layout="column">
 
                     <div layout="row">
