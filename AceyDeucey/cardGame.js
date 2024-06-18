@@ -439,6 +439,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// TODO:  authentication request failed
 		else {
+			$scope.initializeGame()
+
+			$scope.showLogin = true;
+			$scope.showGame = false;
+			$scope.showLeaderboard = false;
+
 			$mdDialog.show(
 				$mdDialog.alert()
 
