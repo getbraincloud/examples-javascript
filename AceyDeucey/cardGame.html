@@ -327,7 +327,7 @@
                     <div layout="column" layout-align="center center">
                         <div layout="row">
                             <h3 class="jackpot-header" layout-align="end">JACKPOT:</h3>
-                            <h3 class="jackpot-header" style="margin-left: 20;">${{currentJackpot}}</h3>
+                            <h3 class="jackpot-header" style="margin-left: 20;">${{currentJackpot | currency:"":0}}</h3>
                         </div>
                         <div layout="row" layout-align="center center">
                             <p class="jackpot-streak">{{streakToWinJackpot}}-Streak to Win!</p>
@@ -402,7 +402,7 @@
                             <p style="font-size: 30px; margin-top: 0;">{{streakToWinJackpot}} GAMES IN A ROW!</p>
                             <div style="position: absolute; left: 0; right: 0; margin-top: 50;">
                                 <button id="collectJackpotButton" class="game-data-button" style="font-size: 75px;">Collect
-                                    ${{currentJackpot}}</button>
+                                    ${{currentJackpot | currency:"":0}}</button>
                             </div>
                         </div>
                     </dialog>
@@ -414,8 +414,8 @@
                     <div class="grid-item game-data-label">BET</div>
                     <div class="grid-item game-data-label">RESULT</div>
                     <div class="grid-item game-data-label">CURRENT STREAK</div>
-                    <div class="grid-item game-data-label">${{money}}</div>
-                    <div class="grid-item game-data-label">{{bet | currency}}</div>
+                    <div class="grid-item game-data-label">${{money | currency:"":0}}</div>
+                    <div class="grid-item game-data-label">${{bet}}</div>
                     <div class="grid-item game-data-label">{{gameStatusMsg}}</div>
                      <div class="grid-item game-data-label">{{currentWinStreak}}</div>
                     <div class="grid-item game-data-button">
@@ -458,7 +458,7 @@
                             </div>
                             <div class="md-tile-content" style="padding-left: 20px;">
                                 <h3>{{ player.name || player.playerId}}</h3>
-                                <h4>Dollars Won: {{ player.data.DollarsWon | currency:undefined:0}} Refills: {{ player.data.Refills}}</h4>
+                                <h4>Dollars Won: ${{ player.data.DollarsWon | currency:"":0}} Refills: {{ player.data.Refills}}</h4>
                             </div>
                         </md-item-content>
 

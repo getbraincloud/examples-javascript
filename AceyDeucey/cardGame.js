@@ -16,30 +16,28 @@ app.filter('stateLabel', function () {
 });
 
 app.filter('card', function () {
-	const faces = {
+	const cardImages = {
+		2: "FaceCards_2.svg",
+		3: "FaceCards_3.svg",
+		4: "FaceCards_4.svg",
+		5: "FaceCards_5.svg",
+		6: "FaceCards_6.svg",
+		7: "FaceCards_7.svg",
+		8: "FaceCards_8.svg",
+		9: "FaceCards_9.svg",
+		10: "FaceCards_10.svg",
 		11: "FaceCards_Jack.svg",
 		12: "FaceCards_Queen.svg",
 		13: "FaceCards_King.svg",
-		14: "A",
+		14: "FaceCards_Ace_Blue.svg"
 	};
 
 	return function (card) {
 		if (card == undefined || card == null || card == "") {
-			return '<img src="AD_bcLogo.png" class="card-class" />';
-		} else {
-			var str = "";
-
-			if (card.value > 10 && card.value < 14) {
-
-				return '<img src="' + faces[card.value] + '" class="card-class" />';
-
-			} else if (card.value === 14) {
-				str += faces[card.value]
-			} else {
-				str += card.value;
-			}
-
-			return '<h2 class="number">' + str + '</h2>';
+			return '<img src="AD_bcLogo_dark.png" class="card-class" />';
+		} 
+		else {
+			return '<img src="' + cardImages[card.value] + '" class="card-class" />';
 		}
 	}
 });
