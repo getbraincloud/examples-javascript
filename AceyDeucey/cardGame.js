@@ -611,7 +611,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// Win - In between the cards
 		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
-			$scope.gameStatusMsg = $scope.bet * 1.5;
+			$scope.gameStatusMsg = "$" + $scope.bet * 1.5;
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.winBorder
@@ -654,7 +654,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 		// Loss - Outside the cards
 		else {
-			$scope.gameStatusMsg = $scope.bet * 0.5;
+			$scope.gameStatusMsg = "$" + $scope.bet * 0.5;
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.lossBorder
