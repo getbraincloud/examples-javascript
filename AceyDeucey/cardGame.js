@@ -333,17 +333,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				// Display user's playerName or prompt them to add one
 				if (result.data.playerName === null || result.data.playerName === 'undefined' || result.data.playerName === "") {
 
-					// Hide login section and display the user name config
-					$scope.$apply(function () {
-						$scope.showLogin = false;
-						$scope.showGame = false
-						$scope.showUsername = true;
-					});
-
 					// TODO
+					console.log("UniversalID: " + $scope.universalId)
 					_bc.playerState.updateUserName($scope.universalId, function (result) {
 						console.log(true, "updateUserName");
 						console.log(result);
+						$scope.username = $scope.universalId
 					}
 					)
 
@@ -374,10 +369,23 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 					}
 				);
+
+				// Hide login section and display the gameplay
+				$scope.$apply(function () {
+					$scope.showLogin = false;
+					$scope.showGame = true;
+				});
 			}
 
 			// Setup new user
 			else {
+				console.log("UniversalID: " + $scope.universalId)
+				_bc.playerState.updateUserName($scope.universalId, function (result) {
+					console.log(true, "updateUserName");
+					console.log(result);
+					$scope.username = $scope.universalId
+				}
+				)
 
 				// Give the user bonus money to start
 				$scope.awardCurrency(100)
@@ -386,7 +394,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				// Hide login section and display the user name config
 				$scope.$apply(function () {
 					$scope.showLogin = false;
-					$scope.showUsername = true;
+					$scope.showGame = true;
 				});
 
 			}
@@ -494,6 +502,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.userId = null
 		$scope.username = null
+		$scope.universalId = null
 
 		$scope.cards = [];
 
@@ -679,13 +688,15 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	$scope.onLogin = function () {
-
+		console.log("onLogin")
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
 		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;
 		}
 
 		$scope.loggingIn = true;
+
+		console.log("UniversalId: " + $scope.universalId)
 
 		_bc.authenticateUniversal(
 			$scope.universalId,
