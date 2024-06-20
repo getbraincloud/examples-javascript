@@ -333,8 +333,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				// Display user's playerName or prompt them to add one
 				if (result.data.playerName === null || result.data.playerName === 'undefined' || result.data.playerName === "") {
 
-					// TODO
-					console.log("UniversalID: " + $scope.universalId)
+					// Update user's player name with their Universal ID
 					_bc.playerState.updateUserName($scope.universalId, function (result) {
 						console.log(true, "updateUserName");
 						console.log(result);
@@ -379,7 +378,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Setup new user
 			else {
-				console.log("UniversalID: " + $scope.universalId)
+				
+				// Update user's player name with their universal ID
 				_bc.playerState.updateUserName($scope.universalId, function (result) {
 					console.log(true, "updateUserName");
 					console.log(result);
@@ -611,7 +611,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// Win - In between the cards
 		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
-			$scope.gameStatusMsg = "You Won $" + $scope.bet * 1.5;
+			$scope.gameStatusMsg = $scope.bet * 1.5;
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.winBorder
@@ -629,7 +629,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 		// Loss - Same as high or low card (i.e. "post")
 		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
-			$scope.gameStatusMsg = "You Posted. You lost $" + $scope.bet;
+			$scope.gameStatusMsg = "$0";
 
 			// Set card borders / result indicators
 			$scope.card3Border = $scope.postBorder
@@ -654,7 +654,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 		// Loss - Outside the cards
 		else {
-			$scope.gameStatusMsg = "You Won $" + $scope.bet * 0.5;
+			$scope.gameStatusMsg = $scope.bet * 0.5;
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.lossBorder
@@ -727,7 +727,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$mdDialog.show(
 			$mdDialog.alert()
 				.title('Acey Duecey Rules')
-				.content('Two cards are shown to the player. They are then able to bet on whether or not the third card will be between the two. If it is, they win their bet. If it is equal to either of the cards, they lose double their bet.')
+				.content("Two cards are shown. The player chooses a bet value and then flips the third card. If the third card is between the first two, the player wins 1.5x their bet. If it is outside, the player wins half their bet. But if the third card matches either the first or second card, the bet is lost. The game also has a Jackpot. While in a session, each time the player wins their Current Streak increases. But each time the player loses their bet, their Current Streak is reset to zero. If the player reaches the Streak goal, the Jackpot is won.")
 				.ok('Close')
 		);
 
