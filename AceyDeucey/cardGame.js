@@ -5,16 +5,17 @@ app.filter('stateLabel', function () {
 	return function (state) {
 		if ((state == undefined || state == null)) {
 			return state;
-		} 
+		}
 		else if (state === "NEW_HAND") {
 			return "Flip";
-		} 
+		}
 		else if (state === "DEAL") {
 			return "Next Round";
 		}
 	}
 });
 
+// Set card images
 app.filter('card', function () {
 	const cardImages = {
 		2: "FaceCards_2.svg",
@@ -35,7 +36,7 @@ app.filter('card', function () {
 	return function (card) {
 		if (card == undefined || card == null || card == "") {
 			return '<img src="AD_bcLogo_dark.png" class="card-class" />';
-		} 
+		}
 		else {
 			return '<img src="' + cardImages[card.value] + '" class="card-class" />';
 		}
@@ -67,7 +68,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			deck.push({ value: card, suit: suit });
 		});
 	});
-	
+
 	$scope.card1;
 	$scope.card2;
 	$scope.card3;
@@ -88,8 +89,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	const leaderBoardAround = 5;
 
-	$scope.message = "You're a Winner!";
-
 	// APP_ID:CHANNEL_TYPE:CHANNEL_ID
 	$scope.channelId = appId + ":gl:jackpot"
 
@@ -105,7 +104,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.updateDisplayedJackpot = function (newJackpotAmount) {
 		console.log("refreshing jack to: " + newJackpotAmount)
-		
+
 		$scope.$apply(function () {
 			$scope.currentJackpot = newJackpotAmount
 		});
@@ -124,7 +123,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			var newJackpotAmount = result.data.statistics.Jackpot
 
 			// Jackpot should never be zero. When a player collects the jackpot, reset it to a default value (defined in Design > Cloud Data > Global Properties)
-			if(newJackpotAmount === 0){
+			if (newJackpotAmount === 0) {
 				$scope.updateJackpot($scope.jackpotDefaultValue)
 			}
 
@@ -147,11 +146,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.resetStreak = function () {
 		var streakStat = "StreakOf"
-		if($scope.currentWinStreak < 10){
+		if ($scope.currentWinStreak < 10) {
 			streakStat += "0"
 		}
 		streakStat += $scope.currentWinStreak
-		
+
 		var statistics = {
 			[streakStat]: 1
 		};
@@ -166,27 +165,27 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	/** Event listeners for Insufficient Funds and Collect Jackpot modals */
 	addFundsButton.addEventListener("click", () => {
-	
+
 		// Increase balance by 500
 		$scope.freeMoney(500)
 		console.log("Increased balance by $500")
 		insufficientFundsDialog.close()
 	})
-	
+
 	cancelAddFundsButton.addEventListener("click", () => {
 		insufficientFundsDialog.close()
 	})
 
 	collectJackpotButton.addEventListener("click", () => {
 		console.log("adding " + $scope.currentJackpot + " dollars")
-		
+
 		$scope.awardCurrency($scope.currentJackpot)
 
 		$scope.updateJackpot("RESET")
 
 		// Reset win streak and update global stats (track average streak achieved by user)
 		$scope.resetStreak()
-		
+
 		collectJackpotDialog.close()
 	})
 
@@ -194,30 +193,30 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Logout automatically whenever the user refreshes or closes the application.
 	 */
 	window.addEventListener("beforeunload", (ev) => {
-		
+
 		// When false- the profileId is not cleared on logout. 
 		// This allows Reconnect Authentication as there will be a saved profile ID to reference when the user returns.
 		var forgetUser = false
-		
+
 		_bc.logoutOnApplicationClose(forgetUser)
 	})
 
 	$scope.updateUserBalance = function () {
 		var vcId = "bucks"
-		
+
 		_bc.virtualCurrency.getCurrency(vcId, (getCurrencyResponse) => {
 			var newBalance = getCurrencyResponse.data.currencyMap.bucks.balance
 			$scope.$apply(function () {
 				$scope.money = newBalance
 			});
-		})		
+		})
 	}
 
 	$scope.awardCurrency = function (amountToAward) {
 		var scriptName = "AwardCurrency"
 		var vcAmount = amountToAward
 		var scriptData = {
-			"vcAmount" : vcAmount
+			"vcAmount": vcAmount
 		}
 
 		_bc.script.runScript(scriptName, scriptData, () => {
@@ -229,7 +228,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		var scriptName = "ConsumeCurrency"
 		var vcAmount = amountToConsume
 		var scriptData = {
-			"vcAmount" : vcAmount
+			"vcAmount": vcAmount
 		}
 
 		_bc.script.runScript(scriptName, scriptData, () => {
@@ -243,18 +242,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	/**
 	 * Increment the number of wins since last loss (only a "POST" counts as a loss)
 	 */
-	$scope.updateCurrentWinStreak = function () {		
+	$scope.updateCurrentWinStreak = function () {
 		$scope.currentWinStreak++
 
-		if($scope.currentWinStreak == $scope.streakToWinJackpot){
+		if ($scope.currentWinStreak == $scope.streakToWinJackpot) {
 			console.log("YOU WON THE JACKPOT!")
 
-			// TODO:  modal
-
 			collectJackpotDialog.showModal()
-		}
-		else{
-			console.log("not. yet. you are at " + $scope.currentWinStreak + "but you need " + $scope.streakToWinJackpot)
 		}
 	}
 
@@ -263,14 +257,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * @param {*} rttMessage RTT Chat update message
 	 */
 	var rttCallback = function (rttMessage) {
-		
+
 		// Update Jackpot with value received from Chat message
-		if(rttMessage.data.content.jackpotAmount >= 0){
+		if (rttMessage.data.content.jackpotAmount >= 0) {
 			var newJackpotAmount = rttMessage.data.content.jackpotAmount
 			console.log("Jackpot Amount: " + newJackpotAmount)
 			$scope.updateDisplayedJackpot(newJackpotAmount)
 		}
-		else{
+		else {
 			console.log("not")
 		}
 	}
@@ -280,15 +274,15 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.connectToGlobalChannels = function () {
 		var maxReturn = 0
-		
+
 		_bc.chat.channelConnect($scope.channelId, maxReturn, channelConnectResponse => {
 			var status = channelConnectResponse.status
-			
-			if(status === 200) {
+
+			if (status === 200) {
 				console.log("Connected to Jackpot Updates channel")
 			}
-			else{
-				
+			else {
+
 				// TODO:  what do we do if we fail to connect to one of the channels?
 				console.log("Failed to connect to " + channel.name + " channel (ID: " + $scope.channelId + ")")
 			}
@@ -372,22 +366,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 					}
 				);
-
-				_bc.entity.getEntitiesByType(
-					'congratsMessage',
-					function (result) {
-						console.log(true, "readEntityByType");
-						console.log(result);
-
-						if (result.data && result.data.entities && result.data.entities.length > 0) {
-							$scope.$apply(function () {
-								if (result.data.entities[0].data['msg']) {
-									$scope.message = result.data.entities[0].data['msg'];
-								}
-							});
-						}
-					}
-				);
 			}
 
 			// Setup new user
@@ -407,7 +385,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Read Global Properties to get number of wins in a row required to collect the Jackpot
 			_bc.globalApp.readProperties(readPropertiesResponse => {
-				if(readPropertiesResponse.data.StreakToWinJackpot){
+				if (readPropertiesResponse.data.StreakToWinJackpot) {
 					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
 
 					$scope.$apply(function () {
@@ -415,10 +393,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					});
 				}
 
-				if(readPropertiesResponse.data.JackpotDefaultValue){
+				if (readPropertiesResponse.data.JackpotDefaultValue) {
 					var jackpotDefaultValue = readPropertiesResponse.data.JackpotDefaultValue.value
 
-					$scope.jackpotDefaultValue = jackpotDefaultValue				}
+					$scope.jackpotDefaultValue = jackpotDefaultValue
+				}
+
 			});
 
 			// Read Global Statistics to get current Jackpot amount
@@ -436,7 +416,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.enableRTT()
 		}
 
-		// TODO:  authentication request failed
 		else {
 			$scope.initializeGame()
 
@@ -446,9 +425,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$mdDialog.show(
 				$mdDialog.alert()
-
-					// TODO:  authentication failing is not necessarily due to an incorrect password...
-					.content('The password you entered was incorrect')
+					.content('Authentication Error')
 					.ok('Okay')
 			);
 		}
@@ -465,7 +442,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				$scope.state = "DEAL";
 				$scope.deal();
 			}
-		} 
+		}
 		else if ($scope.state === "DEAL") {
 			$scope.state = "NEW_HAND";
 			$scope.newHand();
@@ -486,7 +463,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 */
 	$scope.initializeGame = function () {
 		if (!_bc.brainCloudClient.isInitialized()) {
-			
+
 			// change this url if you want to point to another brainCloud server
 			_bc.brainCloudClient.setServerUrl(url);
 
@@ -504,9 +481,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			// to spit json requests/responses to the console
 			_bc.brainCloudClient.enableLogging(true);
 		}
-		
+
 		$scope.title = "Acey Deucey";
-		
+
 		$scope.userId = null
 		$scope.username = null
 
@@ -564,11 +541,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	$scope.reconnectUser = function () {
 		console.log("Looking for saved IDs to see if Reconnect Authentication is possible . . .")
 
-		if(_bc.canReconnect()){
+		if (_bc.canReconnect()) {
 			console.log("Profile and Anonymous IDs found. Attempting Reconnect Authentication . . .")
 			_bc.reconnect(loginCallback)
 		}
-		else{
+		else {
 			console.log("Profile and/or Anonymous IDs were not found. Going to login screen . . .")
 			$scope.goToLoginMenu()
 		}
@@ -585,7 +562,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// Reset card borders
 		$scope.resetCardBorders()
 
-		if($scope.money === 0){
+		if ($scope.money === 0) {
 			insufficientFundsDialog.showModal()
 		}
 
@@ -639,10 +616,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Set card borders / result indicators
 			$scope.card3Border = $scope.postBorder
-			if($scope.card1.value === $scope.card3.value){
+			if ($scope.card1.value === $scope.card3.value) {
 				$scope.card1Border = $scope.postBorder
 			}
-			else{
+			else {
 				$scope.card2Border = $scope.postBorder
 			}
 
@@ -694,7 +671,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	$scope.onLogin = function () {
-		
+
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
 		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;
@@ -717,22 +694,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			console.log(result);
 
 		}
-		);
-
-		_bc.entity.createEntity(
-			"congratsMessage", { "msg": $scope.message }, null,
-			function (result) {
-				console.log(true, "readEntityByType");
-				console.log(result);
-
-				$scope.$apply(function () {
-					$scope.showUsername = false;
-					$scope.showGame = true;
-				});
-
-			},
-			0
-		);
+		)
 	};
 
 	$scope.freeMoney = function (amount) {
@@ -862,10 +824,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * @returns True if a new hand is ready and the user can place a bet.
 	 */
 	$scope.canBet = function () {
-		if($scope.state === "DEAL"){
+		if ($scope.state === "DEAL") {
 			return true
 		}
-		
+
 		return false
 	}
 
@@ -873,13 +835,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Logs user out of brainCloud and returns to login screen.
 	 */
 	$scope.logout = function () {
-		
+
 		// When true- the profileId is cleared on logout. 
 		// This prevents Reconnect Authentication as there will be no saved profile ID to reference.
 		var forgetUser = true
 
 		$mdSidenav('left').close();
-		
+
 		_bc.logout(forgetUser, response => {
 			$scope.goToLoginMenu()
 			console.log("Logout Response: " + response)
@@ -887,7 +849,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	$scope.initializeGame()
-	//$scope.goToLoginMenu()
-	$scope.reconnectUser()
+	$scope.goToLoginMenu()
+	//$scope.reconnectUser()
 
 }]);

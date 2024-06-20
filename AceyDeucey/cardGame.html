@@ -1,10 +1,10 @@
 <html lang="en" ng-app="CardGame">
 
 <head>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-	<meta name="HandheldFriendly" content="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="HandheldFriendly" content="true" />
 
-	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
 
     <style>
         md-toolbar h1 {
@@ -12,7 +12,7 @@
             font-weight: 400;
             margin: auto;
         }
-    
+
         md-list .md-button {
             color: inherit;
             font-size: 24;
@@ -20,7 +20,7 @@
             text-align: left;
             width: 100%;
         }
-    
+
         .visuallyhidden {
             border: 0;
             clip: rect(0 0 0 0);
@@ -31,24 +31,24 @@
             position: absolute;
             width: 1px;
         }
-    
+
         .animate-show {
             line-height: 20px;
             opacity: 1;
             background: white;
         }
-    
+
         .animate-show.ng-hide-add.ng-hide-add-active,
         .animate-show.ng-hide-remove.ng-hide-remove-active {
             -webkit-transition: all linear 0.5s;
             transition: all linear 0.5s;
         }
-    
+
         .animate-show.ng-hide {
             opacity: 0;
             padding: 0 10px;
         }
-    
+
         [ng\:cloak],
         [ng-cloak],
         [data-ng-cloak],
@@ -57,33 +57,33 @@
         .x-ng-cloak {
             display: none !important;
         }
-    
+
         .card-class {
             /*height: 100px;
                             width: 100px;*/
         }
-    
+
         .card-back {
             background-color: rgb(19, 110, 181)
         }
-    
+
         .card {
             border-radius: 5px !important;
             box-shadow: 0 2px 5px 0 rgb(126, 127, 127);
             height: 170px;
             width: 160px;
         }
-    
+
         .number {
             font-size: 75px;
             text-align: center;
             color: rgb(19, 110, 181);
         }
-    
+
         md-card-content {
             height: 172px;
         }
-    
+
         .leaderboard-badge {
             background: rgb(63, 81, 181);
             border-radius: 28px;
@@ -93,7 +93,7 @@
             width: 38px;
             color: white;
         }
-    
+
         .sidenav-link {
             cursor: pointer;
             font-variant: small-caps;
@@ -128,7 +128,7 @@
             font-weight: bold;
             margin-top: -15;
         }
-    
+
         .game-data-label {
             font-size: 24px;
             font-weight: bold;
@@ -160,7 +160,6 @@
             font-size: 30px;
             font-weight: bolder;
         }
-        
     </style>
 </head>
 
@@ -170,13 +169,13 @@
 
         <!-- Sidebar menu and username-->
         <div layout="row" style="width: 33%; text-align: center; vertical-align: middle;">
-            <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()" ng-show="showGame || showLeaderboard"
-                style="margin-left: 5px; min-width: 40px;">
-        
+            <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()"
+                ng-show="showGame || showLeaderboard" style="margin-left: 5px; min-width: 40px;">
+
                 <img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
-        
+
             </md-button>
-        
+
             <!-- Authenticated User's Name Label-->
             <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
         </div>
@@ -187,7 +186,9 @@
         </div>
 
         <!-- Help section-->
-        <div class="toolbar-header" ng-click="showHelp()" style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;" ng-show="showGame">
+        <div class="toolbar-header" ng-click="showHelp()"
+            style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;"
+            ng-show="showGame">
             <p>How to Play</p>
         </div>
 
@@ -210,9 +211,10 @@
                         <label>Password</label>
                         <input ng-model="password" type="password" required>
                     </md-input-container>
-                    
+
                     <div style="display: flex; flex-direction: row; align-items: center; justify-content: center;">
-                        <label style="color:gray"><i>If there is no account tied to the given universal ID, a new one will be auto-created using the password you enter.</i></label>
+                        <label style="color:gray"><i>If there is no account tied to the given universal ID, a new one
+                                will be auto-created using the password you enter.</i></label>
                     </div>
 
                     <br>
@@ -226,8 +228,9 @@
 
 
                     <md-input-container>
-                        <md-button class="md-raised md-warn md-primary" type="button" ng-click=" showForgotPassword = true; showLogin = false; "
-                                   ng-hide="loggingIn">Forgot Password</md-button>
+                        <md-button class="md-raised md-warn md-primary" type="button"
+                            ng-click=" showForgotPassword = true; showLogin = false; " ng-hide="loggingIn">Forgot
+                            Password</md-button>
                     </md-input-container>
 
                 </md-content>
@@ -237,36 +240,6 @@
             </div>
 
 
-        </div>
-    </form>
-
-    <!-- Between login and game -->
-    <form name="usernameForm" ng-submit="setUsername()" ng-show="showUsername" class="animate-show">
-
-        <div layout="row">
-
-            <div flex hide-sm hide-md>
-            </div>
-
-            <div flex>
-                <md-content class="md-padding" layout="column">
-                    <md-input-container>
-                        <label>Player Name</label>
-                        <input ng-model="username" type="text" required>
-                    </md-input-container>
-
-                    <md-input-container>
-                        <label>Congratulations Message</label>
-                        <input ng-model="message" type="text" required>
-                    </md-input-container>
-
-                    <md-button class="md-raised md-primary" type="submit" ng-hide="loggingIn">Save</md-button>
-                    <img src="loading-bubbles.svg" alt="Loading icon" style="height: 70px;" ng-show="loggingIn" />
-                </md-content>
-            </div>
-
-            <div flex hide-sm hide-md>
-            </div>
         </div>
     </form>
 
@@ -318,7 +291,7 @@
     </md-sidenav>
 
     <!-- Game Area -->
-    <div layout="row" flex ng-show="showGame" class="animate-show" >
+    <div layout="row" flex ng-show="showGame" class="animate-show">
 
         <!-- Jackpot Info -->
         <div layout="column" flex id="content">
@@ -358,7 +331,8 @@
                 <div layout="row" layout-align="space-around">
 
                     <!-- Card 3 (flipped card) -->
-                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}" ng-click="dispatchButtonPress()">
+                    <md-card class="card" ng-class="{ 'card-back' : card3 === '' }" ng-style="{'border': card3Border}"
+                        ng-click="dispatchButtonPress()">
                         <md-card-content style="min-height: 100px">
                             <div ng-bind-html="card3 | card"></div>
                         </md-card-content>
@@ -367,7 +341,7 @@
 
                 <!-- Flip Card / Next Hand Section -->
                 <div layout="column" layout-align="space-between center" style="margin-top: 20px; margin-bottom: 20px;">
-                        
+
                     <!-- Flip Card / Next Round Button -->
                     <div layout="row">
                         <md-button class="md-fab md-primary" aria-label="Time" ng-click="dispatchButtonPress()">
@@ -377,7 +351,7 @@
                                 style="width: 24px; height: 24px;" />
                         </md-button>
                     </div>
-            
+
                     <!-- Flip Card / Next Round Indicator -->
                     <div layout="row">
                         <h2>{{state | stateLabel}}</h2>
@@ -387,7 +361,8 @@
                     <dialog id="insufficientFundsDialog" class="modal">
                         <p class="modal-title">Insufficient Funds</p>
                         <p class="modal-text">Would you like to add more funds to your balance?</p>
-                        <p class="modal-text" style="font-weight: lighter; font-style: italic;">This is a virtual transaction, no real money will be charged</p>
+                        <p class="modal-text" style="font-weight: lighter; font-style: italic;">This is a virtual
+                            transaction, no real money will be charged</p>
                         <div style="position: absolute; bottom: 10; right: 10;">
                             <button id="cancel" class="game-data-label" style="font-size: 36px;">Cancel</button>
                             <button id="addFunds" class="game-data-button" style="font-size: 36px;">Add $500</button>
@@ -401,7 +376,8 @@
                                 JACKPOT WINNER!</p>
                             <p style="font-size: 30px; margin-top: 0;">{{streakToWinJackpot}} GAMES IN A ROW!</p>
                             <div style="position: absolute; left: 0; right: 0; margin-top: 50;">
-                                <button id="collectJackpotButton" class="game-data-button" style="font-size: 75px;">Collect
+                                <button id="collectJackpotButton" class="game-data-button"
+                                    style="font-size: 75px;">Collect
                                     ${{currentJackpot | currency:"":0}}</button>
                             </div>
                         </div>
@@ -417,16 +393,21 @@
                     <div class="grid-item game-data-label">${{money | currency:"":0}}</div>
                     <div class="grid-item game-data-label">${{bet}}</div>
                     <div class="grid-item game-data-label">{{gameStatusMsg}}</div>
-                     <div class="grid-item game-data-label">{{currentWinStreak}}</div>
+                    <div class="grid-item game-data-label">{{currentWinStreak}}</div>
                     <div class="grid-item game-data-button">
                         <md-button class="game-data-button" ng-click="freeMoney(100)">ADD VIRTUAL MONEY</md-button>
                     </div>
                     <div class="grid-item game-data-label">
-                        <md-button class="game-data-button" ng-click="customBetClick(2)" ng-disabled="canBet()">$2</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(10)" ng-disabled="canBet()">$10</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(20)" ng-disabled="canBet()">$20</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(50)" ng-disabled="canBet()">$50</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(100)" ng-disabled="canBet()">MAX</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(2)"
+                            ng-disabled="canBet()">$2</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(10)"
+                            ng-disabled="canBet()">$10</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(20)"
+                            ng-disabled="canBet()">$20</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(50)"
+                            ng-disabled="canBet()">$50</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(100)"
+                            ng-disabled="canBet()">MAX</md-button>
                     </div>
                 </div>
                 <!-- DED-->
@@ -445,9 +426,11 @@
                 <md-list layout="column">
 
                     <div layout="row">
-                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)" ng-disabled="disablePrev">Prev</md-button>
+                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)"
+                            ng-disabled="disablePrev">Prev</md-button>
 
-                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)" ng-disabled="disableNext">Next</md-button>
+                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)"
+                            ng-disabled="disableNext">Next</md-button>
                     </div>
 
                     <md-item ng-repeat="player in leaderboard">
@@ -458,7 +441,8 @@
                             </div>
                             <div class="md-tile-content" style="padding-left: 20px;">
                                 <h3>{{ player.name || player.playerId}}</h3>
-                                <h4>Dollars Won: ${{ player.data.DollarsWon | currency:"":0}} Refills: {{ player.data.Refills}}</h4>
+                                <h4>Dollars Won: ${{ player.data.DollarsWon | currency:"":0}} Refills: {{
+                                    player.data.Refills}}</h4>
                             </div>
                         </md-item-content>
 
@@ -493,12 +477,12 @@
 
 
     <!-- Min Version <script src="brainCloudClient.min.js"></script>-->
-    
+
     <script src="brainCloudClient/brainCloudBase.js"></script>
     <script src="brainCloudClient/brainCloudClient.js"></script>
     <script src="brainCloudClient/brainCloudWrapper.js"></script>
-    
-    
+
+
     <script src="brainCloudClient/brainCloudClient-abtests.js"></script>
     <script src="brainCloudClient/brainCloudClient-app-store.js"></script>
     <script src="brainCloudClient/brainCloudClient-async-match.js"></script>
