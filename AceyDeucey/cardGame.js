@@ -339,6 +339,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						$scope.showGame = false
 						$scope.showUsername = true;
 					});
+
+					// TODO
+					_bc.playerState.updateUserName($scope.universalId, function (result) {
+						console.log(true, "updateUserName");
+						console.log(result);
+					}
+					)
+
 				}
 				else {
 					$scope.username = result.data.playerName
@@ -687,16 +695,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		);
 	};
 
-	$scope.setUsername = function () {
-
-		_bc.playerState.updateUserName($scope.username, function (result) {
-			console.log(true, "updateUserName");
-			console.log(result);
-
-		}
-		)
-	};
-
 	$scope.freeMoney = function (amount) {
 
 		var incrementData = { Refills: 1 };
@@ -849,7 +847,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	$scope.initializeGame()
-	$scope.goToLoginMenu()
-	//$scope.reconnectUser()
+	//$scope.goToLoginMenu()
+	$scope.reconnectUser()
 
 }]);
