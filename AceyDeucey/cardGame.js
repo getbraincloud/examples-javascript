@@ -44,9 +44,9 @@ app.filter('card', function () {
 });
 
 // Application IDs defined in PortalX: App > Design > Core App Info
-var appId = "yourAppId"
-var appSecret = "yourAppSecret"
-var url = "yourServerURL"
+var appId = "39480"
+var appSecret = "7091f81e-3d1e-40b9-9ed0-271f90836d48"
+var url = "https://api.internal.braincloudservers.com"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
@@ -96,8 +96,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.currentWinStreak = 0
 
-	$scope.jackpotDefaultValue = 0
-
 	// TODO
 	$scope.quickBet1 = 0
 	$scope.quickBet2 = 0
@@ -133,8 +131,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			var newJackpotAmount = result.data.statistics.Jackpot
 
 			// Jackpot should never be zero. When a player collects the jackpot, reset it to a default value (defined in Design > Cloud Data > Global Properties)
-			if (newJackpotAmount === 0) {
-				$scope.updateJackpot($scope.jackpotDefaultValue)
+			if (newJackpotAmount === 0) {				
+				var defaultResetValue = 0
+				
+				_bc.globalApp.readProperties(result => {
+					defaultResetValue = result.data.JackpotDefaultValue.value
+					
+					$scope.updateJackpot(defaultResetValue)
+				});
+
+				
 			}
 
 			// Send updated Jackpot amount through Chat Channel
@@ -447,13 +453,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					});
 				}
 
-				// Read default starting value of Jackpot (also the value it will reset to upon collection)
-				if (readPropertiesResponse.data.JackpotDefaultValue) {
-					var jackpotDefaultValue = readPropertiesResponse.data.JackpotDefaultValue.value
-
-					$scope.jackpotDefaultValue = jackpotDefaultValue
-				}
-
 				// Read values for Quick Bet buttons
 
 				// TODO
@@ -472,13 +471,22 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			// Read Global Statistics to get current Jackpot amount
 			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
-				if (readAllGlobalStatsResponse.data.statistics.Jackpot < $scope.jackpotDefaultValue) {
-					$scope.updateJackpot($scope.jackpotDefaultValue)
+
+				var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
+
+				if (currentJackpot === 0) {
+					var defaultResetValue = 0
+
+					_bc.globalApp.readProperties(result => {
+						defaultResetValue = result.data.JackpotDefaultValue.value
+						
+						$scope.updateJackpot(defaultResetValue)
+					});
 				}
-				else {
-					var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
+				else{
 					$scope.updateDisplayedJackpot(currentJackpot)
 				}
+				
 			});
 
 			// Upon login, enable RTT to connect to Chat Channel to listen for Jackpot updates
