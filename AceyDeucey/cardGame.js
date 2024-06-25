@@ -250,7 +250,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		})
 	}
 
-	$scope.consumeCurrency = function (amountToConsume) {
+	$scope.consumeCurrency = function (amountToConsume) {		
 		var scriptName = "ConsumeCurrency"
 		var vcAmount = amountToConsume
 		var scriptData = {
@@ -684,7 +684,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(true);
 
-			$scope.awardCurrency($scope.bet * 1.5)
+			$scope.awardCurrency(($scope.bet * 1.5) - $scope.bet)
 
 			$scope.updateCurrentWinStreak()
 		}
@@ -708,7 +708,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			$scope.consumeCurrency($scope.bet)
+			$scope.consumeCurrency($scope.bet * 1)
 
 			// Reset win streak and update global stats (track average streak achieved by user)
 			$scope.resetStreak()
