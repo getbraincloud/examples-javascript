@@ -398,15 +398,15 @@
                         <md-button class="game-data-button" ng-click="freeMoney(100)">ADD VIRTUAL MONEY</md-button>
                     </div>
                     <div class="grid-item game-data-label">
-                        <md-button class="game-data-button" ng-click="customBetClick(2)"
-                            ng-disabled="canBet()">$2</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(10)"
-                            ng-disabled="canBet()">$10</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(20)"
-                            ng-disabled="canBet()">$20</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(50)"
-                            ng-disabled="canBet()">$50</md-button>
-                        <md-button class="game-data-button" ng-click="customBetClick(100)"
+                        <md-button class="game-data-button" ng-click="customBetClick(quickBet1)"
+                            ng-disabled="canBet()">${{quickBet1}}</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(quickBet2)"
+                            ng-disabled="canBet()">${{quickBet2}}</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(quickBet3)"
+                            ng-disabled="canBet()">${{quickBet3}}</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(quickBet4)"
+                            ng-disabled="canBet()">${{quickBet4}}</md-button>
+                        <md-button class="game-data-button" ng-click="customBetClick(quickBetMax)"
                             ng-disabled="canBet()">MAX</md-button>
                     </div>
                 </div>

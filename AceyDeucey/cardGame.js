@@ -98,6 +98,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 	$scope.jackpotDefaultValue = 0
 
+	// TODO
+	$scope.quickBet1 = 0
+	$scope.quickBet2 = 0
+	$scope.quickBet3 = 0
+	$scope.quickBet4 = 0
+	$scope.quickBetMax = 0
+
+	// Percent of lost money that goes toward the Jackpot
+	$scope.jackpotCut = 0
+
 	/**
 	 * Refresh the displayed jackpot value.
 	 * @param {number} newJackpotAmount 
@@ -186,6 +196,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// Reset win streak and update global stats (track average streak achieved by user)
 		$scope.resetStreak()
 
+		// Increment TimesJackpotCollected stat
+		var statistics = {
+			"TimesJackpotCollected": 1
+		};
+
+		_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+			var status = result.status;
+			console.log("TimesJackpotCollected stat incremented " + status + " : " + JSON.stringify(result, null, 2));
+		});
+
 		collectJackpotDialog.close()
 	})
 
@@ -235,8 +255,23 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.updateUserBalance()
 		})
 
+		var jackpotCut = amountToConsume * $scope.jackpotCut
+		var houseCut = amountToConsume - jackpotCut
+
 		// User lost money, so Jackpot increases
-		$scope.updateJackpot(amountToConsume)
+		$scope.updateJackpot(amountToConsume * $scope.jackpotCut)
+
+		// Increment TotalWinnings stat with for House and Jackpot
+		var statistics = {
+			"TotalJackpotWinnings": jackpotCut,
+			"TotalHouseWinnings": houseCut
+		};
+		
+		_bc.globalStatistics.incrementGlobalStats(statistics, result =>
+		{
+			var status = result.status;
+			console.log("Total Winnings stats incremented for Jackpot and House " + status + " : " + JSON.stringify(result, null, 2));
+		});
 	}
 
 	/**
@@ -399,8 +434,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			}
 
-			// Read Global Properties to get number of wins in a row required to collect the Jackpot
+			// Read Global Properties to setup game
 			_bc.globalApp.readProperties(readPropertiesResponse => {
+				
+				console.log("Read Properties Response: " + JSON.stringify(readPropertiesResponse))
+				// Read number of wins in a row required to collect Jackpot
 				if (readPropertiesResponse.data.StreakToWinJackpot) {
 					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
 
@@ -409,11 +447,26 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					});
 				}
 
+				// Read default starting value of Jackpot (also the value it will reset to upon collection)
 				if (readPropertiesResponse.data.JackpotDefaultValue) {
 					var jackpotDefaultValue = readPropertiesResponse.data.JackpotDefaultValue.value
 
 					$scope.jackpotDefaultValue = jackpotDefaultValue
 				}
+
+				// Read values for Quick Bet buttons
+
+				// TODO
+				$scope.quickBet1 = readPropertiesResponse.data.QuickBet1.value
+				$scope.quickBet2 = readPropertiesResponse.data.QuickBet2.value
+				$scope.quickBet3 = readPropertiesResponse.data.QuickBet3.value
+				$scope.quickBet4 = readPropertiesResponse.data.QuickBet4.value
+				$scope.quickBetMax = readPropertiesResponse.data.QuickBetMax.value
+
+				$scope.bet = $scope.quickBet1
+
+				// Read Jackpot Cut (the amount of money lost that goes to the Jackpot)
+				$scope.jackpotCut = readPropertiesResponse.data.JackpotCut.value
 
 			});
 
@@ -508,7 +561,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.resetCardBorders()
 
-		$scope.bet = 2;
+		$scope.bet = 0;
 		$scope.gamesLost = 0;
 		$scope.gamesWon = 0;
 		$scope.dollarsWon = 0;
