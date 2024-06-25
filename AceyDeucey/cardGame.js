@@ -138,6 +138,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					defaultResetValue = result.data.JackpotDefaultValue.value
 					
 					$scope.updateJackpot(defaultResetValue)
+
+					var statistics = {
+						"TotalHouseWinnings": -1 * defaultResetValue
+					};
+					
+					_bc.globalStatistics.incrementGlobalStats(statistics, result =>
+					{
+						var status = result.status;
+						console.log(status + " : " + JSON.stringify(result, null, 2));
+					});
 				});
 
 				
@@ -238,6 +248,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		})
 	}
 
+	/**
+	 * Increase the user's balance and decrement the "house's" TotalWinnings Global Stat
+	 * @param {number} amountToAward amount to award/decrement
+	 */
 	$scope.awardCurrency = function (amountToAward) {
 		var scriptName = "AwardCurrency"
 		var vcAmount = amountToAward
@@ -247,9 +261,22 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		_bc.script.runScript(scriptName, scriptData, () => {
 			$scope.updateUserBalance()
+
+			var statistics = {
+				"TotalHouseWinnings": -1 * amountToAward
+			};
+
+			_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+				var status = result.status;
+				console.log(status + " : " + JSON.stringify(result, null, 2));
+			});
 		})
 	}
 
+	/**
+	 * Decrease the user's balance and increment the "house's" TotalWinnings Global Stat
+	 * @param {number} amountToConsume amount to consume/increment
+	 */
 	$scope.consumeCurrency = function (amountToConsume) {		
 		var scriptName = "ConsumeCurrency"
 		var vcAmount = amountToConsume
@@ -481,6 +508,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						defaultResetValue = result.data.JackpotDefaultValue.value
 						
 						$scope.updateJackpot(defaultResetValue)
+
+						var statistics = {
+							"TotalHouseWinnings": -1 * defaultResetValue
+						};
+						
+						_bc.globalStatistics.incrementGlobalStats(statistics, result =>
+						{
+							var status = result.status;
+							console.log(status + " : " + JSON.stringify(result, null, 2));
+						});
 					});
 				}
 				else{
