@@ -106,6 +106,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// Percent of lost money that goes toward the Jackpot
 	$scope.jackpotCut = 0
 
+	// Amount of currency to be added for free
+	// (New User, ADD VIRTUAL MONEY clicked, etc.)
+	$scope.freeMoneyAmount = 0
+
 	/**
 	 * Refresh the displayed jackpot value.
 	 * @param {number} newJackpotAmount 
@@ -193,7 +197,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	addFundsButton.addEventListener("click", () => {
 
 		// Increase balance by 500
-		$scope.freeMoney(500)
+		$scope.freeMoney($scope.freeMoneyAmount)
 		console.log("Increased balance by $500")
 		insufficientFundsDialog.close()
 	})
@@ -395,6 +399,70 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.userId = result.data.id;
 
+			// Read Global Properties to setup game
+
+			_bc.globalApp.readProperties(readPropertiesResponse => {
+				
+				console.log("Read Properties Response: " + JSON.stringify(readPropertiesResponse))
+				// Read number of wins in a row required to collect Jackpot
+				if (readPropertiesResponse.data.StreakToWinJackpot) {
+					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
+
+					$scope.$apply(function () {
+						$scope.streakToWinJackpot = streakToWinJackpot
+					});
+				}
+				
+				if(readPropertiesResponse.data.AddFreeMoney){
+					$scope.freeMoneyAmount = parseInt(readPropertiesResponse.data.AddFreeMoney.value)
+				}
+
+				// Read values for Quick Bet buttons
+
+				// TODO
+				$scope.quickBet1 = parseInt(readPropertiesResponse.data.QuickBet1.value)
+				$scope.quickBet2 = parseInt(readPropertiesResponse.data.QuickBet2.value)
+				$scope.quickBet3 = parseInt(readPropertiesResponse.data.QuickBet3.value)
+				$scope.quickBet4 = parseInt(readPropertiesResponse.data.QuickBet4.value)
+				$scope.quickBetMax = parseInt(readPropertiesResponse.data.QuickBetMax.value)
+
+				$scope.bet = $scope.quickBet1
+
+				// Read Jackpot Cut (the amount of money lost that goes to the Jackpot)
+				$scope.jackpotCut = readPropertiesResponse.data.JackpotCut.value
+
+			});
+
+			// Read Global Statistics to get current Jackpot amount
+			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
+
+				var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
+
+				if (currentJackpot === 0) {
+					var defaultResetValue = 0
+
+					_bc.globalApp.readProperties(result => {
+						defaultResetValue = result.data.JackpotDefaultValue.value
+						
+						$scope.updateJackpot(defaultResetValue)
+
+						var statistics = {
+							"TotalHouseWinnings": -1 * defaultResetValue
+						};
+						
+						_bc.globalStatistics.incrementGlobalStats(statistics, result =>
+						{
+							var status = result.status;
+							console.log(status + " : " + JSON.stringify(result, null, 2));
+						});
+					});
+				}
+				else{
+					$scope.updateDisplayedJackpot(currentJackpot)
+				}
+				
+			});
+
 			// Read info from existing/returning user
 			if (result.data && result.data.newUser === "false") {
 
@@ -456,7 +524,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				)
 
 				// Give the user bonus money to start
-				$scope.awardCurrency(100)
+				$scope.awardCurrency($scope.freeMoneyAmount)
 
 
 				// Hide login section and display the user name config
@@ -466,65 +534,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				});
 
 			}
-
-			// Read Global Properties to setup game
-			_bc.globalApp.readProperties(readPropertiesResponse => {
-				
-				console.log("Read Properties Response: " + JSON.stringify(readPropertiesResponse))
-				// Read number of wins in a row required to collect Jackpot
-				if (readPropertiesResponse.data.StreakToWinJackpot) {
-					var streakToWinJackpot = readPropertiesResponse.data.StreakToWinJackpot.value
-
-					$scope.$apply(function () {
-						$scope.streakToWinJackpot = streakToWinJackpot
-					});
-				}
-
-				// Read values for Quick Bet buttons
-
-				// TODO
-				$scope.quickBet1 = readPropertiesResponse.data.QuickBet1.value
-				$scope.quickBet2 = readPropertiesResponse.data.QuickBet2.value
-				$scope.quickBet3 = readPropertiesResponse.data.QuickBet3.value
-				$scope.quickBet4 = readPropertiesResponse.data.QuickBet4.value
-				$scope.quickBetMax = readPropertiesResponse.data.QuickBetMax.value
-
-				$scope.bet = $scope.quickBet1
-
-				// Read Jackpot Cut (the amount of money lost that goes to the Jackpot)
-				$scope.jackpotCut = readPropertiesResponse.data.JackpotCut.value
-
-			});
-
-			// Read Global Statistics to get current Jackpot amount
-			_bc.globalStatistics.readAllGlobalStats(readAllGlobalStatsResponse => {
-
-				var currentJackpot = readAllGlobalStatsResponse.data.statistics.Jackpot
-
-				if (currentJackpot === 0) {
-					var defaultResetValue = 0
-
-					_bc.globalApp.readProperties(result => {
-						defaultResetValue = result.data.JackpotDefaultValue.value
-						
-						$scope.updateJackpot(defaultResetValue)
-
-						var statistics = {
-							"TotalHouseWinnings": -1 * defaultResetValue
-						};
-						
-						_bc.globalStatistics.incrementGlobalStats(statistics, result =>
-						{
-							var status = result.status;
-							console.log(status + " : " + JSON.stringify(result, null, 2));
-						});
-					});
-				}
-				else{
-					$scope.updateDisplayedJackpot(currentJackpot)
-				}
-				
-			});
 
 			// Upon login, enable RTT to connect to Chat Channel to listen for Jackpot updates
 			$scope.enableRTT()
@@ -745,7 +754,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.gameResults.push(false);
 
-			$scope.consumeCurrency($scope.bet * 1)
+			$scope.consumeCurrency($scope.bet)
 
 			// Reset win streak and update global stats (track average streak achieved by user)
 			$scope.resetStreak()
@@ -786,7 +795,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	$scope.onLogin = function () {
-		console.log("onLogin")
+		
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
 		if ($scope.loggingIn || $scope.loginForm.$invalid) {
 			return;
@@ -794,7 +803,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		$scope.loggingIn = true;
 
-		console.log("UniversalId: " + $scope.universalId)
+		
 
 		_bc.authenticateUniversal(
 			$scope.universalId,
@@ -805,7 +814,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	};
 
 	$scope.freeMoney = function (amount) {
-
+		
 		var incrementData = { Refills: 1 };
 
 		$scope.refills++;
