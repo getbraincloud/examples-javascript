@@ -724,9 +724,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.card3Border = $scope.winBorder
 
 			$scope.gamesWon++;
-			$scope.dollarsWon += $scope.bet;
+			$scope.dollarsWon += $scope.bet * 1.5;
 			incrementData["Wins"] = 1;
-			incrementData["DollarsWon"] = $scope.bet;
+			incrementData["DollarsWon"] = $scope.bet * 1.5;
 
 			$scope.gameResults.push(true);
 
@@ -777,7 +777,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 			$scope.updateCurrentWinStreak()
 		}
-
+		
 		_bc.globalStatistics.incrementGlobalStats(
 			{ GamesPlayed: 1 },
 			function (result) { console.log(true, "incrementGlobalGameStatistics"); console.log(result.status, 200, "Expecting 200"); },
@@ -786,14 +786,17 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		_bc.socialLeaderboard.postScoreToLeaderboard(
 			"AceyDeucyPlayers",
-			($scope.dollarsWon * 1000) - $scope.refills,
+			$scope.dollarsWon,
 			{ "DollarsWon": $scope.dollarsWon, "Refills": $scope.refills },
-			function (result) { console.log(true, "postScoreCallback"); console.log(result.status, 200, "Expecting 200"); }
+			function (result) {
+				console.log(true, "postScoreCallback")
+				console.log(result.status, 200, "Expecting 200")
+			}
 		);
-
 
 	};
 
+	// Authentication callback function
 	$scope.onLogin = function () {
 		
 		// Prevent multiple simultanious logins, or Mobile Safari's busted form validation
