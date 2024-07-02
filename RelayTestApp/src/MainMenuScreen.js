@@ -21,7 +21,18 @@ class MainMenuScreen extends Component
 
     render()
     {
-        let versionSuffix = (ids.url) ? " - dev" : " - prod"
+        let versionSuffix = ""
+        switch(ids.url){
+            case "https://api.internal.braincloudservers.com":
+                versionSuffix = " - internal"
+                break
+            case "https://api.internalg.braincloudservers.com":
+                versionSuffix = " - internalg"
+                break
+            default:
+                versionSuffix = " - prod"
+                break
+        }
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>

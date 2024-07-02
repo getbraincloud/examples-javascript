@@ -26,7 +26,18 @@ class LoginScreen extends Component
 
     render()
     {
-        let versionSuffix = (ids.url) ? " - dev" : " - prod"
+        let versionSuffix = ""
+        switch(ids.url){
+            case "https://api.internal.braincloudservers.com":
+                versionSuffix = " - internal"
+                break
+            case "https://api.internalg.braincloudservers.com":
+                versionSuffix = " - internalg"
+                break
+            default:
+                versionSuffix = " - prod"
+                break
+        }
         return (
             <div className="LoginScreen">
                 <div id="login-area">
