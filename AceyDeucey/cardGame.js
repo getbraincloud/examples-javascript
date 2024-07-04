@@ -194,6 +194,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	}
 
 	/** Event listeners for Insufficient Funds and Collect Jackpot modals */
+
+	// Refill Balance after being prompted by Insufficient Funds dialog that a bet cannot be placed
 	addFundsButton.addEventListener("click", () => {
 
 		// Increase balance by 500
@@ -718,22 +720,25 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		// Win - In between the cards
 		if ($scope.card3.value > $scope.card1.value && $scope.card3.value < $scope.card2.value) {
-			$scope.gameStatusMsg = "$" + $scope.bet * 1.5;
+			var winAmount = $scope.bet * 1.5
+			
+			$scope.gameStatusMsg = "$" + winAmount
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.winBorder
 
 			$scope.gamesWon++;
-			$scope.dollarsWon += $scope.bet * 1.5;
+			$scope.dollarsWon += winAmount;
 			incrementData["Wins"] = 1;
-			incrementData["DollarsWon"] = $scope.bet * 1.5;
+			incrementData["DollarsWon"] = winAmount;
 
 			$scope.gameResults.push(true);
 
-			$scope.awardCurrency(($scope.bet * 1.5) - $scope.bet)
+			$scope.awardCurrency((winAmount) - $scope.bet)
 
 			$scope.updateCurrentWinStreak()
 		}
+		
 		// Loss - Same as high or low card (i.e. "post")
 		else if ($scope.card3.value === $scope.card1.value || $scope.card3.value === $scope.card2.value) {
 			$scope.gameStatusMsg = "$0";
@@ -759,21 +764,24 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			// Reset win streak and update global stats (track average streak achieved by user)
 			$scope.resetStreak()
 		}
-		// Loss - Outside the cards
+
+		// Win - Outside the cards
 		else {
-			$scope.gameStatusMsg = "$" + $scope.bet * 0.5;
+			var winAmount = $scope.bet * 0.5
+			
+			$scope.gameStatusMsg = "$" + winAmount;
 
 			// Set card border / result indicator
 			$scope.card3Border = $scope.lossBorder
 
 			$scope.gamesWon++;
-			$scope.dollarsWon += $scope.bet * 0.5;
+			$scope.dollarsWon += winAmount;
 			incrementData["Wins"] = 1;
-			incrementData["DollarsWon"] = $scope.bet * 0.5;
+			incrementData["DollarsWon"] = winAmount;
 
 			$scope.gameResults.push(false);
 
-			$scope.consumeCurrency($scope.bet * 0.5)
+			$scope.consumeCurrency(winAmount)
 
 			$scope.updateCurrentWinStreak()
 		}
@@ -781,6 +789,12 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		_bc.globalStatistics.incrementGlobalStats(
 			{ GamesPlayed: 1 },
 			function (result) { console.log(true, "incrementGlobalGameStatistics"); console.log(result.status, 200, "Expecting 200"); },
+			0
+		);
+
+		_bc.playerStatistics.incrementUserStats(
+			incrementData,
+			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
 		);
 
@@ -825,6 +839,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			incrementData,
 			function (result) { console.log(true, "updatePlayerStatistics"); console.log(result.status, 200, "Expecting 200"); },
 			0
+		);
+
+		_bc.socialLeaderboard.postScoreToLeaderboard(
+			"AceyDeucyPlayers",
+			$scope.dollarsWon,
+			{ "DollarsWon": $scope.dollarsWon, "Refills": $scope.refills },
+			function (result) {
+				console.log(true, "postScoreCallback")
+				console.log(result.status, 200, "Expecting 200")
+			}
 		);
 
 		$scope.awardCurrency(amount)
