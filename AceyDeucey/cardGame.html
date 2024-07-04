@@ -58,11 +58,6 @@
             display: none !important;
         }
 
-        .card-class {
-            /*height: 100px;
-                            width: 100px;*/
-        }
-
         .card-back {
             background-color: rgb(19, 110, 181)
         }
@@ -120,6 +115,7 @@
             font-size: 50px;
             font-weight: bold;
             color: rgb(63, 81, 181);
+            margin-top: 10;
         }
 
         .jackpot-streak {
@@ -244,12 +240,11 @@
     </form>
 
     <!-- Options Sidebar -->
-    <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left" style="top: 90px">
+    <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left">
         <md-toolbar class="md-theme-indigo">
             <h1 class="md-toolbar-tools">Options</h1>
         </md-toolbar>
         <md-content class="md-padding">
-
             <md-content>
                 <md-list>
                     <md-item>
@@ -259,7 +254,7 @@
                             </div>
                         </md-item-content>
                     </md-item>
-
+    
                     <md-item>
                         <md-item-content ng-click="showLeaderboards()" class="sidenav-link">
                             <div class="md-tile-content">
@@ -267,7 +262,7 @@
                             </div>
                         </md-item-content>
                     </md-item>
-
+    
                     <md-item>
                         <md-item-content ng-click="showHelp()" class="sidenav-link">
                             <div class="md-tile-content">
@@ -275,7 +270,7 @@
                             </div>
                         </md-item-content>
                     </md-item>
-
+    
                     <md-item>
                         <md-item-content ng-click="logout()" class="sidenav-link">
                             <div class="md-tile-content">
@@ -283,10 +278,8 @@
                             </div>
                         </md-item-content>
                     </md-item>
-
                 </md-list>
             </md-content>
-
         </md-content>
     </md-sidenav>
 
