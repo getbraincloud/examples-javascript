@@ -112,17 +112,17 @@
         }
 
         .jackpot-header {
-            font-size: 50px;
+            font-size: 40px;
             font-weight: bold;
             color: rgb(63, 81, 181);
             margin-top: 10;
         }
 
         .jackpot-streak {
-            font-size: 30;
-            font-style: italic;
+            font-size: 24px;
             font-weight: bold;
             margin-top: -15;
+            color: grey;
         }
 
         .game-data-label {
@@ -289,13 +289,13 @@
         <!-- Jackpot Info -->
         <div layout="column" flex id="content">
             <md-content layout="column" flex class="md-padding" style="overflow-x: hidden;">
-                <div layout="column" layout-align="end end">
-                    <div layout="column" layout-align="center center">
+                <div layout="column" layout-align="start end">
+                    <div layout="column" layout-align="center end">
                         <div layout="row">
                             <h3 class="jackpot-header" layout-align="end">JACKPOT:</h3>
                             <h3 class="jackpot-header" style="margin-left: 20;">${{currentJackpot | currency:"":0}}</h3>
                         </div>
-                        <div layout="row" layout-align="center center">
+                        <div layout="row" layout-align="end start">
                             <p class="jackpot-streak">{{streakToWinJackpot}}-Streak to Win!</p>
                         </div>
                     </div>
