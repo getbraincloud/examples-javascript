@@ -34,6 +34,9 @@ class LoginScreen extends Component
             case "https://api.internalg.braincloudservers.com":
                 versionSuffix = " - internalg"
                 break
+            case "https://api.internala.braincloudservers.com":
+                versionSuffix = " - internala"
+                break
             default:
                 versionSuffix = " - prod"
                 break
