@@ -110,6 +110,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// (New User, ADD VIRTUAL MONEY clicked, etc.)
 	$scope.freeMoneyAmount = 0
 
+	$scope.toggleSidenav = function () {
+		$mdSidenav('left').toggle();
+	}
+
 	/**
 	 * Refresh the displayed jackpot value.
 	 * @param {number} newJackpotAmount 
@@ -945,13 +949,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.title = "Acey Deucey";
 
 		$mdSidenav('left').close();
-	};
-
-	$scope.toggleLeftSideMenu = function () {
-		$mdSidenav('left').toggle()
-			.then(function () {
-				console.debug("toggle left is done");
-			});
 	};
 
 	/**

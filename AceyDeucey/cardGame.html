@@ -7,11 +7,13 @@
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
 
     <style>
-        md-toolbar h1 {
+        
+        /* TODO */
+        /* md-toolbar h1 {
             font-size: 1.250em;
             font-weight: 400;
             margin: auto;
-        }
+        } */
 
         md-list .md-button {
             color: inherit;
@@ -89,10 +91,11 @@
             color: white;
         }
 
-        .sidenav-link {
+        /* TODO */
+        /* .sidenav-link {
             cursor: pointer;
             font-variant: small-caps;
-        }
+        } */
 
         .modal {
             position: relative;
@@ -161,34 +164,73 @@
 
 <body layout="column" ng-controller="GameCtrl" ng-cloak class="ng-cloak">
 
-    <md-toolbar layout="row">
+    <!-- TOOLBAR was here -->
+    <md-toolbar layout="row" style="height: 5%;">
+        <div layout="row" style="width: 100%;">
+            <div layout="row" style="width: 100%; height: 100%; align-items: center;">
+                <md-button ng-click="toggleSidenav()">
+                    <img src="Icon_Menu.svg" style="height: 75%; width: 75%;"/>
+                </md-button>
 
-        <!-- Sidebar menu and username-->
-        <div layout="row" style="width: 33%; text-align: center; vertical-align: middle;">
-            <md-button class="md-raised md-primary" ng-click="toggleLeftSideMenu()"
-                ng-show="showGame || showLeaderboard" style="margin-left: 5px; min-width: 40px;">
-
-                <img src="Icon_Menu.svg" style="height: 28px; width: 28px;" />
-
-            </md-button>
-
-            <!-- Authenticated User's Name Label-->
-            <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
+                <div style="width: 32%;">
+                    <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
+                </div>
+            
+                <div style="width: 31%; text-align: center;">
+                    <p class="toolbar-header">{{title}}</p>
+                </div>
+            
+                <div style="width: 34%; text-align: right;">
+                    <p class="toolbar-header" style="margin-right: 1em;" ng-click="showHelp()">How to Play</p>
+                </div>
+            </div>
         </div>
-
-        <!-- Game Title -->
-        <div class="toolbar-header" style="width: 33%; text-align: center; vertical-align: middle;">
-            <p>{{title}}</p>
-        </div>
-
-        <!-- Help section-->
-        <div class="toolbar-header" ng-click="showHelp()"
-            style="margin-right: 1em; text-decoration: underline; width: 33%; text-align: right; vertical-align: middle;"
-            ng-show="showGame">
-            <p>How to Play</p>
-        </div>
-
+        
     </md-toolbar>
+
+    <md-sidenav md-component-id="left" class="md-sidenav-left md-whiteframe-z2"
+        style="height: 95%; position: absolute; top: 5%;">
+        <md-toolbar class="md-theme-indigo">
+            <h1 class="md-toolbar-tools">Options</h1>
+        </md-toolbar>
+        <md-content class="md-padding">
+            <md-content>
+                <md-list>
+                    <md-item>
+                        <md-item-content ng-click="showGameAgain()" class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Game</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+    
+                    <md-item>
+                        <md-item-content ng-click="showLeaderboards()" class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Leaderboards</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+    
+                    <md-item>
+                        <md-item-content ng-click="showHelp()" class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Help</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+    
+                    <md-item>
+                        <md-item-content ng-click="logout()" class="sidenav-link">
+                            <div class="md-tile-content">
+                                <h3>Log Out</h3>
+                            </div>
+                        </md-item-content>
+                    </md-item>
+                </md-list>
+            </md-content>
+        </md-content>
+    </md-sidenav>
 
     <form name="loginForm" ng-submit="onLogin()" ng-show="showLogin">
 
@@ -238,50 +280,6 @@
 
         </div>
     </form>
-
-    <!-- Options Sidebar -->
-    <md-sidenav class="md-sidenav-left md-whiteframe-z2" md-component-id="left">
-        <md-toolbar class="md-theme-indigo">
-            <h1 class="md-toolbar-tools">Options</h1>
-        </md-toolbar>
-        <md-content class="md-padding">
-            <md-content>
-                <md-list>
-                    <md-item>
-                        <md-item-content ng-click="showGameAgain()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Game</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="showLeaderboards()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Leaderboards</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="showHelp()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Help</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="logout()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Log Out</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-                </md-list>
-            </md-content>
-        </md-content>
-    </md-sidenav>
 
     <!-- Game Area -->
     <div layout="row" flex ng-show="showGame" class="animate-show">
