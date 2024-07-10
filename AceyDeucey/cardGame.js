@@ -202,9 +202,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// Refill Balance after being prompted by Insufficient Funds dialog that a bet cannot be placed
 	addFundsButton.addEventListener("click", () => {
 
-		// Increase balance by 500
+		// Increase balance by refill amount defined as Global Property
 		$scope.freeMoney($scope.freeMoneyAmount)
-		console.log("Increased balance by $500")
+		console.log("Increased balance by $" + $scope.freeMoneyAmount)
 		insufficientFundsDialog.close()
 	})
 
@@ -491,6 +491,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 					$scope.$apply(function () {
 						$scope.showLogin = false;
 						$scope.showGame = true;
+						$scope.loggedIn = true
 					});
 				}
 
@@ -513,8 +514,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 				// Hide login section and display the gameplay
 				$scope.$apply(function () {
-					$scope.showLogin = false;
-					$scope.showGame = true;
+					$scope.showLogin = false
+					$scope.showGame = true
+					$scope.loggedIn = true
 				});
 			}
 
@@ -535,8 +537,9 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 				// Hide login section and display the user name config
 				$scope.$apply(function () {
-					$scope.showLogin = false;
-					$scope.showGame = true;
+					$scope.showLogin = false
+					$scope.showGame = true
+					$scope.loggedIn = true
 				});
 
 			}
@@ -548,9 +551,10 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		else {
 			$scope.initializeGame()
 
-			$scope.showLogin = true;
-			$scope.showGame = false;
-			$scope.showLeaderboard = false;
+			$scope.showLogin = true
+			$scope.showGame = false
+			$scope.loggedIn = false
+			$scope.showLeaderboard = false
 
 			$mdDialog.show(
 				$mdDialog.alert()
@@ -658,11 +662,14 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Resets game (cards, stats, etc.) and displays login menu.
 	 */
 	$scope.goToLoginMenu = function () {
+		console.log("go to login menu")
+		
 		$scope.initializeGame()
 
-		$scope.showLogin = true;
-		$scope.showGame = false;
-		$scope.showLeaderboard = false;
+		$scope.showLogin = true
+		$scope.showGame = false
+		$scope.loggedIn = false
+		$scope.showLeaderboard = false
 	}
 
 	/**
@@ -983,8 +990,19 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$mdSidenav('left').close();
 
 		_bc.logout(forgetUser, response => {
-			$scope.goToLoginMenu()
 			console.log("Logout Response: " + response)
+
+			$scope.$apply(function () {
+				$scope.initializeGame()
+				
+				$scope.showLogin = true
+				$scope.showGame = false
+				$scope.showLeaderboard = false
+				$scope.loggedIn = false
+
+				$scope.universalId = ""
+				$scope.password = ""
+			});
 		})
 	}
 

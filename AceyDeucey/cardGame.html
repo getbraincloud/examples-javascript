@@ -7,13 +7,6 @@
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.7.1/angular-material.min.css">
 
     <style>
-        
-        /* TODO */
-        /* md-toolbar h1 {
-            font-size: 1.250em;
-            font-weight: 400;
-            margin: auto;
-        } */
 
         md-list .md-button {
             color: inherit;
@@ -91,12 +84,6 @@
             color: white;
         }
 
-        /* TODO */
-        /* .sidenav-link {
-            cursor: pointer;
-            font-variant: small-caps;
-        } */
-
         .modal {
             position: relative;
             bottom: 20%;
@@ -164,73 +151,44 @@
 
 <body layout="column" ng-controller="GameCtrl" ng-cloak class="ng-cloak">
 
-    <!-- TOOLBAR was here -->
     <md-toolbar layout="row" style="height: 5%;">
         <div layout="row" style="width: 100%;">
             <div layout="row" style="width: 100%; height: 100%; align-items: center;">
-                <md-button ng-click="toggleSidenav()">
-                    <img src="Icon_Menu.svg" style="height: 75%; width: 75%;"/>
-                </md-button>
-
-                <div style="width: 32%;">
-                    <p class="toolbar-header" style="margin-left: 1em;">{{username}}</p>
+            
+                <div style="width: 33%;">
+                    <md-button>
+                        <img src="playing-cards.svg" style="width: 80%; height: 80%;" ng-click="showGameAgain()" ng-show="loggedIn" />
+                    </md-button>
+            
+                    <md-button>
+                        <img src="leaderboard.svg" style="width: 80%; height: 80%;" ng-click="showLeaderboards()" ng-show="loggedIn" />
+                    </md-button>
+            
+                    <md-button>
+                        <img src="help.svg" style="width: 80%; height: 80%;" ng-click="showHelp()" ng-show="loggedIn" />
+                    </md-button>
+            
+                    <md-button>
+                        <img src="info.svg" style="width: 80%; height: 80%;" ng-click="showHelp()" ng-show="loggedIn" />
+                    </md-button>
                 </div>
             
-                <div style="width: 31%; text-align: center;">
+                <div style="width: 33%; text-align: center; margin-left: 2em;">
                     <p class="toolbar-header">{{title}}</p>
                 </div>
             
-                <div style="width: 34%; text-align: right;">
-                    <p class="toolbar-header" style="margin-right: 1em;" ng-click="showHelp()">How to Play</p>
+                <div layout="row" style="height: 100%; width: 34%; align-items: center; justify-content: end;">
+                    <p class="toolbar-header">{{username}}</p>
+            
+                    <md-button>
+                        <img src="logout.svg" style="width: 80%; height: 80%;" ng-click="logout()" ng-show="loggedIn" />
+                    </md-button>
                 </div>
+            
             </div>
         </div>
         
     </md-toolbar>
-
-    <md-sidenav md-component-id="left" class="md-sidenav-left md-whiteframe-z2"
-        style="height: 95%; position: absolute; top: 5%;">
-        <md-toolbar class="md-theme-indigo">
-            <h1 class="md-toolbar-tools">Options</h1>
-        </md-toolbar>
-        <md-content class="md-padding">
-            <md-content>
-                <md-list>
-                    <md-item>
-                        <md-item-content ng-click="showGameAgain()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Game</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="showLeaderboards()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Leaderboards</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="showHelp()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Help</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-    
-                    <md-item>
-                        <md-item-content ng-click="logout()" class="sidenav-link">
-                            <div class="md-tile-content">
-                                <h3>Log Out</h3>
-                            </div>
-                        </md-item-content>
-                    </md-item>
-                </md-list>
-            </md-content>
-        </md-content>
-    </md-sidenav>
 
     <form name="loginForm" ng-submit="onLogin()" ng-show="showLogin">
 
@@ -356,7 +314,7 @@
                             transaction, no real money will be charged</p>
                         <div style="position: absolute; bottom: 10; right: 10;">
                             <button id="cancel" class="game-data-label" style="font-size: 36px;">Cancel</button>
-                            <button id="addFunds" class="game-data-button" style="font-size: 36px;">Add $500</button>
+                            <button id="addFunds" class="game-data-button" style="font-size: 36px;">Add ${{freeMoneyAmount}}</button>
                         </div>
                     </dialog>
 
