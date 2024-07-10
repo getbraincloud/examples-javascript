@@ -102,10 +102,11 @@
         }
 
         .jackpot-header {
-            font-size: 40px;
+            font-size: 35px;
             font-weight: bold;
             color: rgb(63, 81, 181);
             margin-top: 10;
+            margin-bottom: 20;
         }
 
         .jackpot-streak {
@@ -155,21 +156,17 @@
         <div layout="row" style="width: 100%;">
             <div layout="row" style="width: 100%; height: 100%; align-items: center;">
             
-                <div style="width: 33%;">
-                    <md-button>
+                <div style="width: 33%; padding-left: 1em;">
+                    <md-button ng-style="{'border-bottom': onGamePage()}">
                         <img src="playing-cards.svg" style="width: 80%; height: 80%;" ng-click="showGameAgain()" ng-show="loggedIn" />
                     </md-button>
             
-                    <md-button>
+                    <md-button ng-style="{'border-bottom': onLeaderboardPage()}">
                         <img src="leaderboard.svg" style="width: 80%; height: 80%;" ng-click="showLeaderboards()" ng-show="loggedIn" />
                     </md-button>
             
                     <md-button>
                         <img src="help.svg" style="width: 80%; height: 80%;" ng-click="showHelp()" ng-show="loggedIn" />
-                    </md-button>
-            
-                    <md-button>
-                        <img src="info.svg" style="width: 80%; height: 80%;" ng-click="showHelp()" ng-show="loggedIn" />
                     </md-button>
                 </div>
             
@@ -177,7 +174,7 @@
                     <p class="toolbar-header">{{title}}</p>
                 </div>
             
-                <div layout="row" style="height: 100%; width: 34%; align-items: center; justify-content: end;">
+                <div layout="row" style="height: 100%; width: 34%; padding-right: 1em; align-items: center; justify-content: end;">
                     <p class="toolbar-header">{{username}}</p>
             
                     <md-button>
@@ -374,13 +371,7 @@
             <md-content>
                 <md-list layout="column">
 
-                    <div layout="row">
-                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)"
-                            ng-disabled="disablePrev">Prev</md-button>
-
-                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)"
-                            ng-disabled="disableNext">Next</md-button>
-                    </div>
+                    
 
                     <md-item ng-repeat="player in leaderboard">
 
@@ -396,6 +387,14 @@
                         </md-item-content>
 
                     </md-item>
+
+                    <div layout="row">
+                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(-1)"
+                            ng-disabled="disablePrev">Previous</md-button>
+
+                        <md-button class="md-raised md-primary" ng-click="pageLeaderboard(1)"
+                            ng-disabled="disableNext">Next</md-button>
+                    </div>
 
                 </md-list>
             </md-content>

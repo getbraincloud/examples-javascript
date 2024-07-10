@@ -110,10 +110,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	// (New User, ADD VIRTUAL MONEY clicked, etc.)
 	$scope.freeMoneyAmount = 0
 
-	$scope.toggleSidenav = function () {
-		$mdSidenav('left').toggle();
-	}
-
 	/**
 	 * Refresh the displayed jackpot value.
 	 * @param {number} newJackpotAmount 
@@ -234,6 +230,18 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 		collectJackpotDialog.close()
 	})
+
+	$scope.onGamePage = function () {
+		if($scope.showGame){
+			return "5px solid yellow"
+		}
+	}
+
+	$scope.onLeaderboardPage = function () {
+		if($scope.showLeaderboard){
+			return "5px solid yellow"
+		}
+	}
 
 	/**
 	 * Logout automatically whenever the user refreshes or closes the application.
@@ -899,9 +907,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 					$scope.showLeaderboard = true;
 					$scope.title = "Leaderboards";
-
-					$mdSidenav('left').close();
-
 				});
 
 			});
@@ -954,8 +959,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		$scope.showLeaderboard = false;
 		$scope.showGame = true;
 		$scope.title = "Acey Deucey";
-
-		$mdSidenav('left').close();
 	};
 
 	/**
@@ -986,8 +989,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// When true- the profileId is cleared on logout. 
 		// This prevents Reconnect Authentication as there will be no saved profile ID to reference.
 		var forgetUser = true
-
-		$mdSidenav('left').close();
 
 		_bc.logout(forgetUser, response => {
 			console.log("Logout Response: " + response)
