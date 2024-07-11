@@ -153,7 +153,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 						console.log(status + " : " + JSON.stringify(result, null, 2));
 					});
 				});
-
 				
 			}
 
@@ -347,11 +346,8 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		// Update Jackpot with value received from Chat message
 		if (rttMessage.data.content.jackpotAmount >= 0) {
 			var newJackpotAmount = rttMessage.data.content.jackpotAmount
-			console.log("Jackpot Amount: " + newJackpotAmount)
+			
 			$scope.updateDisplayedJackpot(newJackpotAmount)
-		}
-		else {
-			console.log("not")
 		}
 	}
 
@@ -457,25 +453,23 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 
 					_bc.globalApp.readProperties(result => {
 						defaultResetValue = result.data.JackpotDefaultValue.value
-						
+
 						$scope.updateJackpot(defaultResetValue)
 
 						var statistics = {
 							"TotalHouseWinnings": -1 * defaultResetValue
-						};
-						
-						_bc.globalStatistics.incrementGlobalStats(statistics, result =>
-						{
-							var status = result.status;
-							console.log(status + " : " + JSON.stringify(result, null, 2));
-						});
-					});
+						}
+
+						_bc.globalStatistics.incrementGlobalStats(statistics, result => {
+							var status = result.status
+							console.log(status + " : " + JSON.stringify(result, null, 2))
+						})
+					})
 				}
-				else{
+				else {
 					$scope.updateDisplayedJackpot(currentJackpot)
 				}
-				
-			});
+			})
 
 			// Read info from existing/returning user
 			if (result.data && result.data.newUser === "false") {
