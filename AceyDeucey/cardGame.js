@@ -551,14 +551,16 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		}
 
 		else {
-			$scope.initializeGame()
+			$scope.$apply(function () {
+				$scope.initializeGame()
 
-			$scope.showLogin = true
-			$scope.showGame = false
-			$scope.loggedIn = false
-			$scope.showLeaderboard = false
+				$scope.showLogin = true
+				$scope.showGame = false
+				$scope.loggedIn = false
+				$scope.showLeaderboard = false
+			})
 
-			if(!_bc.canReconnect()){
+			if (!_bc.canReconnect()) {
 				$mdDialog.show(
 					$mdDialog.alert()
 						.content('Authentication Error')
