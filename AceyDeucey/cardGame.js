@@ -558,11 +558,13 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 			$scope.loggedIn = false
 			$scope.showLeaderboard = false
 
-			$mdDialog.show(
-				$mdDialog.alert()
-					.content('Authentication Error')
-					.ok('Okay')
-			);
+			if(!_bc.canReconnect()){
+				$mdDialog.show(
+					$mdDialog.alert()
+						.content('Authentication Error')
+						.ok('Okay')
+				);
+			}
 		}
 	}
 
