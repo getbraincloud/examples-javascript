@@ -1,6 +1,14 @@
 function BrainCloudRelayComms(_client) {
     var bcr = this;
 
+//> REMOVE IF K6
+
+// Check window and document objects to determine if environment is browser or node
+if ([typeof window, typeof document].includes('undefined')) {
+    var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
+}
+//> END
+
     bcr.CONTROL_BYTES_SIZE = 1;
 
     bcr.MAX_PLAYERS     = 40;
@@ -13,6 +21,7 @@ function BrainCloudRelayComms(_client) {
     bcr.CL2RS_ACK           = 3;
     bcr.CL2RS_PING          = 4;
     bcr.CL2RS_RSMG_ACK      = 5;
+    bcr.CL2RS_ENDMATCH      = 6;
 
     // Messages sent from Relay-Server to Client
     bcr.RS2CL_RSMG          = 0;
@@ -44,6 +53,8 @@ function BrainCloudRelayComms(_client) {
     bcr._pingTime = null;
     bcr._sendPacketId = {};
     bcr.ping = 999;
+
+    bcr.endMatchRequested = false;
 
     bcr.setDebugEnabled = function(debugEnabled) {
         bcr._debugEnabled = debugEnabled;
@@ -94,6 +105,7 @@ function BrainCloudRelayComms(_client) {
         var passcode = options.passcode;
         var lobbyId = options.lobbyId;
         
+        bcr.endMatchRequested = false;
         bcr.isConnected = false;
         bcr.connectCallback = {
             success: success,
@@ -136,21 +148,39 @@ function BrainCloudRelayComms(_client) {
 
     bcr.disconnect = function() {
         bcr.stopPing();
-        if (bcr.socket) {
+        
+        if(!bcr.endMatchRequested){
+            if (bcr.socket) {
 //> REMOVE IF K6
-            bcr.socket.removeEventListener('error', bcr.onSocketError);
-            bcr.socket.removeEventListener('close', bcr.onSocketClose);
-            bcr.socket.removeEventListener('open', bcr.onSocketOpen);
-            bcr.socket.removeEventListener('message', bcr.onSocketMessage);
+                bcr.socket.removeEventListener('error', bcr.onSocketError);
+                bcr.socket.removeEventListener('close', bcr.onSocketClose);
+                bcr.socket.removeEventListener('open', bcr.onSocketOpen);
+                bcr.socket.removeEventListener('message', bcr.onSocketMessage);
 //> END
-            bcr.socket.close();
-            bcr.socket = null;
+                bcr.socket.close();
+                bcr.socket = null;
+            }
         }
+        
         bcr.isConnected = false;
         bcr._sendPacketId = {};
         bcr._netIdToProfileId = {};
         bcr._profileIdToNetId = {};
         bcr.ping = 999;    
+    }
+
+    bcr.endMatch = function(json){
+        if(bcr.isConnected){
+            
+            // Send end match request
+            var payload = {
+                jsonPayload: json
+            };
+
+            bcr.sendJson(bcr.CL2RS_ENDMATCH, payload);
+            
+            bcr.endMatchRequested = true;
+        }
     }
 
     bcr.registerRelayCallback = function(callback) {
@@ -214,7 +244,9 @@ function BrainCloudRelayComms(_client) {
     bcr.onSocketClose = function(e) {
         bcr.disconnect();
         if (bcr.connectCallback.failure) {
-            bcr.connectCallback.failure("Relay Connection closed");
+            if(!bcr.endMatchRequested){
+                bcr.connectCallback.failure("Relay Connection closed");
+            }
         }
     }
 
@@ -240,7 +272,7 @@ function BrainCloudRelayComms(_client) {
 //+         var buffer = new Uint8Array(data);
 //> END
 //> REMOVE IF K6
-            var buffer = new Buffer(data);
+            var buffer = Buffer.from(data);
 //> END
             if (data.length < 3) {
                 bcr.disconnect();
@@ -287,7 +319,7 @@ function BrainCloudRelayComms(_client) {
 //+     }
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(text.length + 3)
+        var buffer = Buffer.alloc(text.length + 3)
         buffer.writeUInt16BE(text.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.write(text, 3, text.length);
@@ -353,7 +385,7 @@ function BrainCloudRelayComms(_client) {
 //+     var buffer = new Uint8Array(data.length + 11);
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(data.length + 11)
+        var buffer = Buffer.alloc(data.length + 11)
 //> END
         buffer.writeUInt16BE(data.length + 11, 0)
         buffer.writeUInt8(bcr.CL2RS_RELAY, 2)
@@ -386,7 +418,7 @@ function BrainCloudRelayComms(_client) {
 //+     buffer[4] = (value_16u >> 8) & 0xFF;
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(5)
+        var buffer = Buffer.alloc(5)
         buffer.writeUInt16BE(5, 0);
         buffer.writeUInt8(bcr.CL2RS_PING, 2);
         buffer.writeUInt16BE(bcr.ping, 3);
@@ -419,7 +451,7 @@ function BrainCloudRelayComms(_client) {
 //+     buffer.set(data, 3);
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(data.length + 3)
+        var buffer = Buffer.alloc(data.length + 3)
         buffer.writeUInt16BE(data.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.set(data, 3);
@@ -507,6 +539,11 @@ function BrainCloudRelayComms(_client) {
             }
             case "MIGRATE_OWNER": {
                 bcr._ownerId = json.cxId;
+                break;
+            }
+            case "END_MATCH": {
+                bcr.endMatchRequested = true;
+                bcr.disconnect();
                 break;
             }
         }

@@ -44,7 +44,7 @@ function BrainCloudManager ()
     bcm._inProgressQueue = [];
     bcm._abTestingId = -1;
     bcm._sessionId = "";
-    bcm._packetId = -1;
+    bcm._packetId = 0;
     bcm._loader = null;
     bcm._eventCallback = null;
     bcm._rewardCallback = null;
@@ -150,7 +150,7 @@ function BrainCloudManager ()
         }
         else
         {
-            bcm._packetId = -1; 
+            bcm._packetId = 0; 
         }
         bcm._sessionId = sessionId;
     };
@@ -282,7 +282,7 @@ function BrainCloudManager ()
         bcm._sendQueue = [];
         bcm._inProgressQueue = [];
         bcm._sessionId = "";
-        bcm.packetId = -1;
+        bcm.packetId = 0;
         bcm._isAuthenticated = false;
         bcm._requestInProgress = false;
 
@@ -644,7 +644,7 @@ function BrainCloudManager ()
                     bcm._requestInProgress = false;
                     bcm.processQueue();
                 }
-                else if (xmlhttp.status == 503)
+                else if (xmlhttp.status == 502 || xmlhttp.status == 503 || xmlhttp.status == 504)
                 {
                     bcm.debugLog("packet in progress", false);
                     bcm.retry();
@@ -1174,6 +1174,7 @@ function BCAsyncMatch() {
 	bc.asyncMatch.OPERATION_DELETE_MATCH = "DELETE_MATCH";
 	bc.asyncMatch.OPERATION_ABANDON_MATCH_WITH_SUMMARY_DATA = "ABANDON_MATCH_WITH_SUMMARY_DATA";
 	bc.asyncMatch.OPERATION_COMPLETE_MATCH_WITH_SUMMARY_DATA = "COMPLETE_MATCH_WITH_SUMMARY_DATA";
+	bc.asyncMatch.OPERATION_UPDATE_MATCH_STATE_CURRENT_TURN = "UPDATE_MATCH_STATE_CURRENT_TURN";
 
 	/**
 	 * Creates an instance of an asynchronous match.
@@ -1327,6 +1328,7 @@ function BCAsyncMatch() {
 		if (matchState) {
 			data["matchState"] = matchState;
 		}
+		else data["matchState"] = {};
 		if (nextPlayer) {
 			data["status"] = { currentPlayer: nextPlayer };
 		}
@@ -1549,6 +1551,46 @@ function BCAsyncMatch() {
 		});
 	};
 
+	/**
+	 * Allows the current player in the game to overwrite the matchState and
+	 * statistics without completing their turn or adding to matchHistory.
+	 * 
+	 * Service Name - AsyncMatch
+	 * Service Operation - UpdateMatchStateCurrentTurn
+	 * 
+	 * @param ownerId           Match owner identifier
+	 * @param matchId           Match identifier
+	 * @param version           Game state version being updated, to ensure data integrity
+	 * @param matchState    	JSON object provided by the caller. Overwrites the matchState. Required.
+	 * @param statistics    	Optional JSON object provided by the caller. Overwrites the statistics.
+	 * @param callback			The method to be invoked when the server response is received
+	 */
+	bc.asyncMatch.updateMatchStateCurrentTurn = function (ownerId, matchId, version, matchState, statistics, callback) {
+		var data = {
+			ownerId: ownerId,
+			matchId: matchId,
+			version: version
+		}
+
+		if (matchState) {
+			data["matchState"] = matchState;
+		}
+		else data["matchState"] = {};
+
+		if (statistics) {
+			data["statistics"] = statistics;
+		}
+
+		bc.brainCloudManager.sendRequest(
+			{
+				service: bc.SERVICE_ASYNC_MATCH,
+				operation: bc.asyncMatch.OPERATION_UPDATE_MATCH_STATE_CURRENT_TURN,
+				data: data,
+				callback: callback
+			}
+		)
+	}
+
 }
 
 //> REMOVE IF K6
@@ -1609,6 +1651,14 @@ function BCAuthentication() {
 
 	bc.authentication.profileId = "";
 	bc.authentication.anonymousId = "";
+    bc.authentication.previousAuthParams = {
+        externalId: "",
+        authenticationToken: "",
+        authenticationType: "",
+        externalAuthName: "",
+        forceCreate: true,
+        extraJson: ""
+    };
 
 	/**
 	 * Initialize - initializes the identity service with the saved
@@ -2365,7 +2415,7 @@ function BCAuthentication() {
 	 * @param callback The method to be invoked when the server response is received
 	 *
 	 */
-	bc.authentication.authenticateSettopHandoff= function(handoffCode, callback) {
+	bc.authentication.authenticateSettopHandoff = function(handoffCode, callback) {
 		bc.authentication.authenticate(
 			handoffCode,
 			"",
@@ -2375,6 +2425,17 @@ function BCAuthentication() {
             null,
 			callback);
 	};
+
+    bc.authentication.retryPreviousAuthenticate = function(callback) {
+		bc.authentication.authenticate(
+			bc.authentication.previousAuthParams.externalId,
+			bc.authentication.previousAuthParams.authenticationToken,
+			bc.authentication.previousAuthParams.authenticationType,
+			bc.authentication.previousAuthParams.externalAuthName,
+			bc.authentication.previousAuthParams.forceCreate,
+            bc.authentication.previousAuthParams.extraJson,
+			callback);
+    };
 
 	/** Method allows a caller to authenticate with bc. Note that
 	 * callers should use the other authenticate methods in this class as
@@ -2389,6 +2450,13 @@ function BCAuthentication() {
 	 * @param responseHandler {function} - The user callback method
 	 */
 	bc.authentication.authenticate = function(externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, extraJson, responseHandler) {
+
+        bc.authentication.previousAuthParams.externalId = externalId;
+        bc.authentication.previousAuthParams.authenticationToken = authenticationToken;
+        bc.authentication.previousAuthParams.authenticationType = authenticationType;
+        bc.authentication.previousAuthParams.externalAuthName = externalAuthName;
+        bc.authentication.previousAuthParams.forceCreate = forceCreate;
+        bc.authentication.previousAuthParams.extraJson = extraJson;
 
         var callerCallback = responseHandler;
 		// The joy of closures...
@@ -2510,6 +2578,51 @@ function BCAuthentication() {
 }
 
 BCAuthentication.apply(window.brainCloudClient = window.brainCloudClient || {});
+
+function BCBlockchain(){
+  var bc = this;
+
+  bc.blockchain = {};
+
+  bc.SERVICE_BLOCKCHAIN = "blockchain";
+
+  bc.blockchain.OPERATION_GET_BLOCKCHAIN_ITEMS = "GET_BLOCKCHAIN_ITEMS";
+  bc.blockchain.OPERATION_GET_UNIQS = "GET_UNIQS";
+
+  /**
+  * Retrieves the blockchain items owned by the caller.
+  */
+  bc.blockchain.getBlockchainItems = function(integrationId, contextJson, callback) {
+    var message = {
+      integrationId : integrationId,
+      contextJson : contextJson
+    };
+
+    bc.brainCloudManager.sendRequest({
+      service : bc.SERVICE_BLOCKCHAIN,
+      operation : bc.blockchain.OPERATION_GET_BLOCKCHAIN_ITEMS,
+      data : message,
+      callback : callback
+    });
+  };
+
+  /**
+  * Retrieves the uniqs owned by the caller.
+  */
+  bc.blockchain.getUniqs = function(integrationId, contextJson, callback){
+    var message = {
+      integrationId : integrationId,
+      contextJson : contextJson
+    };
+
+    bc.brainCloudManager.sendRequest({
+      service : bc.SERVICE_BLOCKCHAIN,
+      operation : bc.blockchain.OPERATION_GET_UNIQS,
+      data : message,
+      callback : callback
+    });
+  };
+}
 
 function BCChat() {
     var bc = this;
@@ -2810,329 +2923,334 @@ BCChat.apply(window.brainCloudClient = window.brainCloudClient || {});
 function BCCustomEntity() {
     var bc = this;
 
-	bc.customEntity = {};
+    bc.customEntity = {};
 
-	bc.SERVICE_CUSTOM_ENTITY = "customEntity";
+    bc.SERVICE_CUSTOM_ENTITY = "customEntity";
 
-	bc.customEntity.OPERATION_CREATE= "CREATE_ENTITY";
-	bc.customEntity.OPERATION_GET_COUNT= "GET_COUNT";
-	bc.customEntity.OPERATION_GET_PAGE= "GET_PAGE";
-	bc.customEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING= "GET_RANDOM_ENTITIES_MATCHING";
-	bc.customEntity.OPERATION_GET_PAGE_OFFSET= "GET_PAGE_BY_OFFSET";
-	bc.customEntity.OPERATION_GET_ENTITY_PAGE= "GET_ENTITY_PAGE";
-	bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET= "GET_ENTITY_PAGE_OFFSET";
-	bc.customEntity.OPERATION_READ_ENTITY= "READ_ENTITY";
-	bc.customEntity.OPERATION_UPDATE_ENTITY= "UPDATE_ENTITY";
-	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS = "UPDATE_ENTITY_FIELDS";
-	bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS_SHARDED = "UPDATE_ENTITY_FIELDS_SHARDED";
-	bc.customEntity.OPERATION_DELETE_ENTITY = "DELETE_ENTITY";
-	bc.customEntity.OPERATION_DELETE_ENTITIES = "DELETE_ENTITIES";
-	bc.customEntity.OPERATION_DELETE_SINGLETON = "DELETE_SINGLETON";
-	bc.customEntity.OPERATION_READ_SINGLETON = "READ_SINGLETON";
-	bc.customEntity.OPERATION_UPDATE_SINGLETON = "UPDATE_SINGLETON";
-	bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS = "UPDATE_SINGLETON_FIELDS";
+    bc.customEntity.OPERATION_CREATE = "CREATE_ENTITY";
+    bc.customEntity.OPERATION_GET_COUNT = "GET_COUNT";
+    bc.customEntity.OPERATION_GET_PAGE = "GET_PAGE";
+    bc.customEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING = "GET_RANDOM_ENTITIES_MATCHING";
+    bc.customEntity.OPERATION_GET_PAGE_OFFSET = "GET_PAGE_BY_OFFSET";
+    bc.customEntity.OPERATION_GET_ENTITY_PAGE = "GET_ENTITY_PAGE";
+    bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET = "GET_ENTITY_PAGE_OFFSET";
+    bc.customEntity.OPERATION_READ_ENTITY = "READ_ENTITY";
+    bc.customEntity.OPERATION_UPDATE_ENTITY = "UPDATE_ENTITY";
+    bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS = "UPDATE_ENTITY_FIELDS";
+    bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS_SHARDED = "UPDATE_ENTITY_FIELDS_SHARDED";
+    bc.customEntity.OPERATION_DELETE_ENTITY = "DELETE_ENTITY";
+    bc.customEntity.OPERATION_DELETE_ENTITIES = "DELETE_ENTITIES";
+    bc.customEntity.OPERATION_DELETE_SINGLETON = "DELETE_SINGLETON";
+    bc.customEntity.OPERATION_READ_SINGLETON = "READ_SINGLETON";
+    bc.customEntity.OPERATION_INCREMENT_SINGLETON_DATA = "INCREMENT_SINGLETON_DATA";
+    bc.customEntity.OPERATION_UPDATE_SINGLETON = "UPDATE_SINGLETON";
+    bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS = "UPDATE_SINGLETON_FIELDS";
 
-	/**
-	 * Creates new custom entity.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param data
-	 *            {json} The entity's data as a json string
-	 * @param acl
-	 *            {json} The entity's access control list as json. A null acl
-	 *            implies default permissions which make the entity
-	 *            readable/writeable by only the user.
-	 * @param timeToLive
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.createEntity = function(entityType, dataJson, acl, timeToLive, isOwned, callback) {
-		var message = {
-			entityType : entityType,
-			dataJson : dataJson,
-			timeToLive : timeToLive, 
-			isOwned : isOwned 
-		};
+    /**
+     * Creates new custom entity.
+     *
+     * @param entityType
+     *            {string} The entity type as defined by the user
+     * @param data
+     *            {json} The entity's data as a json string
+     * @param acl
+     *            {json} The entity's access control list as json. A null acl
+     *            implies default permissions which make the entity
+     *            readable/writeable by only the user.
+     * @param timeToLive
+     * @param callback
+     *            {function} The callback handler.
+     */
+    bc.customEntity.createEntity = function(entityType, dataJson, acl, timeToLive, isOwned, callback) {
+        var message = {
+            entityType : entityType,
+            dataJson : dataJson,
+            timeToLive : timeToLive,
+            isOwned : isOwned
+        };
 
-		if (acl) {
-			message["acl"] = acl;
-		}
+        if (acl) {
+            message["acl"] = acl;
+        }
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_CREATE,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_CREATE,
+            data : message,
+            callback : callback
+        });
+    };
 
-	/**
-	 * Counts the number of custom entities meeting the specified where clause.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param whereJson
-	 *            {json} The entity data
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.getCount = function(entityType, whereJson, callback) {
-		var message = {
-			entityType : entityType,
-			whereJson : whereJson
-		};
+    /**
+     * Counts the number of custom entities meeting the specified where clause.
+     *
+     * @param entityType
+     *            {string} The entity type as defined by the user
+     * @param whereJson
+     *            {json} The entity data
+     * @param callback
+     *            {function} The callback handler.
+     */
+    bc.customEntity.getCount = function(entityType, whereJson, callback) {
+        var message = {
+            entityType : entityType,
+            whereJson : whereJson
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_COUNT,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_COUNT,
+            data : message,
+            callback : callback
+        });
+    };
 
-		/**
-	 * Gets a list of up to maxReturn randomly selected custom entities from the server based on the entity type and where condition.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param whereJson
-	 *            {string} Mongo sstyle query string
-	 * @param maxReturn
-	 *            {int} number of max returns
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.getRandomEntitiesMatching = function(entityType, whereJson, maxReturn, callback) {
-		var message = {
-			entityType : entityType,
-			whereJson : whereJson,
-			maxReturn : maxReturn
-		};
+        /**
+     * Gets a list of up to maxReturn randomly selected custom entities from the server based on the entity type and where condition.
+     *
+     * @param entityType
+     *            {string} The entity type as defined by the user
+     * @param whereJson
+     *            {string} Mongo sstyle query string
+     * @param maxReturn
+     *            {int} number of max returns
+     * @param callback
+     *            {function} The callback handler.
+     */
+    bc.customEntity.getRandomEntitiesMatching = function(entityType, whereJson, maxReturn, callback) {
+        var message = {
+            entityType : entityType,
+            whereJson : whereJson,
+            maxReturn : maxReturn
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_RANDOM_ENTITIES_MATCHING,
+            data : message,
+            callback : callback
+        });
+    };
 
-	/**
-	 * Retrieves first page of custom entities from the server based on the custom entity type and specified query context
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param rowsPerPage
-	 *            {int} 
-	 * @param searchJson
-	 * 			  {json} data to look for
-	 * @param sortJson
-	 * 			  {json} data to sort by
-	 * @param doCount 
-	 * 			  {bool} 
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
+    /**
+     * Retrieves first page of custom entities from the server based on the custom entity type and specified query context
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
+     * @param rowsPerPage
+     *              {int}
+     * @param searchJson
+     *              {json} data to look for
+     * @param sortJson
+     *              {json} data to sort by
+     * @param doCount
+     *              {bool}
+     * @param callback
+     *              {function} The callback handler.
+     */
 
 	/**
      * @deprecated Use getEntityPage() instead - Removal after October 21 2021
      */
-	bc.customEntity.getPage = function(entityType, rowsPerPage, searchJson, sortJson, doCount, callback) {
-		var message = {
-			entityType : entityType,
-			rowsPerPage : rowsPerPage,
-			doCount : doCount
-		};
+    bc.customEntity.getPage = function(entityType, rowsPerPage, searchJson, sortJson, doCount, callback) {
+        var message = {
+            entityType : entityType,
+            rowsPerPage : rowsPerPage,
+            doCount : doCount
+        };
 
-		if(searchJson) message.searchJson = searchJson;
-		if(sortJson) message.sortJson = sortJson;
+        if(searchJson) message.searchJson = searchJson;
+        if(sortJson) message.sortJson = sortJson;
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_PAGE,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_PAGE,
+            data : message,
+            callback : callback
+        });
+    };
 
-	/** 
-	* @param context The json context for the page request.
-	*                   See the portal appendix documentation for format.
-	* @param entityType
-	* @param callback The callback object
-	*/
-	bc.customEntity.getEntityPage = function(entityType, context, callback) {
-		var message = {
-			entityType : entityType,
-			context : context
-		};
+    /**
+    * @param context The json context for the page request.
+    *                   See the portal appendix documentation for format.
+    * @param entityType
+    * @param callback The callback object
+    */
+    bc.customEntity.getEntityPage = function(entityType, context, callback) {
+        var message = {
+            entityType : entityType,
+            context : context
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE,
+            data : message,
+            callback : callback
+        });
+    };
 
-	/**
-	 * Creates new custom entity.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param context
-	 * 			  {string} context
-	 * @param pageOffset
-	 *            {int} 
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
+    /**
+     * Creates new custom entity.
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
+     * @param context
+     *              {string} context
+     * @param pageOffset
+     *              {int}
+     * @param callback
+     *              {function} The callback handler.
+     */
 
-	 /**
+     /**
      * @deprecated Use getEntityPageOffset() instead - Removal after October 21 2021
      */
-	bc.customEntity.getPageOffset = function(entityType, context, pageOffset, callback) {
-		var message = {
-			entityType : entityType,
-			context : context,
-			pageOffset : pageOffset
-		};
+    bc.customEntity.getPageOffset = function(entityType, context, pageOffset, callback) {
+        var message = {
+            entityType : entityType,
+            context : context,
+            pageOffset : pageOffset
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_PAGE_OFFSET,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_PAGE_OFFSET,
+            data : message,
+            callback : callback
+        });
+    };
 
-		/**
-	 * Creates new custom entity.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param context
-	 * 			  {string} context
-	 * @param pageOffset
-	 *            {int} 
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.getEntityPageOffset = function(entityType, context, pageOffset, callback) {
-		var message = {
-			entityType : entityType,
-			context : context,
-			pageOffset : pageOffset
-		};
+        /**
+     * Creates new custom entity.
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
+     * @param context
+     *              {string} context
+     * @param pageOffset
+     *              {int}
+     * @param callback
+     *              {function} The callback handler.
+     */
+    bc.customEntity.getEntityPageOffset = function(entityType, context, pageOffset, callback) {
+        var message = {
+            entityType : entityType,
+            context : context,
+            pageOffset : pageOffset
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE_OFFSET,
+            data : message,
+            callback : callback
+        });
+    };
 
 
-	/**
-	 * Reads a custom entity.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param entityId
-	 * 			  {string}
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.readEntity = function(entityType, entityId, callback) {
-		var message = {
-			entityType : entityType,
-			entityId : entityId
-		};
+    /**
+     * Reads a custom entity.
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
+     * @param entityId
+     *              {string}
+     * @param callback
+     *              {function} The callback handler.
+     */
+    bc.customEntity.readEntity = function(entityType, entityId, callback) {
+        var message = {
+            entityType : entityType,
+            entityId : entityId
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_READ_ENTITY,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_READ_ENTITY,
+            data : message,
+            callback : callback
+        });
+    };
 
-	/**
-	 * Replaces the specified custom entity's data, and optionally updates the acl and expiry, on the server.
-	 *
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param entityId
-	 * 			  {string}
-	 * @param version
-	 * @param dataJson
-	 * 			  {json} data of entity
-	 * @param acl 
-	 * 			  {json} 
-	 * @param timeToLive
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.updateEntity = function(entityType, entityId, version, dataJson, acl, timeToLive, callback) {
-		var message = {
-			entityType : entityType,
-			entityId : entityId,
-			version : version,
-			timeToLive : timeToLive
-		};
+    /**
+     * Replaces the specified custom entity's data, and optionally updates the acl and expiry, on the server.
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
+     * @param entityId
+     *              {string}
+     * @param version
+     * @param dataJson
+     *              {json} data of entity
+     * @param acl
+     *              {json}
+     * @param timeToLive
+     * @param callback
+     *              {function} The callback handler.
+     */
+    bc.customEntity.updateEntity = function(entityType, entityId, version, dataJson, acl, timeToLive, callback) {
+        var message = {
+            entityType : entityType,
+            entityId : entityId,
+            version : version,
+            timeToLive : timeToLive
+        };
 
-		if(dataJson) message.dataJson = dataJson;
-		if(acl) message.acl = acl;
+        if(dataJson) message.dataJson = dataJson;
+        if(acl) message.acl = acl;
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_UPDATE_ENTITY,
-			data : message,
-			callback : callback
-		});
-	};
-
-	/**
-	 *Sets the specified fields within custom entity data on the server.
-	 * 
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param entityId
-	 * 			  {string}
-	 * @param version
-	 * @param fieldsJson
-	 * 			  {json} the fields in the entity
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.updateEntityFields = function(entityType, entityId, version, fieldsJson, callback) {
-		var message = {
-			entityType : entityType,
-			entityId : entityId,
-			version : version
-		};
-
-		if(fieldsJson) message.fieldsJson = fieldsJson;
-
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_UPDATE_ENTITY,
+            data : message,
+            callback : callback
+        });
+    };
 
     /**
      *Sets the specified fields within custom entity data on the server.
-     * 
-     * @param entityType {string} The entity type as defined by the user
+     *
+     * @param entityType
+     *              {string} The entity type as defined by the user
      * @param entityId
-     * @param version 
-     * @param fieldsJson {json} the fields in the entity
-     * @param shardKeyJson The shard key field(s) and value(s), as JSON, applicable to the entity being updated.
-     * @param callback {function} The callback handler.
+     *              {string}
+     * @param version
+     * @param fieldsJson
+     *              {json} the fields in the entity
+     * @param callback
+     *              {function} The callback handler.
+     */
+    bc.customEntity.updateEntityFields = function(entityType, entityId, version, fieldsJson, callback) {
+        var message = {
+            entityType : entityType,
+            entityId : entityId,
+            version : version
+        };
+
+        if(fieldsJson) message.fieldsJson = fieldsJson;
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_UPDATE_ENTITY_FIELDS,
+            data : message,
+            callback : callback
+        });
+    };
+
+    /**
+     *Sets the specified fields within custom entity data on the server.
+     *
+     * @param entityType 
+     *              {string} The entity type as defined by the user
+     * @param entityId
+     * @param version
+     * @param fieldsJson 
+     *              {json} the fields in the entity
+     * @param shardKeyJson 
+     *              The shard key field(s) and value(s), as JSON, applicable to the entity being updated.
+     * @param callback 
+     *              {function} The callback handler.
      */
     bc.customEntity.updateEntityFieldsSharded = function(entityType, entityId, version, fieldsJson, shardKeyJson, callback) {
         var message = {
@@ -3154,175 +3272,201 @@ function BCCustomEntity() {
 
 /**
 *deletes entities based on the delete criteria.
-* 
+*
 * @param entityType
-*            {string} The entity type as defined by the user
+*               {string} The entity type as defined by the user
 * @param deleteCriteria
-* 			  {json} delte criteria
+*               {json} delte criteria
 * @param callback
-*            {function} The callback handler.
+*               {function} The callback handler.
 */
 bc.customEntity.deleteEntities = function(entityType, deleteCriteria, callback) {
-	var message = {
-		entityType : entityType,
-		deleteCriteria : deleteCriteria
-	};
+    var message = {
+        entityType : entityType,
+        deleteCriteria : deleteCriteria
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_DELETE_ENTITIES,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_DELETE_ENTITIES,
+        data : message,
+        callback : callback
+    });
 };
 
 /**
 *
-* 
+*
 * @param entityType
 *            {string} The entity type as defined by the user
 * @param version
-* 			  
+*
 * @param callback
 *            {function} The callback handler.
 */
 bc.customEntity.deleteSingleton = function(entityType, version, callback) {
-	var message = {
-		entityType : entityType,
-		version : version
-	};
+    var message = {
+        entityType : entityType,
+        version : version
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_DELETE_SINGLETON,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_DELETE_SINGLETON,
+        data : message,
+        callback : callback
+    });
 };
 
 /**
 *
-* 
+*
 * @param entityType
 *            {string} The entity type as defined by the user
 * @param callback
 *            {function} The callback handler.
 */
 bc.customEntity.readSingleton = function(entityType, callback) {
-	var message = {
-		entityType : entityType
-	};
+    var message = {
+        entityType : entityType
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_READ_SINGLETON,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_READ_SINGLETON,
+        data : message,
+        callback : callback
+    });
+};
+
+/**
+* Increments the specified fields, of the singleton owned by the user, by the
+* specified amount within the custom entity data on the server.
+*
+* @param entityType
+*             {string} The type of custom entity being updated.
+* @param fieldsJson
+*             {json} Specific fields, as JSON, within entity's custom data,
+*                    with respective increment amount.
+* @param callback
+*             {function} The callback handler.
+*/
+bc.customEntity.incrementSingletonData = function(entityType, fieldsJson, callback){
+  var message = {
+    entityType : entityType,
+    fieldsJson : fieldsJson
+  };
+
+  bc.brainCloudManager.sendRequest({
+    service : bc.SERVICE_CUSTOM_ENTITY,
+    operation : bc.customEntity.OPERATION_INCREMENT_SINGLETON_DATA,
+    data : message,
+    callback : callback
+  });
 };
 
 /**
 *
-* 
+*
 * @param entityType
 *            {string} The entity type as defined by the user
 * @param version
-* 			  
+*
 * @param callback
 *            {function} The callback handler.
 */
 bc.customEntity.updateSingleton = function(entityType, version, dataJson, acl, timeToLive, callback) {
-	var message = {
-		entityType : entityType,
-		version : version,
-		dataJson : dataJson,
-		acl : acl,
-		timeToLive: timeToLive
-	};
+    var message = {
+        entityType : entityType,
+        version : version,
+        dataJson : dataJson,
+        acl : acl,
+        timeToLive: timeToLive
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_UPDATE_SINGLETON,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_UPDATE_SINGLETON,
+        data : message,
+        callback : callback
+    });
 };
 
 /**
 *
-* 
+*
 * @param entityType
 *            {string} The entity type as defined by the user
 * @param version
-* 			  
+*
 * @param callback
 *            {function} The callback handler.
 */
 bc.customEntity.updateSingletonFields = function(entityType, version, fieldsJson, callback) {
-	var message = {
-		entityType : entityType,
-		version : version,
-		fieldsJson : fieldsJson
-	};
+    var message = {
+        entityType : entityType,
+        version : version,
+        fieldsJson : fieldsJson
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_UPDATE_SINGLETON_FIELDS,
+        data : message,
+        callback : callback
+    });
 };
 
 /**
 *
-* 
+*
 * @param entityType
 *            {string} The entity type as defined by the user
 * @param version
-* 			  
+*
 * @param callback
 *            {function} The callback handler.
 */
 bc.customEntity.incrementData = function(entityType, entityId, fieldsJson, callback) {
-	var message = {
-		entityType : entityType,
-		entityId : entityId,
-		fieldsJson : fieldsJson
-	};
+    var message = {
+        entityType : entityType,
+        entityId : entityId,
+        fieldsJson : fieldsJson
+    };
 
-	bc.brainCloudManager.sendRequest({
-		service : bc.SERVICE_CUSTOM_ENTITY,
-		operation : bc.customEntity.OPERATION_INCREMENT_DATA,
-		data : message,
-		callback : callback
-	});
+    bc.brainCloudManager.sendRequest({
+        service : bc.SERVICE_CUSTOM_ENTITY,
+        operation : bc.customEntity.OPERATION_INCREMENT_DATA,
+        data : message,
+        callback : callback
+    });
 };
 
 
-	/**
-	 *Deletes the specified custom entity on the server.
-	 * 
-	 * @param entityType
-	 *            {string} The entity type as defined by the user
-	 * @param entityId
-	 * @param version
-	 * @param callback
-	 *            {function} The callback handler.
-	 */
-	bc.customEntity.deleteEntity = function(entityType, entityId, version, callback) {
-		var message = {
-			entityType : entityType,
-			entityId : entityId,
-			version : version
-		};
+    /**
+     *Deletes the specified custom entity on the server.
+     *
+     * @param entityType
+     *            {string} The entity type as defined by the user
+     * @param entityId
+     * @param version
+     * @param callback
+     *            {function} The callback handler.
+     */
+    bc.customEntity.deleteEntity = function(entityType, entityId, version, callback) {
+        var message = {
+            entityType : entityType,
+            entityId : entityId,
+            version : version
+        };
 
-		bc.brainCloudManager.sendRequest({
-			service : bc.SERVICE_CUSTOM_ENTITY,
-			operation : bc.customEntity.OPERATION_DELETE_ENTITY,
-			data : message,
-			callback : callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_CUSTOM_ENTITY,
+            operation : bc.customEntity.OPERATION_DELETE_ENTITY,
+            data : message,
+            callback : callback
+        });
+    };
 
 }
 
@@ -4253,39 +4397,6 @@ function BCFile() {
             data : message,
             callback : callback
         });
-    };
-
-    /**
-     * Method uploads the supplied file to the brainCloud server. Note that you must
-     * call prepareUserUpload to retrieve the uploadId before calling this method.
-     * It is assumed that any methods required to monitor the file upload including
-     * progress, and completion are attached to the XMLHttpRequest xhr object's
-     * events such as:
-     *
-     * xhr.upload.addEventListener("progress", uploadProgress);
-     * xhr.addEventListener("load", transferComplete);
-     * xhr.addEventListener("error", transferFailed);
-     * xhr.addEventListener("abort", transferCanceled);
-     *
-     * @param xhr The XMLHttpRequest object that the brainCloud client will
-     * use to upload the file.
-     * @param file The file object
-     * @param uploadId The upload id obtained via prepareUserUpload()
-     * @param peerCode - optional - peerCode.  A Peer needs to allow prepareUserUpload 
-     */
-    bc.file.uploadFile = function(xhr, file, uploadId, peerCode) {
-
-        var url = bc.brainCloudManager.getFileUploadUrl();
-        var fd = new FormData();
-        var fileSize = file.size;
-
-        xhr.open("POST", url, true);
-        fd.append("sessionId", bc.brainCloudManager.getSessionId());
-        if (peerCode !== undefined) fd.append("peerCode", peerCode);
-        fd.append("uploadId", uploadId);
-        fd.append("fileSize", fileSize);
-        fd.append("uploadFile", file);
-        xhr.send(fd);
     };
 
     /**
@@ -6268,6 +6379,280 @@ function BCGlobalEntity() {
 }
 
 BCGlobalEntity.apply(window.brainCloudClient = window.brainCloudClient || {});
+function BCGroupFile() {
+    var bc = this;
+
+    bc.groupFile = {};
+
+    bc.SERVICE_GROUP_FILE = "groupFile";
+
+    bc.groupFile.OPERATION_GET_FILE_INFO = "GET_FILE_INFO";
+    bc.groupFile.OPERATION_GET_FILE_INFO_SIMPLE = "GET_FILE_INFO_SIMPLE";
+    bc.groupFile.OPERATION_GET_CDN_URL = "GET_CDN_URL";
+    bc.groupFile.OPERATION_GET_FILE_LIST = "GET_FILE_LIST";
+    bc.groupFile.OPERATION_CHECK_FILENAME_EXISTS = "CHECK_FILENAME_EXISTS";
+    bc.groupFile.OPERATION_CHECK_FULLPATH_FILENAME_EXISTS = "CHECK_FULLPATH_FILENAME_EXISTS";
+    bc.groupFile.OPERATION_MOVE_FILE = "MOVE_FILE";
+    bc.groupFile.OPERATION_UPDATE_FILE_INFO = "UPDATE_FILE_INFO";
+    bc.groupFile.OPERATION_COPY_FILE = "COPY_FILE";
+    bc.groupFile.OPERATION_DELETE_FILE = "DELETE_FILE";
+    bc.groupFile.OPERATION_MOVE_USER_TO_GROUP_FILE = "MOVE_USER_TO_GROUP_FILE";
+
+    /**
+      * Returns information on a file using fileId.
+      * @param groupId ID of the group
+      * @param fileId ID of the file
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.getFileInfo = function (groupId, fileId, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_GET_FILE_INFO,
+            data: {
+                groupId: groupId,
+                fileId: fileId
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Returns information on a file using path and name.
+      * @param groupId ID of the group
+      * @param folderPath Folder path
+      * @param filename File name
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.getFileInfoSimple = function (groupId, folderPath, filename, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_GET_FILE_INFO_SIMPLE,
+            data: {
+                groupId: groupId,
+                folderPath: folderPath,
+                filename: filename
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Return the CDN url for file for clients that cannot handle redirect
+      * @param groupId ID of the group
+      * @param fileId ID of the file
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.getCDNUrl = function (groupId, fileId, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_GET_CDN_URL,
+            data: {
+                groupId: groupId,
+                fileId: fileId
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Returns a list of files.
+      * @param groupId ID of group
+      * @param folderPath Folder path
+      * @param recurse Whether to recurse beyond the starting folder
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.getFileList = function (groupId, folderPath, recurse, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_GET_FILE_LIST,
+            data: {
+                groupId: groupId,
+                folderPath: folderPath,
+                recurse: recurse
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Check if filename exists for provided path and name.
+      * @param groupId ID of the group
+      * @param folderPath File located cloud path/folder
+      * @param filename File cloud name
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.checkFilenameExists = function (groupId, folderPath, filename, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_CHECK_FILENAME_EXISTS,
+            data: {
+                groupId: groupId,
+                folderPath: folderPath,
+                filename: filename
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Check if filename exists for provided path and name.
+      * @param groupId ID of the group
+      * @param fullPathFilename File cloud name in full path
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.checkFullpathFilenameExists = function (groupId, fullPathFilename, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_CHECK_FULLPATH_FILENAME_EXISTS,
+            data: {
+                groupId: groupId,
+                fullPathFilename: fullPathFilename
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Move a file.
+      * @param groupId ID of the group
+      * @param fileId ID of the file
+      * @param version Target version of the file. As an option, you can use -1 for the latest version of the file
+      * @param newTreeId ID of the destination folder
+      * @param treeVersion Target version of the folder tree
+      * @param newFilename Optional new file name
+      * @param overwriteIfPresent Whether to allow overwrite of an existing file if present
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.moveFile = function (groupId, fileId, version, newTreeId, treeVersion, newFilename, overwriteIfPresent, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_MOVE_FILE,
+            data: {
+                groupId: groupId,
+                fileId: fileId,
+                version: version,
+                newTreeId: newTreeId,
+                treeVersion: treeVersion,
+                newFilename: newFilename,
+                overwriteIfPresent: overwriteIfPresent
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Rename or edit permissions of an uploaded file. Does not change the contents of the file.
+      * @param groupId ID of the group
+      * @param fileId ID of the file
+      * @param version Target version of the file
+      * @param newFilename Optional new file name
+      * @param newAcl Optional new acl
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.updateFileInfo = function (groupId, fileId, version, newFilename, newAcl, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_UPDATE_FILE_INFO,
+            data: {
+                groupId: groupId,
+                fileId: fileId,
+                version: version,
+                newFilename: newFilename,
+                newAcl: newAcl
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Copy a file.
+      * @param groupId ID of the group
+    * @param fileId ID of the file
+      * @param version Target version of the file
+      * @param newTreeId ID of the destination folder
+      * @param treeVersion Target version of the folder tree
+      * @param newFilename Optional new file name
+      * @param overwriteIfPresent Whether to allow overwrite of an existing file if present
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.copyFile = function (groupId, fileId, version, newTreeId, treeVersion, newFilename, overwriteIfPresent, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_COPY_FILE,
+            data: {
+                groupId: groupId,
+                fileId: fileId,
+                version: version,
+                newTreeId: newTreeId,
+                treeVersion: treeVersion,
+                newFilename: newFilename,
+                overwriteIfPresent: overwriteIfPresent
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Delete a file.
+      * @param groupId ID of the group
+      * @param fileId ID of the file
+      * @param version Target version of the file
+      * @param filename File name for verification purposes
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.deleteFile = function (groupId, fileId, version, filename, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_DELETE_FILE,
+            data: {
+                groupId: groupId,
+                fileId: fileId,
+                version: version,
+                filename: filename
+            },
+            callback: callback
+        });
+    };
+
+    /**
+      * Move a file from user space to group space.
+      * @param userCloudPath User file folder
+      * @param userCloudFilename User file name
+      * @param groupId ID of the group
+      * @param groupTreeId ID of the destination folder
+      * @param groupFileName Group file name
+      * @param groupFileAcl Acl of the new group file
+      * @param overwriteIfPresent Whether to allow overwrite of an existing file if present
+      * @param callback The method to be invoked when the server response is received
+      */
+    bc.groupFile.moveUserToGroupFile = function (
+        userCloudPath,
+        userCloudFilename,
+        groupId,
+        groupTreeId,
+        groupFilename,
+        groupFileAcl,
+        overwriteIfPresent,
+        callback
+    ) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP_FILE,
+            operation: bc.groupFile.OPERATION_MOVE_USER_TO_GROUP_FILE,
+            data: {
+                userCloudPath: userCloudPath,
+                userCloudFilename: userCloudFilename,
+                groupId: groupId,
+                groupTreeId: groupTreeId,
+                groupFilename: groupFilename,
+                groupFileAcl: groupFileAcl,
+                overwriteIfPresent: overwriteIfPresent
+            },
+            callback: callback
+        });
+    };
+}
+
+BCGroupFile.apply(window.brainCloudClient = window.brainCloudClient || {});
 
 function BCGroup() {
     var bc = this;
@@ -6286,6 +6671,7 @@ function BCGroup() {
     bc.group.OPERATION_CREATE_GROUP_ENTITY = "CREATE_GROUP_ENTITY";
     bc.group.OPERATION_DELETE_GROUP = "DELETE_GROUP";
     bc.group.OPERATION_DELETE_GROUP_ENTITY = "DELETE_GROUP_ENTITY";
+    bc.group.OPERATION_DELETE_GROUP_JOIN_REQUEST = "DELETE_GROUP_JOIN_REQUEST";
     bc.group.OPERATION_DELETE_MEMBER_FROM_GROUP = "DELETE_MEMBER_FROM_GROUP";
     bc.group.OPERATION_GET_MY_GROUPS = "GET_MY_GROUPS";
     bc.group.OPERATION_INCREMENT_GROUP_DATA = "INCREMENT_GROUP_DATA";
@@ -6769,6 +7155,28 @@ function BCGroup() {
             callback : callback
         });
     };
+
+    /**
+     * Delete a request to join a group.
+     * 
+     * Service Name - group
+     * Service Operation - DELETE_GROUP_JOIN_REQUEST
+     * 
+     * @param {string} groupId ID of the group
+     * @param {function} callback the function to be invoked when the server response is received
+     */
+    bc.group.deleteGroupJoinRequest = function(groupId, callback){
+        var message = {
+            groupId : groupId
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_GROUP,
+            operation : bc.group.OPERATION_DELETE_GROUP_JOIN_REQUEST,
+            data : message,
+            callback : callback
+        });
+    }
 
     /**
      * Leave a group in which the user is a member.
@@ -10286,12 +10694,12 @@ function BCPlayerState() {
     bc.playerState.OPERATION_READ_FRIENDS = "READ_FRIENDS";
     bc.playerState.OPERATION_READ_FRIEND_PLAYER_STATE = "READ_FRIEND_PLAYER_STATE";
 
-    bc.playerState.UPDATE_ATTRIBUTES = "UPDATE_ATTRIBUTES";
-    bc.playerState.REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTES";
-    bc.playerState.GET_ATTRIBUTES = "GET_ATTRIBUTES";
+    bc.playerState.OPERATION_UPDATE_ATTRIBUTES = "UPDATE_ATTRIBUTES";
+    bc.playerState.OPERATION_REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTES";
+    bc.playerState.OPERATION_GET_ATTRIBUTES = "GET_ATTRIBUTES";
 
-    bc.playerState.UPDATE_PICTURE_URL = "UPDATE_PICTURE_URL";
-    bc.playerState.UPDATE_CONTACT_EMAIL = "UPDATE_CONTACT_EMAIL";
+    bc.playerState.OPERATION_UPDATE_PICTURE_URL = "UPDATE_PICTURE_URL";
+    bc.playerState.OPERATION_UPDATE_CONTACT_EMAIL = "UPDATE_CONTACT_EMAIL";
 
     bc.playerState.OPERATION_READ = "READ";
 
@@ -10347,7 +10755,7 @@ function BCPlayerState() {
     bc.playerState.getAttributes = function(callback) {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_PLAYERSTATE,
-            operation : bc.playerState.GET_ATTRIBUTES,
+            operation : bc.playerState.OPERATION_GET_ATTRIBUTES,
             callback : callback
         });
     };
@@ -10401,7 +10809,7 @@ function BCPlayerState() {
     bc.playerState.removeAttributes = function(attributes, callback) {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_PLAYERSTATE,
-            operation : bc.playerState.REMOVE_ATTRIBUTES,
+            operation : bc.playerState.OPERATION_REMOVE_ATTRIBUTES,
             data : {
                 attributes : attributes
             },
@@ -10483,7 +10891,7 @@ function BCPlayerState() {
                                                              wipeExisting, callback) {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_PLAYERSTATE,
-            operation : bc.playerState.UPDATE_ATTRIBUTES,
+            operation : bc.playerState.OPERATION_UPDATE_ATTRIBUTES,
             data : {
                 attributes : attributes,
                 wipeExisting : wipeExisting
@@ -10564,7 +10972,7 @@ function BCPlayerState() {
     bc.playerState.updateUserPictureUrl = function(pictureUrl, callback) {
         bc.brainCloudManager.sendRequest({
             service: bc.SERVICE_PLAYERSTATE,
-            operation: bc.playerState.UPDATE_PICTURE_URL,
+            operation: bc.playerState.OPERATION_UPDATE_PICTURE_URL,
             data: {
                 playerPictureUrl: pictureUrl
             },
@@ -10585,7 +10993,7 @@ function BCPlayerState() {
     bc.playerState.updateContactEmail = function(contactEmail, callback) {
         bc.brainCloudManager.sendRequest({
             service: bc.SERVICE_PLAYERSTATE,
-            operation: bc.playerState.UPDATE_CONTACT_EMAIL,
+            operation: bc.playerState.OPERATION_UPDATE_CONTACT_EMAIL,
             data: {
                 contactEmail: contactEmail
             },
@@ -11265,12 +11673,13 @@ function BCPresence() {
     * Service Name - Presence
     * Service Operation - UPDATE_ACTIVITY
     *
+    * @param activity Presence activity record json
     * @param callback The method to be invoked when the server response is received
     */
-    bc.presence.updateActivity = function(jsonActivity, callback)
+    bc.presence.updateActivity = function(activity, callback)
     {
         var message = {
-            jsonActivity: jsonActivity
+            activity: activity
         };
 
         bc.brainCloudManager.sendRequest({
@@ -11991,6 +12400,7 @@ function BCReasonCodes() {
     bc.reasonCodes.INVALID_ATTRIBUTES = 40351;
     bc.reasonCodes.IMPORT_MISSING_GAME_DATA = 40352;
     bc.reasonCodes.IMPORT_SCHEMA_VERSION_TOO_OLD = 40353;
+    bc.reasonCodes.IMPORT_MISSING_DIVISION_SETS = 40354;
     bc.reasonCodes.IMPORT_SCHEMA_VERSION_INVALID = 40355;
     bc.reasonCodes.PLAYER_SESSION_LOGGED_OUT = 40356;
     bc.reasonCodes.API_HOOK_SCRIPT_ERROR = 40357;
@@ -12280,7 +12690,6 @@ function BCReasonCodes() {
     bc.reasonCodes.INVALID_TOURNAMENT_JOB_ID = 40641;
     bc.reasonCodes.LEADERBOARD_ROTATION_ERROR = 40642;
     bc.reasonCodes.CLOUD_COMPUTING_ERROR = 40643;
-    bc.reasonCodes.DOCKER_ERROR = 40644;
     bc.reasonCodes.ROOM_SERVER_HOST_NOT_FOUND = 40645;
     bc.reasonCodes.INVALID_ATTACHMENT_DATA = 40646;
     bc.reasonCodes.SCRIPT_PARSING_ERROR = 40647;
@@ -12364,11 +12773,15 @@ function BCReasonCodes() {
     bc.reasonCodes.UPLOLAD_IN_PROGRESS = 40724;
     bc.reasonCodes.REFRESH_IN_PROGRESS = 40725;
     bc.reasonCodes.REFRESH_INTERRUPTED = 40726;
-    bc.reasonCodes.GAMELIFT_ERROR = 40727;
     bc.reasonCodes.GAMELIFT_LAUNCH_ERROR = 40728;
     bc.reasonCodes.MAX_HOSTED_SERVERS_REACHED = 40729;
     bc.reasonCodes.DUPLICATE_PACKET_ID = 40730;
     bc.reasonCodes.FEATURE_NOT_SUPPORTED_BY_BILLING_PLAN = 40731;
+    bc.reasonCodes.FEATURE_CONFIGURATION_FAILURE = 40732;
+    bc.reasonCodes.IMPORT_MISSING_ENTRY = 40733;
+    bc.reasonCodes.PENDING_MEMBER_REQUEST_NOT_FOUND = 40734;
+    bc.reasonCodes.EVENT_TO_PROFILE_IDS_SIZE_EXCEEDS_MAXIMUM = 40735;
+    bc.reasonCodes.INVALID_CC_AND_BCC_EMAIL_ADDRESS = 40736;
     bc.reasonCodes.NO_FRIENDS_FOUND = 40740;
     bc.reasonCodes.PRODUCT_TRANSACTION_NOT_FOUND = 40741;
     bc.reasonCodes.ITEM_DEF_NOT_FOUND = 40742;
@@ -12378,6 +12791,32 @@ function BCReasonCodes() {
     bc.reasonCodes.GROUP_MEMBER_ACL_MUST_BE_READ_WRITE_FOR_UNOWNED_ENTITY = 40746;
     bc.reasonCodes.GROUP_MEMBER_ACL_REQUIRED = 40747;
     bc.reasonCodes.GROUP_TYPE_MAX_MEMBERS_EXCEEDED = 40748;
+    bc.reasonCodes.GROUP_ADD_MEMBER_EXISTS_DIFF_ROLE_ATTRIBS = 40749;
+    bc.reasonCodes.REDEMPTION_IN_PROGRESS = 40750;
+    bc.reasonCodes.REDEMPTION_FAILED = 40751;
+    bc.reasonCodes.REDEMPTION_FAILED_MAX_RETRIES = 40752;
+    bc.reasonCodes.REDEMPTION_CODE_TYPE_DISABLED = 40753;
+    bc.reasonCodes.INVALID_SCAN_CODE_FOR_TYPE = 40754;
+    bc.reasonCodes.REDEMPTION_CODE_TYPE_MISMATCH = 40755;
+    bc.reasonCodes.REDEMPTION_CODE_SCRIPT_FAILURE = 40756;
+    bc.reasonCodes.REDEMPTION_OF_CUSTOM_CODE_FAILED = 40757;
+    bc.reasonCodes.REDEMPTION_CODE_NOT_IN_PROGRESS = 40758;
+    bc.reasonCodes.REDEMPTION_CODE_ATTEMPT_ERROR = 40759;
+    bc.reasonCodes.REDEMPTION_CODE_ATTEMPT_MISMATCH = 40760;
+    bc.reasonCodes.REDEMPTION_CODE_ASYNC_BAD_RESPONSE = 40761;
+    bc.reasonCodes.REDEMPTION_CODE_BY_ID_NOT_FOUND = 40762;
+    bc.reasonCodes.REDEMPTION_CODE_ATTEMPTED_BY_REDEEMED_BY_MISMATCH = 40763;
+    bc.reasonCodes.REDEMPTION_CODE_ATTEMPT_DATA_INVALID = 40764;
+    bc.reasonCodes.REDEMPTION_CODE_MAX_FAILED_EXCEEDED_FOR_USER = 40765;
+    bc.reasonCodes.REDEMPTION_CODE_BLOCKCHAIN_PROXY_ERROR = 40766;
+    bc.reasonCodes.REDEMPTION_CODE_TYPE_NOT_ASYNC = 40767;
+    bc.reasonCodes.REDEMPTION_CODE_ASYNC_PROCESSING_TIMEOUT = 40768;
+    bc.reasonCodes.DUPLICATE_DIVISION_SET_CONFIG = 40770;
+    bc.reasonCodes.DIVISION_SET_INSTANCE_LEADERBOARDS_STILL_EXIST = 40771;
+    bc.reasonCodes.SINGLETON_ALREADY_EXISTS_FOR_USER = 40772;
+    bc.reasonCodes.CUSTOM_ENTITY_INCREMENT_SINGLETON_DATA_ERROR = 40773;
+    bc.reasonCodes.CUSTOM_ENTITY_COLLECTIONS_MAX_EXCEEDED = 40774;
+    bc.reasonCodes.IMPORT_PRECONDITION_ERROR = 40780;
     bc.reasonCodes.REQUEST_FAILED = 40801;
     bc.reasonCodes.RESET_QUESTS_FAILED = 40802;
     bc.reasonCodes.RESET_ALL_QUESTS_AND_MILESTONES_FAILED = 40803;
@@ -12404,6 +12843,7 @@ function BCReasonCodes() {
     bc.reasonCodes.TOURNAMENT_SCORES_EXIST = 40843;
     bc.reasonCodes.LEADERBOARD_DBVERSION_MISMATCH = 40844;
     bc.reasonCodes.LEADERBOARD_API_DOES_NOT_APPLY = 40845;
+    bc.reasonCodes.LEADERBOARD_EXPIRED = 40846;
     bc.reasonCodes.MISSING_CONFIG = 40900;
     bc.reasonCodes.INVALID_SAML_RESP = 40901;
     bc.reasonCodes.MISSING_PAGE_NAME = 40902;
@@ -12414,6 +12854,13 @@ function BCReasonCodes() {
     bc.reasonCodes.SCRIPT_EXISTS = 40907;
     bc.reasonCodes.SCRIPT_DUPLICATE_EXISTS = 40908;
     bc.reasonCodes.INVALID_UPLOAD_EXTENSION = 40909;
+    bc.reasonCodes.SCRIPT_TIMEOUT_ERROR = 40910;
+    bc.reasonCodes.SCRIPT_RHINO_ERROR = 40911;
+    bc.reasonCodes.SCRIPT_JAVA_ERROR = 40912;
+    bc.reasonCodes.GROUP_FILE_EXISTS = 40950;
+    bc.reasonCodes.OTHER_USER_ACL_REQUIRED = 40951;
+    bc.reasonCodes.GROUP_MEMBER_ACCESS_INVALID = 40952;
+    bc.reasonCodes.REUSED_PACKET_ID = 40953;
     bc.reasonCodes.NO_TWITTER_CONSUMER_KEY = 500001;
     bc.reasonCodes.NO_TWITTER_CONSUMER_SECRET = 500002;
     bc.reasonCodes.INVALID_CONFIGURATION = 500003;
@@ -12427,6 +12874,7 @@ function BCReasonCodes() {
     bc.reasonCodes.FACEBOOK_APPLICATION_TOKEN_REQUEST_ERROR = 500013;
     bc.reasonCodes.FACEBOOK_BAD_APPLICATION_TOKEN_SIGNATURE = 500014;
     bc.reasonCodes.UNSUPPORTED_SOCIAL_PLATFORM_CODE = 500020;
+    bc.reasonCodes.MEMCACHED_TIMEOUT = 503000;
     bc.reasonCodes.NOT_TEAM_ADMIN = 550000;
     bc.reasonCodes.NO_TEAM_ACCESS = 550001;
     bc.reasonCodes.MISSING_COMPANY_RECORD = 550002;
@@ -12443,6 +12891,15 @@ function BCReasonCodes() {
     bc.reasonCodes.BASIC_AUTH_FAILURE = 550013;
     bc.reasonCodes.EMAIL_MISMATCH = 550014;
     bc.reasonCodes.EMAIL_ID_NOT_FOUND = 550015;
+    bc.reasonCodes.INVALID_AUTH_TYPE = 550016;
+    bc.reasonCodes.APIKEY_EXPIRED = 550017;
+    bc.reasonCodes.APIKEY_NOT_TEAM_SCOPE = 550018;
+    bc.reasonCodes.INVALID_API_KEY = 550019;
+    bc.reasonCodes.TEAM_ADMIN_API_DISABLED = 550020;
+    bc.reasonCodes.TEAM_ADMIN_AUTH_FAILURE = 550021;
+    bc.reasonCodes.INVALID_PASSWORD_CONTENT = 550022;
+    bc.reasonCodes.INVALID_APP_ACCESS = 550023;
+    bc.reasonCodes.INVALID_TEAM_ID = 550024;
     bc.reasonCodes.MONGO_DB_EXCEPTION = 600001;
     bc.reasonCodes.CONCURRENT_LOCK_ERROR = 600002;
     bc.reasonCodes.USER_EXPORT_ERROR = 600003;
@@ -12454,6 +12911,8 @@ function BCReasonCodes() {
     bc.reasonCodes.ERROR_SETTING_NEW_LOBBY_OWNER = 600009;
     bc.reasonCodes.ERROR_SWITCHING_TEAMS = 600010;
     bc.reasonCodes.DEPLOY_FAILED = 600011;
+    bc.reasonCodes.IMPORT_EXPORT_TASK_IN_PROGRESS = 600012;
+    bc.reasonCodes.BACKUP_REFERENCE_DATA_FAILED = 600013;
     bc.reasonCodes.BUILDER_API_KEY_NOT_FOUND = 60100;
     bc.reasonCodes.BUILDER_API_INVALID_KEY_SCOPE = 60101;
     bc.reasonCodes.BUILDER_API_UPDATED_AT_MISMATCH = 60102;
@@ -12467,17 +12926,34 @@ function BCReasonCodes() {
     bc.reasonCodes.BUILDER_API_APP_SUSPENDED = 60110;
     bc.reasonCodes.BUILDER_API_CREATED_AT_MISMATCH = 60111;
     bc.reasonCodes.PLAYSTATION_NETWORK_ERROR = 60200;
+    bc.reasonCodes.EMAIL_CC_MAX_SIZE_EXCEEDED = 60201;
+    bc.reasonCodes.EMAIL_BCC_MAX_SIZE_EXCEEDED = 60202;
     bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
+    bc.reasonCodes.LEFT_BY_CHOICE = 80000;
     bc.reasonCodes.RTT_EVICTED = 80001;
+    bc.reasonCodes.EVICTED = 80001;
     bc.reasonCodes.RTT_LOST_CONNECTION = 80002;
+    bc.reasonCodes.LOST_CONNECTION = 80002;
     bc.reasonCodes.RTT_TIMEOUT = 80100;
+    bc.reasonCodes.TIMEOUT = 80100;
     bc.reasonCodes.RTT_ROOM_READY = 80101;
+    bc.reasonCodes.ROOM_READY = 80101;
     bc.reasonCodes.RTT_ROOM_CANCELLED = 80102;
+    bc.reasonCodes.ROOM_CANCELLED = 80102;
     bc.reasonCodes.RTT_ERROR_ASSIGNING_ROOM = 80103;
+    bc.reasonCodes.ERROR_ASSIGNING_ROOM = 80103;
     bc.reasonCodes.RTT_ERROR_LAUNCHING_ROOM = 80104;
+    bc.reasonCodes.ERROR_LAUNCHING_ROOM = 80104;
     bc.reasonCodes.RTT_BY_REQUEST = 80105;
+    bc.reasonCodes.BY_REQUEST = 80105;
+    bc.reasonCodes.ROOM_READY_TIMEOUT = 80106;
+    bc.reasonCodes.DOCKER_ERROR = 80107;
+    bc.reasonCodes.GAMELIFT_ERROR = 80108;
+    bc.reasonCodes.NO_ROOM_SERVER_CONFIGURED = 80109;
     bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
+    bc.reasonCodes.NO_LOBBIES_FOUND = 80200;
     bc.reasonCodes.RTT_FIND_REQUEST_CANCELLED = 80201;
+    bc.reasonCodes.FIND_REQUEST_CANCELLED = 80201;
     bc.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT = 90001;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_CANCELLED = 90100;
     bc.reasonCodes.CLIENT_UPLOAD_FILE_TIMED_OUT = 90101;
@@ -12563,10 +13039,10 @@ function BCRelay() {
     bc.SERVICE_RELAY = "relay";
 
     bc.relay.TO_ALL_PLAYERS = 0x000000FFFFFFFFFF;
-    bc.relay.CHANNEL_HIGH_PRIORITY_1      = 0;
-    bc.relay.CHANNEL_HIGH_PRIORITY_2      = 1;
-    bc.relay.CHANNEL_NORMAL_PRIORITY      = 2;
-    bc.relay.CHANNEL_LOW_PRIORITY         = 3;
+    bc.relay.CHANNEL_HIGH_PRIORITY_1 = 0;
+    bc.relay.CHANNEL_HIGH_PRIORITY_2 = 1;
+    bc.relay.CHANNEL_NORMAL_PRIORITY = 2;
+    bc.relay.CHANNEL_LOW_PRIORITY = 3;
 
     /**
     * Start a connection, based on connection type to 
@@ -12583,22 +13059,30 @@ function BCRelay() {
     * @param success Called on success to establish a connection.
     * @param failure Called on failure to establish a connection or got disconnected.
     */
-    bc.relay.connect = function(options, success, failure) {
+    bc.relay.connect = function (options, success, failure) {
         bc.brainCloudRelayComms.connect(options, success, failure);
     };
 
     /**
      * Disconnects from the relay server
      */
-    bc.relay.disconnect = function() {
+    bc.relay.disconnect = function () {
         bc.brainCloudRelayComms.disconnect();
+    }
+
+    /**
+     * Terminate the match instance by the owner.
+     * @param json Payload data sent in JSON format. It will be relayed to other connnected players.
+     */
+    bc.relay.endMatch = function (json) {
+        bc.brainCloudRelayComms.endMatch(json);
     }
 
     /**
      * Returns whether or not we have a successful connection with
      * the relay server
      */
-    bc.relay.isConnected = function() {
+    bc.relay.isConnected = function () {
         return bc.brainCloudRelayComms.isConnected;
     }
 
@@ -12607,7 +13091,7 @@ function BCRelay() {
      * Note: Pings are not distributed amount other members. Your game will
      * have to bundle it inside a packet and distribute to other peers.
      */
-    bc.relay.getPing = function() {
+    bc.relay.getPing = function () {
         return bc.brainCloudRelayComms.ping;
     }
 
@@ -12618,49 +13102,49 @@ function BCRelay() {
      * 
      * @param interval in Seconds
      */
-    bc.relay.setPingInterval = function(interval) {
+    bc.relay.setPingInterval = function (interval) {
         bc.brainCloudRelayComms.setPingInterval(interval);
     }
 
     /**
      * Get the lobby's owner profile Id
      */
-    bc.relay.getOwnerProfileId = function() {
+    bc.relay.getOwnerProfileId = function () {
         return bc.brainCloudRelayComms.getOwnerProfileId();
     }
 
     /**
      * Get the lobby's owner Connection Id
      */
-    bc.relay.getOwnerCxId = function() {
+    bc.relay.getOwnerCxId = function () {
         return bc.brainCloudRelayComms.getOwnerCxId();
     }
 
     /**
      * Returns the profileId associated with a netId.
      */
-    bc.relay.getProfileIdForNetId = function(netId) {
+    bc.relay.getProfileIdForNetId = function (netId) {
         return bc.brainCloudRelayComms.getProfileIdForNetId(netId);
     }
 
     /**
      * Returns the Connection Id associated with a netId.
      */
-    bc.relay.getCxIdForNetId = function(netId) {
+    bc.relay.getCxIdForNetId = function (netId) {
         return bc.brainCloudRelayComms.getCxIdForNetId(netId);
     }
 
     /**
      * Returns the netId associated with a profileId.
      */
-    bc.relay.getNetIdForProfileId = function(profileId) {
+    bc.relay.getNetIdForProfileId = function (profileId) {
         return bc.brainCloudRelayComms.getNetIdForProfileId(profileId);
     }
 
     /**
      * Returns the netId associated with a connection Id.
      */
-    bc.relay.getNetIdForCxId = function(cxId) {
+    bc.relay.getNetIdForCxId = function (cxId) {
         return bc.brainCloudRelayComms.getNetIdForCxId(cxId);
     }
 
@@ -12669,10 +13153,10 @@ function BCRelay() {
      * 
      * @param callback Calle whenever a relay message was received. function(netId, data[])
      */
-    bc.relay.registerRelayCallback = function(callback) {
+    bc.relay.registerRelayCallback = function (callback) {
         bc.brainCloudRelayComms.registerRelayCallback(callback);
     }
-    bc.relay.deregisterRelayCallback = function() {
+    bc.relay.deregisterRelayCallback = function () {
         bc.brainCloudRelayComms.deregisterRelayCallback();
     }
 
@@ -12720,10 +13204,10 @@ function BCRelay() {
      *   profileId: "..."
      * }
      */
-    bc.relay.registerSystemCallback = function(callback) {
+    bc.relay.registerSystemCallback = function (callback) {
         bc.brainCloudRelayComms.registerSystemCallback(callback);
     }
-    bc.relay.deregisterSystemCallback = function() {
+    bc.relay.deregisterSystemCallback = function () {
         bc.brainCloudRelayComms.deregisterSystemCallback();
     }
 
@@ -12736,13 +13220,11 @@ function BCRelay() {
      * @param ordered Receive this ordered or not.
      * @param channel One of: (bc.relay.CHANNEL_HIGH_PRIORITY_1, bc.relay.CHANNEL_HIGH_PRIORITY_2, bc.relay.CHANNEL_NORMAL_PRIORITY, bc.relay.CHANNEL_LOW_PRIORITY)
      */
-    bc.relay.send = function(data, toNetId, reliable, ordered, channel) {
-        if (toNetId == bc.relay.TO_ALL_PLAYERS)
-        {
+    bc.relay.send = function (data, toNetId, reliable, ordered, channel) {
+        if (toNetId == bc.relay.TO_ALL_PLAYERS) {
             bc.relay.sendToAll(data, reliable, ordered, channel);
         }
-        else
-        {
+        else {
             // Fancy math here because using bitwise operation will transform the number into 32 bits
             var playerMask = Math.pow(2, toNetId);
             bc.brainCloudRelayComms.sendRelay(data, playerMask, reliable, ordered, channel);
@@ -12758,7 +13240,7 @@ function BCRelay() {
      * @param ordered Receive this ordered or not.
      * @param channel One of: (bc.relay.CHANNEL_HIGH_PRIORITY_1, bc.relay.CHANNEL_HIGH_PRIORITY_2, bc.relay.CHANNEL_NORMAL_PRIORITY, bc.relay.CHANNEL_LOW_PRIORITY)
      */
-    bc.relay.sendToPlayers = function(data, playerMask, reliable, ordered, channel) {
+    bc.relay.sendToPlayers = function (data, playerMask, reliable, ordered, channel) {
         bc.brainCloudRelayComms.sendRelay(data, playerMask, reliable, ordered, channel);
     }
 
@@ -12770,7 +13252,7 @@ function BCRelay() {
      * @param ordered Receive this ordered or not.
      * @param channel One of: (bc.relay.CHANNEL_HIGH_PRIORITY_1, bc.relay.CHANNEL_HIGH_PRIORITY_2, bc.relay.CHANNEL_NORMAL_PRIORITY, bc.relay.CHANNEL_LOW_PRIORITY)
      */
-    bc.relay.sendToAll = function(data, reliable, ordered, channel) {
+    bc.relay.sendToAll = function (data, reliable, ordered, channel) {
         var myProfileId = bc.authentication.profileId;
         var myNetId = bc.relay.getNetIdForProfileId(myProfileId);
 
@@ -15317,6 +15799,7 @@ function BrainCloudClient() {
         BCGlobalApp.apply(bcc);
         BCGlobalStatistics.apply(bcc);
         BCGlobalEntity.apply(bcc);
+        BCGroupFile.apply(bcc);
         BCGroup.apply(bcc);
         BCIdentity.apply(bcc);
         BCItemCatalog.apply(bcc);
@@ -15347,6 +15830,7 @@ function BrainCloudClient() {
         BCTournament.apply(bcc);
         BCGlobalFile.apply(bcc);
         BCCustomEntity.apply(bcc);
+        BCBlockchain.apply(bcc);
 
         BCTimeUtils.apply(bcc);
 
@@ -15367,6 +15851,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.globalApp = bcc.globalApp;
         bcc.brainCloudManager.globalStatistics = bcc.globalStatistics;
         bcc.brainCloudManager.globalEntity = bcc.globalEntity;
+        bcc.brainCloudManager.groupFile = bcc.groupFile;
         bcc.brainCloudManager.group = bcc.group;
         bcc.brainCloudManager.identity = bcc.identity;
         bcc.brainCloudManager.lobby = bcc.lobby;
@@ -15397,8 +15882,9 @@ function BrainCloudClient() {
         bcc.brainCloudManager.itemCatalog = bcc.itemCatalog;
         bcc.brainCloudManager.userItems = bcc.userItems;
         bcc.brainCloudManager.customEntity = bcc.customEntity;
+        bcc.brainCloudManager.blockchain = bcc.blockchain;
         bcc.brainCloudManager.timeUtils = bcc.timeUtils;
-        
+
         bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
         bcc.brainCloudRelayComms.brainCloudClient = bcc;
@@ -15423,6 +15909,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.globalApp = bcc.brainCloudClient.globalApp = bcc.brainCloudClient.globalApp || {};
         bcc.brainCloudManager.globalStatistics = bcc.brainCloudClient.globalStatistics = bcc.brainCloudClient.globalStatistics || {};
         bcc.brainCloudManager.globalEntity = bcc.brainCloudClient.globalEntity = bcc.brainCloudClient.globalEntity || {};
+        bcc.brainCloudManager.groupFile = bcc.brainCloudClient.groupFile = bcc.brainCloudClient.groupFile || {};
         bcc.brainCloudManager.group = bcc.brainCloudClient.group = bcc.brainCloudClient.group || {};
         bcc.brainCloudManager.identity = bcc.brainCloudClient.identity = bcc.brainCloudClient.identity || {};
         bcc.brainCloudManager.lobby = bcc.brainCloudClient.lobby = bcc.brainCloudClient.lobby || {};
@@ -15454,6 +15941,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.itemCatalog = bcc.brainCloudClient.itemCatalog = bcc.brainCloudClient.itemCatalog || {};
         bcc.brainCloudManager.userItems = bcc.brainCloudClient.userItems = bcc.brainCloudClient.userItems || {};
         bcc.brainCloudManager.customEntity = bcc.brainCloudClient.customEntity = bcc.brainCloudClient.customEntity || {};
+        bcc.brainCloudManager.blockchain = bcc.brainCloudClient.blockchain = bcc.brainCloudClient.blockchain || {};
         bcc.brainCloudManager.timeUtils = bcc.brainCloudClient.timeUtils = bcc.brainCloudClient.timeUtils || {};
 
         bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
@@ -15462,7 +15950,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.10.0";
+    bcc.version = "5.3.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -15559,7 +16047,7 @@ function BrainCloudClient() {
 
     /**
      * Returns the app version
-     * 
+     *
      * @return {string} - The application version
      */
     bcc.getAppVersion = function() {
@@ -15745,7 +16233,7 @@ function BrainCloudClient() {
      * @param languageCode ISO 639-1 two-letter language code
      */
     bcc.overrideLanguageCode = function(languageCode) {
-        brainCloudClient.languageCode = languageCode;
+        bcc.languageCode = languageCode;
     }
 
     bcc.heartbeat = function(callback) {
@@ -15755,7 +16243,7 @@ function BrainCloudClient() {
             callback : callback
         });
     };
-    
+
     /**
      * If the library is used through a command line nodejs app, the app need to be able to stop the heartbeat interval
      * otherwise the app can never exit once it's done processing.
@@ -15775,6 +16263,9 @@ function BrainCloudClient() {
 BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
 function BrainCloudRelayComms(_client) {
     var bcr = this;
+//> REMOVE IF K6
+    var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
+//> END
 
     bcr.CONTROL_BYTES_SIZE = 1;
 
@@ -15788,6 +16279,7 @@ function BrainCloudRelayComms(_client) {
     bcr.CL2RS_ACK           = 3;
     bcr.CL2RS_PING          = 4;
     bcr.CL2RS_RSMG_ACK      = 5;
+    bcr.CL2RS_ENDMATCH      = 6;
 
     // Messages sent from Relay-Server to Client
     bcr.RS2CL_RSMG          = 0;
@@ -15819,6 +16311,8 @@ function BrainCloudRelayComms(_client) {
     bcr._pingTime = null;
     bcr._sendPacketId = {};
     bcr.ping = 999;
+
+    bcr.endMatchRequested = false;
 
     bcr.setDebugEnabled = function(debugEnabled) {
         bcr._debugEnabled = debugEnabled;
@@ -15869,6 +16363,7 @@ function BrainCloudRelayComms(_client) {
         var passcode = options.passcode;
         var lobbyId = options.lobbyId;
         
+        bcr.endMatchRequested = false;
         bcr.isConnected = false;
         bcr.connectCallback = {
             success: success,
@@ -15911,21 +16406,39 @@ function BrainCloudRelayComms(_client) {
 
     bcr.disconnect = function() {
         bcr.stopPing();
-        if (bcr.socket) {
+        
+        if(!bcr.endMatchRequested){
+            if (bcr.socket) {
 //> REMOVE IF K6
-            bcr.socket.removeEventListener('error', bcr.onSocketError);
-            bcr.socket.removeEventListener('close', bcr.onSocketClose);
-            bcr.socket.removeEventListener('open', bcr.onSocketOpen);
-            bcr.socket.removeEventListener('message', bcr.onSocketMessage);
+                bcr.socket.removeEventListener('error', bcr.onSocketError);
+                bcr.socket.removeEventListener('close', bcr.onSocketClose);
+                bcr.socket.removeEventListener('open', bcr.onSocketOpen);
+                bcr.socket.removeEventListener('message', bcr.onSocketMessage);
 //> END
-            bcr.socket.close();
-            bcr.socket = null;
+                bcr.socket.close();
+                bcr.socket = null;
+            }
         }
+        
         bcr.isConnected = false;
         bcr._sendPacketId = {};
         bcr._netIdToProfileId = {};
         bcr._profileIdToNetId = {};
         bcr.ping = 999;    
+    }
+
+    bcr.endMatch = function(json){
+        if(bcr.isConnected){
+            
+            // Send end match request
+            var payload = {
+                jsonPayload: json
+            };
+
+            bcr.sendJson(bcr.CL2RS_ENDMATCH, payload);
+            
+            bcr.endMatchRequested = true;
+        }
     }
 
     bcr.registerRelayCallback = function(callback) {
@@ -15989,7 +16502,9 @@ function BrainCloudRelayComms(_client) {
     bcr.onSocketClose = function(e) {
         bcr.disconnect();
         if (bcr.connectCallback.failure) {
-            bcr.connectCallback.failure("Relay Connection closed");
+            if(!bcr.endMatchRequested){
+                bcr.connectCallback.failure("Relay Connection closed");
+            }
         }
     }
 
@@ -16015,7 +16530,7 @@ function BrainCloudRelayComms(_client) {
 //+         var buffer = new Uint8Array(data);
 //> END
 //> REMOVE IF K6
-            var buffer = new Buffer(data);
+            var buffer = Buffer.from(data);
 //> END
             if (data.length < 3) {
                 bcr.disconnect();
@@ -16062,7 +16577,7 @@ function BrainCloudRelayComms(_client) {
 //+     }
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(text.length + 3)
+        var buffer = Buffer.alloc(text.length + 3)
         buffer.writeUInt16BE(text.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.write(text, 3, text.length);
@@ -16128,7 +16643,7 @@ function BrainCloudRelayComms(_client) {
 //+     var buffer = new Uint8Array(data.length + 11);
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(data.length + 11)
+        var buffer = Buffer.alloc(data.length + 11)
 //> END
         buffer.writeUInt16BE(data.length + 11, 0)
         buffer.writeUInt8(bcr.CL2RS_RELAY, 2)
@@ -16161,7 +16676,7 @@ function BrainCloudRelayComms(_client) {
 //+     buffer[4] = (value_16u >> 8) & 0xFF;
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(5)
+        var buffer = Buffer.alloc(5)
         buffer.writeUInt16BE(5, 0);
         buffer.writeUInt8(bcr.CL2RS_PING, 2);
         buffer.writeUInt16BE(bcr.ping, 3);
@@ -16194,7 +16709,7 @@ function BrainCloudRelayComms(_client) {
 //+     buffer.set(data, 3);
 //> END
 //> REMOVE IF K6
-        var buffer = new Buffer(data.length + 3)
+        var buffer = Buffer.alloc(data.length + 3)
         buffer.writeUInt16BE(data.length + 3, 0);
         buffer.writeUInt8(netId, 2);
         buffer.set(data, 3);
@@ -16282,6 +16797,11 @@ function BrainCloudRelayComms(_client) {
             }
             case "MIGRATE_OWNER": {
                 bcr._ownerId = json.cxId;
+                break;
+            }
+            case "END_MATCH": {
+                bcr.endMatchRequested = true;
+                bcr.disconnect();
                 break;
             }
         }
@@ -16437,7 +16957,7 @@ function BrainCloudRttComms (m_client) {
 //+         socket.on('message', bcrtt.onSocketMessage);
 //+         socket.on('binaryMessage', msg =>
 //+         {
-//+             var message = Utf8ArrayToStr(new Uint8Array(msg))
+//+             var message = String.fromCharCode.apply(null, new Uint8Array(msg));
 //+             bcrtt.onSocketMessage(message);
 //+         });
 //+     });
@@ -16760,6 +17280,7 @@ function BrainCloudWrapper(wrapperName) {
         bcw.globalApp = bcw.brainCloudClient.globalApp;
         bcw.globalStatistics = bcw.brainCloudClient.globalStatistics;
         bcw.globalEntity = bcw.brainCloudClient.globalEntity;
+        bcw.groupFile = bcw.brainCloudClient.groupFile;
         bcw.group = bcw.brainCloudClient.group;
         bcw.identity = bcw.brainCloudClient.identity;
         bcw.lobby = bcw.brainCloudClient.lobby;
@@ -16791,6 +17312,7 @@ function BrainCloudWrapper(wrapperName) {
         bcw.itemCatalog = bcw.brainCloudClient.itemCatalog;
         bcw.userItems = bcw.brainCloudClient.userItems;
         bcw.customEntity = bcw.brainCloudClient.customEntity;
+        bcw.blockchain = bcw.brainCloudClient.blockchain;
         bcw.timeUtils = bcw.brainCloudClient.timeUtils;
 
         bcw.brainCloudManager = bcw.brainCloudClient.brainCloudManager = bcw.brainCloudClient.brainCloudManager || {};
@@ -16808,6 +17330,13 @@ function BrainCloudWrapper(wrapperName) {
     bcw.wrapperName = wrapperName === undefined ? "" : wrapperName;
 
     bcw._alwaysAllowProfileSwitch = true;
+    bcw.initializeParams = {
+        appId: "",
+        secretKey: "",
+        appVersion: "",
+        serverUrl: "",
+        secretMap: null
+    };
 
     bcw._initializeIdentity = function(isAnonymousAuth) {
         var profileId = bcw.getStoredProfileId();
@@ -16839,17 +17368,45 @@ function BrainCloudWrapper(wrapperName) {
         bcw.brainCloudClient.initializeIdentity(profileIdToAuthenticateWith, anonymousId);
     };
 
-    bcw._authResponseHandler = function(result) {
+    bcw._authResponseHandler = function(responseHandler, result) {
+
+        if (result.status == 202 && result.reason_code == bcw.reasonCodes.MANUAL_REDIRECT)
+        {
+            // Manual redirection
+            bcw.initializeParams.serverUrl = result.redirect_url ? result.redirect_url : bcw.initializeParams.serverUrl;
+            var newAppId = result.redirect_appid ? result.redirect_appid : null;
+
+            // re-initialize the client with our app info
+            if (bcw.initializeParams.secretMap == null)
+            {
+                if (newAppId != null) bcw.initializeParams.appId = newAppId;
+                bcw.brainCloudClient.initialize(bcw.initializeParams.appId, bcw.initializeParams.secretKey, bcw.initializeParams.appVersion);
+                bcw.brainCloudClient.setServerUrl(bcw.initializeParams.serverUrl);
+            }
+            else
+            {
+                // For initialize with apps, we ignore the new app id
+                bcw.brainCloudClient.initializeWithApps(bcw.initializeParams.appId, bcw.initializeParams.secretMap, bcw.initializeParams.appVersion);
+                bcw.brainCloudClient.setServerUrl(bcw.initializeParams.serverUrl);
+            }
+
+            bcw._initializeIdentity(true);
+            bcw.brainCloudClient.authentication.retryPreviousAuthenticate(responseHandler);
+
+            return;
+        }
 
         if (result.status == 200) {
             var profileId = result.data.profileId;
             bcw.setStoredProfileId(profileId);
-    
+
             var sessionId = result.data.sessionId;
             bcw.setStoredSessionId(sessionId);
         }
-        
+
         console.log("Updated saved profileId to " + profileId);
+
+        responseHandler(result);
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -16857,10 +17414,24 @@ function BrainCloudWrapper(wrapperName) {
     ///////////////////////////////////////////////////////////////////////////
 
     bcw.initialize = function(appId, secret, appVersion) {
+        bcw.initializeParams = {
+            appId: appId,
+            secretKey: secret,
+            appVersion: appVersion,
+            serverUrl: "",
+            secretMap: null
+        };
         bcw.brainCloudClient.initialize(appId, secret, appVersion);
     };
 
     bcw.initializeWithApps = function(defaultAppId, secretMap, appVersion) {
+        bcw.initializeParams = {
+            appId: defaultAppId,
+            secretKey: "",
+            appVersion: appVersion,
+            serverUrl: "",
+            secretMap: secretMap
+        };
         bcw.brainCloudClient.initializeWithApps(defaultAppId, secretMap, appVersion);
     };
 
@@ -16925,14 +17496,13 @@ function BrainCloudWrapper(wrapperName) {
      *
      */
     bcw.authenticateAnonymous = function(responseHandler) {
-
         bcw._initializeIdentity(true);
 
         bcw.brainCloudClient.authentication.authenticateAnonymous(
             true,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             }
             );
     };
@@ -16961,8 +17531,8 @@ function BrainCloudWrapper(wrapperName) {
             password,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -16989,8 +17559,8 @@ function BrainCloudWrapper(wrapperName) {
             externalAuthName,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17015,8 +17585,8 @@ function BrainCloudWrapper(wrapperName) {
             facebookToken,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17035,14 +17605,14 @@ function BrainCloudWrapper(wrapperName) {
          bcw.authenticateFacebookLimited = function(facebookLimitedId, facebookToken, forceCreate, responseHandler) {
 
             bcw._initializeIdentity(false);
-    
+
             bcw.brainCloudClient.authentication.authenticateFacebookLimited(
                 facebookLimitedId,
                 facebookToken,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17065,8 +17635,8 @@ function BrainCloudWrapper(wrapperName) {
             gameCenterId,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17091,8 +17661,8 @@ function BrainCloudWrapper(wrapperName) {
             identityToken,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17112,12 +17682,12 @@ function BrainCloudWrapper(wrapperName) {
         bcw._initializeIdentity(false);
 
         bcw.brainCloudClient.authentication.authenticateUltra(
-            ultraUsername, 
-            ultraIdToken, 
+            ultraUsername,
+            ultraIdToken,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17142,12 +17712,12 @@ function BrainCloudWrapper(wrapperName) {
             serverAuthCode,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
-    
+
     /**
      * Authenticate the user using a google user id (email address) and google authentication token.
      *
@@ -17161,7 +17731,7 @@ function BrainCloudWrapper(wrapperName) {
      * @param responseHandler {function} - The user callback method
      */
     bcw.authenticateGoogleOpenId = function(googleUserAccountEmail, IdToken, forceCreate, responseHandler) {
-        
+
         bcw._initializeIdentity(false);
 
         bcw.brainCloudClient.authentication.authenticateGoogleOpenId(
@@ -17169,8 +17739,8 @@ function BrainCloudWrapper(wrapperName) {
             IdToken,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17198,8 +17768,8 @@ function BrainCloudWrapper(wrapperName) {
             sessionTicket,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17226,8 +17796,8 @@ function BrainCloudWrapper(wrapperName) {
             secret,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17251,12 +17821,12 @@ function BrainCloudWrapper(wrapperName) {
             userPassword,
             forceCreate,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
-    
+
     /**
      * A generic Authenticate method that translates to the same as calling a specific one, except it takes an extraJson
      * that will be passed along to pre- or post- hooks.
@@ -17280,8 +17850,8 @@ function BrainCloudWrapper(wrapperName) {
             forceCreate,
             extraJson,
             function(result) {
-                bcw._authResponseHandler(result);
-                responseHandler(result);
+                bcw._authResponseHandler(responseHandler, result);
+
             });
     };
 
@@ -17300,9 +17870,6 @@ function BrainCloudWrapper(wrapperName) {
         bcw.brainCloudClient.authentication.authenticateHandoff(
             handoffId,
             securityToken,
-            bc.authentication.AUTHENTICATION_TYPE_HANDOFF,
-            null,
-            false,
             callback);
     };
 
@@ -17319,10 +17886,6 @@ function BrainCloudWrapper(wrapperName) {
     bcw.authenticateSettopHandoff= function(handoffCode, callback) {
         bcw.brainCloudClient.authentication.authenticateSettopHandoff(
             handoffCode,
-            "",
-            bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF,
-            null,
-            false,
             callback);
     };
 
@@ -17356,8 +17919,8 @@ function BrainCloudWrapper(wrapperName) {
                 password,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17392,8 +17955,8 @@ function BrainCloudWrapper(wrapperName) {
                 token,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17427,8 +17990,8 @@ function BrainCloudWrapper(wrapperName) {
                 facebookToken,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17453,20 +18016,20 @@ function BrainCloudWrapper(wrapperName) {
      */
          bcw.smartSwitchAuthenticateFacebookLimited = function (facebookLimitedId, facebookToken, forceCreate, responseHandler)
          {
-     
+
              bcw._initializeIdentity(false);
-     
+
              authenticationCallback = function() {
                  bcw.brainCloudClient.authentication.authenticateFacebookLimited(
                      facebookLimitedId,
                      facebookToken,
                      forceCreate,
                      function(result) {
-                         bcw._authResponseHandler(result);
-                         responseHandler(result);
+                         bcw._authResponseHandler(responseHandler, result);
+
                      });
              };
-     
+
              bcw.brainCloudClient.identity.getIdentities(getIdentitiesCallback(authenticationCallback));
          };
 
@@ -17495,8 +18058,8 @@ function BrainCloudWrapper(wrapperName) {
                 gameCenterId,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17530,8 +18093,8 @@ function BrainCloudWrapper(wrapperName) {
                 googleToken,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17542,7 +18105,7 @@ function BrainCloudWrapper(wrapperName) {
      * Smart Switch Authenticate will logout of the current profile, and switch to the new authentication type.
      * In event the current session was previously an anonymous account, the smart switch will delete that profile.
      * Use this function to keep a clean designflow from anonymous to signed profiles
-     * 
+     *
      * Authenticate the user for Ultra.
      *
      * Service Name - authenticationV2
@@ -17564,14 +18127,14 @@ function BrainCloudWrapper(wrapperName) {
                 ultraIdToken,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
         bcw.brainCloudClient.identity.getIdentities(getIdentitiesCallback(authenticationCallback));
     };
-    
+
 
 
     /**
@@ -17603,8 +18166,8 @@ function BrainCloudWrapper(wrapperName) {
                 sessionTicket,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17640,8 +18203,8 @@ function BrainCloudWrapper(wrapperName) {
                 secret,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17674,8 +18237,8 @@ function BrainCloudWrapper(wrapperName) {
                 userPassword,
                 forceCreate,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17710,8 +18273,8 @@ function BrainCloudWrapper(wrapperName) {
                 forceCreate,
                 extraJson,
                 function(result) {
-                    bcw._authResponseHandler(result);
-                    responseHandler(result);
+                    bcw._authResponseHandler(responseHandler, result);
+
                 });
         };
 
@@ -17824,16 +18387,32 @@ function BrainCloudWrapper(wrapperName) {
      */
     bcw.resetEmailPasswordAdvancedWithExpiry = function(emailAddress, serviceParams, tokenTtlInMinutes, responseHandler) {
         bcw.brainCloudClient.authentication.resetEmailPasswordAdvancedWithExpiry(emailAddress, serviceParams, tokenTtlInMinutes, responseHandler);
-    };
+    }
+
+    /**
+     * Check if a user can reconnect via saved profile and anonymous IDs from a previously authenticated session.
+     * @returns True if a saved profile and anonymous ID exist in localStorage
+     */
+    bcw.canReconnect = function () {
+        return bcw.getStoredProfileId() !== "" && bcw.getStoredAnonymousId() !== ""
+    }
 
     /** Method authenticates the user using universal credentials
      *
      * @param responseHandler {function} - The user callback method
      */
     bcw.reconnect = function(responseHandler) {
-        bcw.authenticateAnonymous(responseHandler);
-    };
-    
+        bcw._initializeIdentity(true)
+
+        bcw.brainCloudClient.authentication.authenticateAnonymous(
+            false,
+            function (result) {
+                bcw._authResponseHandler(responseHandler, result)
+
+            }
+        )
+    }
+
     /**
      * Reset Email password - sends a password reset email to the specified address
      *
@@ -17910,21 +18489,15 @@ function BrainCloudWrapper(wrapperName) {
         bcw.brainCloudClient.authentication.resetUniversalIdPasswordAdvancedWithExpiry(universalId, serviceParams, tokenTtlInMinutes, responseHandler);
     };
 
-    /** Method authenticates the user using universal credentials
-     *
-     * @param responseHandler {function} - The user callback method
-     */
-    bcw.reconnect = function(responseHandler) {
-        bcw.authenticateAnonymous(responseHandler);
-    };
-
     /**
      * Attempt to restore the session based on saved information in cookies.
      * This will failed in the session is expired. It's intended to be able to
      * refresh (F5) a webpage and restore.
      */
     bcw.restoreSession = function(callback) {
-        console.log("Attempting restoring session with id: " + sessionId);
+        var sessionId = bcw.getStoredSessionId();
+        
+        console.log("Attempting to restore session with id: " + sessionId);
 
         var profileId = bcw.getStoredProfileId();
         var anonymousId = bcw.getStoredAnonymousId();
@@ -17932,8 +18505,7 @@ function BrainCloudWrapper(wrapperName) {
 
         bcw.brainCloudClient.brainCloudManager._isAuthenticated = true;
         bcw.brainCloudClient.brainCloudManager._packetId = localStorage.getItem("lastPacketId");
-        
-        var sessionId = bcw.getStoredSessionId();
+
         bcw.brainCloudClient.brainCloudManager.setSessionId(sessionId);
         bcw.brainCloudClient.time.readServerTime(function(result) {
             if (result.status === 200) {
@@ -17942,6 +18514,85 @@ function BrainCloudWrapper(wrapperName) {
                 callback(result);
             }
         });
+    }
+
+    /**
+     * Logs user out of server.
+     * @param {boolean} forgetUser Determines whether the stored profile ID should be reset or not
+     * @param {*} responseHandler Function to invoke when request is processed
+     */
+    bcw.logout = function(forgetUser, responseHandler){
+        if(forgetUser){
+            bcw.resetStoredProfileId()
+        }
+
+        bcw.brainCloudClient.playerState.logout(responseHandler)
+    }
+
+    /**
+     * Logs user out of the server.
+     * Intended to be used when the user closes the page.
+     * 
+     * Service Name - PlayerState
+     * Service Operation - Logout
+     * @param {boolean} forgetUser
+     */
+    bcw.logoutOnApplicationClose = function(forgetUser){
+        if(forgetUser){
+            bcw.resetStoredProfileId()
+        }
+        
+        var messages = JSON.stringify(
+            {
+                messages: [{
+                    service: bcw.brainCloudClient.SERVICE_PLAYERSTATE,
+                    operation: bcw.brainCloudClient.playerState.OPERATION_LOGOUT
+                }],
+                gameId: bcw.brainCloudClient.brainCloudManager._appId,
+                sessionId: bcw.brainCloudClient.brainCloudManager._sessionId,
+                packetId: bcw.brainCloudClient.brainCloudManager._packetId++
+            });
+        var sig = CryptoJS.MD5(messages + bcw.brainCloudClient.brainCloudManager._secret);
+        bcw.brainCloudClient.brainCloudManager._packetId++;
+
+        fetch(bcw.brainCloudClient.brainCloudManager._dispatcherUrl, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", "X-APPID": bcw.brainCloudClient.brainCloudManager._appId, "X-SIG": sig }, body: messages });
+    }
+
+    /**
+     * Execute a script on the server and Logout in one frame, meant to be used when application closes/exits.
+     * @param {boolean} forgetUser 
+     * @param {string} scriptName 
+     * @param {string} jsonString 
+     */
+    bcw.runScriptAndLogoutOnApplicationClose = function(forgetUser, scriptName, jsonString){
+        if(forgetUser){
+            bcw.resetStoredProfileId()
+        }
+        
+        var messages = JSON.stringify(
+            {
+                messages: [
+                    {
+                        service: bcw.brainCloudClient.SERVICE_SCRIPT,
+                        operation: bcw.brainCloudClient.script.OPERATION_RUN,
+                        data: {
+                            scriptName: scriptName,
+                            scriptData: jsonString
+                        }
+                    },
+                    {
+                        service: bcw.brainCloudClient.SERVICE_PLAYERSTATE,
+                        operation: bcw.brainCloudClient.playerState.OPERATION_LOGOUT
+                    }
+                ],
+                gameId: bcw.brainCloudClient.brainCloudManager._appId,
+                sessionId: bcw.brainCloudClient.brainCloudManager._sessionId,
+                packetId: bcw.brainCloudClient.brainCloudManager._packetId++
+            });
+        var sig = CryptoJS.MD5(messages + bcw.brainCloudClient.brainCloudManager._secret);
+        bcw.brainCloudClient.brainCloudManager._packetId++;
+
+        fetch(bcw.brainCloudClient.brainCloudManager._dispatcherUrl, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", "X-APPID": bcw.brainCloudClient.brainCloudManager._appId, "X-SIG": sig }, body: messages });
     }
 }
 
