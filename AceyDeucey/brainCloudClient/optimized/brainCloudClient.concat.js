@@ -2468,6 +2468,12 @@ function BCAuthentication() {
 		_navLangCode = _navLangCode.split("-");
 		var languageCode =  bc.languageCode == null ? _navLangCode[0] : bc.languageCode;
 		var countryCode = bc.countryCode == null ? _navLangCode[1] : bc.countryCode;
+		if (countryCode === "419") {
+			countryCode = "_LA_"
+		}
+		if (countryCode === "Hans" || countryCode === "Hant") {
+			countryCode = "CN"
+		}
 
 		var now = new Date();
 		var timeZoneOffset = -now.getTimezoneOffset() / 60.0;
@@ -4163,6 +4169,7 @@ function BCEvents() {
 
 	bc.event.OPERATION_SEND = "SEND";
 	bc.event.OPERATION_UPDATE_EVENT_DATA = "UPDATE_EVENT_DATA";
+	bc.event.OPERATION_UPDATE_EVENT_DATA_IF_EXISTS = "UPDATE_EVENT_DATA_IF_EXISTS";
 	bc.event.OPERATION_DELETE_INCOMING = "DELETE_INCOMING";
 	bc.event.OPERATION_DELETE_SENT = "DELETE_SENT";
 	bc.event.OPERATION_GET_EVENTS = "GET_EVENTS";
@@ -4223,6 +4230,30 @@ function BCEvents() {
 		bc.brainCloudManager.sendRequest({
 			service: bc.SERVICE_EVENT,
 			operation: bc.event.OPERATION_UPDATE_EVENT_DATA,
+			data: message,
+			callback: callback
+		});
+	};
+
+	/**
+	 * Updates an event in the player's incoming event mailbox.
+	 * Identical to updateIncomingEventData method, but will not return an error if the event does not exist
+	 *
+	 * Service Name - Event
+	 * Service Operation - UpdateEventData
+	 *
+	 * @param evId The event id
+	 * @param eventData The user-defined data for this event encoded in JSON.
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.event.updateIncomingEventDataIfExists = function(evId, eventData, callback) {
+		var message = {
+			evId: evId,
+			eventData: eventData
+		};
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_EVENT,
+			operation: bc.event.OPERATION_UPDATE_EVENT_DATA_IF_EXISTS,
 			data: message,
 			callback: callback
 		});
@@ -8886,32 +8917,38 @@ function BCIdentity() {
 		});
 	};
 
-	bc.identity.switchToChildProfileInternal = function(childProfileId, childAppId, forceCreate, forceSingleton, callback) {
+    bc.identity.switchToChildProfileInternal = function (childProfileId, childAppId, forceCreate, forceSingleton, callback) {
 
-		var _navLangCode = window.navigator.userLanguage || window.navigator.language;
-		_navLangCode = _navLangCode.split("-");
-		var languageCode = _navLangCode[0];
-		var countryCode = _navLangCode[1];
+        var _navLangCode = window.navigator.userLanguage || window.navigator.language;
+        _navLangCode = _navLangCode.split("-");
+        var languageCode = _navLangCode[0];
+        var countryCode = _navLangCode[1];
+        if (countryCode === "419") {
+            countryCode = "_LA_"
+        }
+        if (countryCode === "Hans" || countryCode === "Hant") {
+            countryCode = "CN"
+        }
 
-		var now = new Date();
-		var timeZoneOffset = -now.getTimezoneOffset() / 60.0;
+        var now = new Date();
+        var timeZoneOffset = -now.getTimezoneOffset() / 60.0;
 
-		bc.brainCloudManager.sendRequest({
-			service: bc.SERVICE_IDENTITY,
-			operation: bc.identity.OPERATION_SWITCH_TO_CHILD_PROFILE,
-			data: {
-				profileId : childProfileId,
-				gameId : childAppId,
-				forceCreate : forceCreate,
-				forceSingleton : forceSingleton,
-				releasePlatform: "WEB",
-				timeZoneOffset : timeZoneOffset,
-				languageCode : languageCode,
-				countryCode : countryCode
-			},
-			callback: callback
-		});
-	};
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_IDENTITY,
+            operation: bc.identity.OPERATION_SWITCH_TO_CHILD_PROFILE,
+            data: {
+                profileId: childProfileId,
+                gameId: childAppId,
+                forceCreate: forceCreate,
+                forceSingleton: forceSingleton,
+                releasePlatform: "WEB",
+                timeZoneOffset: timeZoneOffset,
+                languageCode: languageCode,
+                countryCode: countryCode
+            },
+            callback: callback
+        });
+    };
 
 }
 
@@ -9462,8 +9499,7 @@ function BCLobby() {
     /// </summary>
     bc.lobby.cancelFindRequest = function(lobbyType, callback) {
         var data = {
-            lobbyType: lobbyType,
-            cxId: bc.rttService.getRTTConnectionId()
+            lobbyType: lobbyType
         };
 
         bc.brainCloudManager.sendRequest({
@@ -13774,17 +13810,24 @@ function BCSocialLeaderboard() {
 
     bc.socialLeaderboard.OPERATION_POST_SCORE = "POST_SCORE";
     bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC = "POST_SCORE_DYNAMIC";
+    bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC_USING_CONFIG = "POST_SCORE_DYNAMIC_USING_CONFIG";
     bc.socialLeaderboard.OPERATION_RESET = "RESET";
     bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD = "GET_SOCIAL_LEADERBOARD";
+    bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD_IF_EXISTS = "GET_SOCIAL_LEADERBOARD_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD_BY_VERSION = "GET_SOCIAL_LEADERBOARD_BY_VERSION";
+    bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS = "GET_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_GET_MULTI_SOCIAL_LEADERBOARD = "GET_MULTI_SOCIAL_LEADERBOARD";
     bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_PAGE = "GET_GLOBAL_LEADERBOARD_PAGE";
+    bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_PAGE_IF_EXISTS = "GET_GLOBAL_LEADERBOARD_PAGE_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VIEW = "GET_GLOBAL_LEADERBOARD_VIEW";
+    bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VIEW_IF_EXISTS = "GET_GLOBAL_LEADERBOARD_VIEW_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VERSIONS = "GET_GLOBAL_LEADERBOARD_VERSIONS";
     bc.socialLeaderboard.OPERATION_GET_GROUP_SOCIAL_LEADERBOARD = "GET_GROUP_SOCIAL_LEADERBOARD";
     bc.socialLeaderboard.OPERATION_GET_GROUP_SOCIAL_LEADERBOARD_BY_VERSION = "GET_GROUP_SOCIAL_LEADERBOARD_BY_VERSION";
     bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD = "GET_PLAYERS_SOCIAL_LEADERBOARD";
+    bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_IF_EXISTS = "GET_PLAYERS_SOCIAL_LEADERBOARD_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION = "GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION";
+    bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS = "GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS";
     bc.socialLeaderboard.OPERATION_LIST_ALL_LEADERBOARDS = "LIST_ALL_LEADERBOARDS";
     bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_ENTRY_COUNT = "GET_GLOBAL_LEADERBOARD_ENTRY_COUNT";
     bc.socialLeaderboard.OPERATION_REMOVE_PLAYER_SCORE = "REMOVE_PLAYER_SCORE";
@@ -13843,6 +13886,43 @@ function BCSocialLeaderboard() {
 
     /**
      * Method returns a page of global leaderboard results.
+     *
+     * Leaderboards entries contain the player's score and optionally, some user-defined
+     * data associated with the score.
+     *
+     * Note: This method allows the client to retrieve pages from within the global leaderboard list
+     * 
+     * This method returns the same data as getGlobalLeaderboardPage, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - SocialLeaderboard
+     * Service Operation - GetGlobalLeaderboardPage
+     *
+     * @param leaderboardId {string} The id of the leaderboard to retrieve.
+     * @param sortOrder {string} Sort key Sort order of page.
+     * @param startRank {int} The rank at which to start the page.
+     * @param endRank {int} The rank at which to end the page.
+     * @param callback The method to be invoked when the server response is received
+     *
+     * @see bc.socialLeaderboard.SortOrder
+     */
+    bc.socialLeaderboard.getGlobalLeaderboardPageIfExists = function (
+        leaderboardId, sortOrder, startIndex, endIndex, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service: bc.SERVICE_LEADERBOARD,
+                operation: bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_PAGE_IF_EXISTS,
+                data: {
+                    leaderboardId: leaderboardId,
+                    sort: sortOrder,
+                    startIndex: startIndex,
+                    endIndex: endIndex
+                },
+                callback: callback
+            });
+    };
+
+    /**
+     * Method returns a page of global leaderboard results.
      * By using a non-current version id, the user can retrieve a historial leaderboard.
      * See GetGlobalLeaderboardVersions method to retrieve the version id.
      *
@@ -13864,6 +13944,42 @@ function BCSocialLeaderboard() {
             .sendRequest({
                 service : bc.SERVICE_LEADERBOARD,
                 operation : bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_PAGE,
+                data : {
+                    leaderboardId : leaderboardId,
+                    sort : sortOrder,
+                    startIndex : startIndex,
+                    endIndex : endIndex,
+                    versionId : versionId
+                },
+                callback : callback
+            });
+    };
+
+    /**
+     * Method returns a page of global leaderboard results.
+     * By using a non-current version id, the user can retrieve a historial leaderboard.
+     * See GetGlobalLeaderboardVersions method to retrieve the version id.
+     * 
+     * This method returns the same data as getGlobalLeaderboardPageByVersion, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - SocialLeaderboard
+     * Service Operation - GetGlobalLeaderboardPage
+     *
+     * @param leaderboardId {string} The id of the leaderboard to retrieve.
+     * @param sortOrder {string} Sort key Sort order of page.
+     * @param startRank {int} The rank at which to start the page.
+     * @param endRank {int} The rank at which to end the page.
+     * @param versionId The historical version to retrieve
+     * @param callback The method to be invoked when the server response is received
+     *
+     * @see bc.socialLeaderboard.SortOrder
+     */
+    bc.socialLeaderboard.getGlobalLeaderboardPageByVersionIfExists = function(
+        leaderboardId, sortOrder, startIndex, endIndex, versionId, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service : bc.SERVICE_LEADERBOARD,
+                operation : bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_PAGE_IF_EXISTS,
                 data : {
                     leaderboardId : leaderboardId,
                     sort : sortOrder,
@@ -13912,6 +14028,43 @@ function BCSocialLeaderboard() {
 
     /**
      * Method returns a view of global leaderboard results.
+     *
+     * Leaderboards entries contain the player's score and optionally, some user-defined
+     * data associated with the score.
+     *
+     * Note: This method allows the client to retrieve pages from within the global leaderboard list
+     * 
+     * This method returns the same data as getGlobalLeaderboardView, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - SocialLeaderboard
+     * Service Operation - GetGlobalLeaderboardPage
+     *
+     * @param leaderboardId {string} The id of the leaderboard to retrieve.
+     * @param sortOrder {string} Sort key Sort order of page.
+     * @param beforeCount {int} The count of number of players before the current player to include.
+     * @param afterCount {int} The count of number of players after the current player to include.
+     * @param callback The method to be invoked when the server response is received
+     *
+     * @see bc.socialLeaderboard.SortOrder
+     */
+    bc.socialLeaderboard.getGlobalLeaderboardViewIfExists = function(
+        leaderboardId, sortOrder, beforeCount, afterCount, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service : bc.SERVICE_LEADERBOARD,
+                operation : bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VIEW_IF_EXISTS,
+                data : {
+                    leaderboardId : leaderboardId,
+                    sort : sortOrder,
+                    beforeCount : beforeCount,
+                    afterCount : afterCount
+                },
+                callback : callback
+            });
+    };
+
+    /**
+     * Method returns a view of global leaderboard results.
      * By using a non-current version id, the user can retrieve a historial leaderboard.
      * See GetGlobalLeaderboardVersions method to retrieve the version id.
      *
@@ -13933,6 +14086,42 @@ function BCSocialLeaderboard() {
             .sendRequest({
                 service : bc.SERVICE_LEADERBOARD,
                 operation : bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VIEW,
+                data : {
+                    leaderboardId : leaderboardId,
+                    sort : sortOrder,
+                    beforeCount : beforeCount,
+                    afterCount : afterCount,
+                    versionId : versionId
+                },
+                callback : callback
+            });
+    };
+
+    /**
+     * Method returns a view of global leaderboard results.
+     * By using a non-current version id, the user can retrieve a historial leaderboard.
+     * See GetGlobalLeaderboardVersions method to retrieve the version id.
+     * 
+     * This method returns the same data as getGlobalLeaderboardViewByVersion, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - SocialLeaderboard
+     * Service Operation - GetGlobalLeaderboardView
+     *
+     * @param leaderboardId {string} The id of the leaderboard to retrieve.
+     * @param sortOrder {string} Sort key Sort order of page.
+     * @param beforeCount {int} The count of number of players before the current player to include.
+     * @param afterCount {int} The count of number of players after the current player to include.
+     * @param versionId The historical version to retrieve
+     * @param callback The method to be invoked when the server response is received
+     *
+     * @see bc.socialLeaderboard.SortOrder
+     */
+    bc.socialLeaderboard.getGlobalLeaderboardViewByVersionIfExists = function(
+        leaderboardId, sortOrder, beforeCount, afterCount, versionId, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service : bc.SERVICE_LEADERBOARD,
+                operation : bc.socialLeaderboard.OPERATION_GET_GLOBAL_LEADERBOARD_VIEW_IF_EXISTS,
                 data : {
                     leaderboardId : leaderboardId,
                     sort : sortOrder,
@@ -14025,6 +14214,44 @@ function BCSocialLeaderboard() {
     };
 
     /**
+     * Method returns the social leaderboard. A player's social leaderboard is
+     * comprised of players who are recognized as being your friend.
+     * 
+     * This method returns the same data as getSocialLeaderboard, but it will not return an error if the leaderboard does not exist.
+     * 
+     * The getSocialLeaderboard will retrieve all friends from all friend platforms, so
+     * - all external friends (Facebook, Steam, PlaystationNetwork)
+     * - all internal friends (brainCloud)
+     * - plus "self".
+     *
+     * Leaderboards entries contain the player's score and optionally, some user-defined
+     * data associated with the score. The currently logged in player will also
+     * be returned in the social leaderboard.
+     *
+     * Note: If no friends have played the game, the bestScore, createdAt, updatedAt
+     * will contain NULL.
+     *
+     * @param leaderboardId The id of the leaderboard to retrieve
+     * @param replaceName If true, the currently logged in player's name will be replaced
+     * by the string "You".
+     * @param callback The method to be invoked when the server response is received
+     *
+     */
+    bc.socialLeaderboard.getSocialLeaderboardIfExists = function (
+        leaderboardId, replaceName, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service: bc.SERVICE_LEADERBOARD,
+                operation: bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD_IF_EXISTS,
+                data: {
+                    leaderboardId: leaderboardId,
+                    replaceName: replaceName
+                },
+                callback: callback
+            });
+    };
+
+    /**
      * Method returns the social leaderboard by version. A player's social leaderboard is
      * comprised of players who are recognized as being your friend.
      * 
@@ -14059,6 +14286,46 @@ function BCSocialLeaderboard() {
                     versionId : versionId
                 },
                 callback : callback
+            });
+    };
+
+    /**
+     * Method returns the social leaderboard by version. A player's social leaderboard is
+     * comprised of players who are recognized as being your friend.
+     * 
+     * This method returns the same data as getSocialLeaderboardByVersion, but it will not return an error if the leaderboard does not exist.
+     * 
+     * The getSocialLeaderboard will retrieve all friends from all friend platforms, so
+     * - all external friends (Facebook, Steam, PlaystationNetwork)
+     * - all internal friends (brainCloud)
+     * - plus "self".
+     * 
+     * Leaderboards entries contain the player's score and optionally, some user-defined
+     * data associated with the score. The currently logged in player will also
+     * be returned in the social leaderboard.
+     *
+     * Note: If no friends have played the game, the bestScore, createdAt, updatedAt
+     * will contain NULL.
+     *
+     * @param leaderboardId The id of the leaderboard to retrieve
+     * @param replaceName If true, the currently logged in player's name will be replaced
+     * by the string "You".
+     * @param versionId the version of the social leaderboard
+     * @param callback The method to be invoked when the server response is received
+     *
+     */
+    bc.socialLeaderboard.getSocialLeaderboardByVersionIfExists = function (
+        leaderboardId, replaceName, versionId, callback) {
+        bc.brainCloudManager
+            .sendRequest({
+                service: bc.SERVICE_LEADERBOARD,
+                operation: bc.socialLeaderboard.OPERATION_GET_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS,
+                data: {
+                    leaderboardId: leaderboardId,
+                    replaceName: replaceName,
+                    versionId: versionId
+                },
+                callback: callback
             });
     };
 
@@ -14186,25 +14453,55 @@ function BCSocialLeaderboard() {
      * @param retainedCount How many rotations to keep
      * @param callback The method to be invoked when the server response is received
      */
-    bc.socialLeaderboard.postScoreToDynamicLeaderboardUTC = function(leaderboardName, score,
-                                                                     data, leaderboardType, rotationType, 
-                                                                     rotationReset, retainedCount, callback ) {
+    bc.socialLeaderboard.postScoreToDynamicLeaderboardUTC = function (leaderboardName, score,
+        data, leaderboardType, rotationType,
+        rotationReset, retainedCount, callback) {
+        
         bc.brainCloudManager
             .sendRequest({
-                service : bc.SERVICE_LEADERBOARD,
-                operation : bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC,
-                data : {
-                    leaderboardId : leaderboardName,
-                    score : score,
-                    data : data,
-                    leaderboardType : leaderboardType,
-                    rotationType : rotationType,
-                    rotationResetTime : rotationReset.getTime().toFixed(0),
-                    retainedCount : retainedCount
+                service: bc.SERVICE_LEADERBOARD,
+                operation: bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC,
+                data: {
+                    leaderboardId: leaderboardName,
+                    score: score,
+                    data: data,
+                    leaderboardType: leaderboardType,
+                    rotationType: rotationType,
+                    rotationResetTime: rotationReset.getTime().toFixed(0),
+                    retainedCount: retainedCount
                 },
-                callback : callback
+                callback: callback
             });
     };
+
+    /**
+     * Post the player's score to the given social leaderboard, dynamically creating the leaderboard if it does not exist yet.
+     * To create new leaderboard, configJson must specify:
+     * 
+     * leaderboardType,
+     * rotationType,
+     * resetAt, 
+     * and retainedCount, at a minimum, with support to optionally specify an expiry in minutes.
+     * 
+     * @param {*} leaderboardId 
+     * @param {*} score 
+     * @param {*} scoreData 
+     * @param {*} configJson 
+     * @param {*} callback 
+     */
+    bc.socialLeaderboard.postScoreToDynamicLeaderboardUsingConfig = function(leaderboardId, score, scoreData, configJson, callback){
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LEADERBOARD,
+            operation: bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC_USING_CONFIG,
+            data: {
+                leaderboardId: leaderboardId,
+                score: score,
+                scoreData: scoreData,
+                configJson: configJson
+            },
+            callback: callback
+        })
+    }
 
     /**
      *@deprecated Use postScoreToDynamicLeaderboardDaysUTC instead - Will be removed on March 1, 2022
@@ -14385,6 +14682,32 @@ function BCSocialLeaderboard() {
     }
 
     /**
+     * Retrieve the social leaderboard for a group.
+     * 
+     * This method returns the same data as getPlayersSocialLeaderboard, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - leaderboard
+     * Service Operation - GET_GROUP_SOCIAL_LEADERBOARD
+     *
+     * @param leaderboardId The leaderboard to retrieve
+     * @param profileIds The IDs of the players
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.socialLeaderboard.getPlayersSocialLeaderboardIfExists = function (leaderboardId, profileIds, callback) {
+        var message = {
+            leaderboardId: leaderboardId,
+            profileIds: profileIds
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LEADERBOARD,
+            operation: bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_IF_EXISTS,
+            data: message,
+            callback: callback
+        });
+    }
+
+    /**
      * Retrieve the social leaderboard for a player by the version.
      *
      * Service Name - leaderboard
@@ -14405,6 +14728,34 @@ function BCSocialLeaderboard() {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_LEADERBOARD,
             operation : bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION,
+            data : message,
+            callback : callback
+        });
+    }
+
+    /**
+     * Retrieve the social leaderboard for a player by the version.
+     * 
+     * This method returns the same data as getPlayersSocialLeaderboardByVersion, but it will not return an error if the leaderboard does not exist.
+     *
+     * Service Name - leaderboard
+     * Service Operation - GET_PLAYER_SOCIAL_LEADERBOARD_BY_VERSION
+     *
+     * @param leaderboardId The leaderboard to retrieve
+     * @param profileIds The IDs of the players
+     * @param versionId The version of the leaderboard
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.socialLeaderboard.getPlayersSocialLeaderboardByVersionIfExists = function(leaderboardId, profileIds, versionId, callback) {
+        var message = {
+            leaderboardId : leaderboardId,
+            profileIds : profileIds,
+            versionId : versionId
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_LEADERBOARD,
+            operation : bc.socialLeaderboard.OPERATION_GET_PLAYERS_SOCIAL_LEADERBOARD_BY_VERSION_IF_EXISTS,
             data : message,
             callback : callback
         });
@@ -15950,7 +16301,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "5.3.0";
+    bcc.version = "5.4.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -16264,7 +16615,13 @@ BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
 function BrainCloudRelayComms(_client) {
     var bcr = this;
 //> REMOVE IF K6
-    var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
+
+// TODO:  verify that this is unneeded
+// Check window and document objects to determine if environment is browser or node
+// if ([typeof window, typeof document].includes('undefined')) {
+//     var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
+// }
+var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
 //> END
 
     bcr.CONTROL_BYTES_SIZE = 1;
@@ -16994,7 +17351,9 @@ function BrainCloudRttComms (m_client) {
     bcrtt.onSocketOpen = function(e) {
         if (bcrtt.isRTTEnabled()) { // This should always be true, but just in case user called disabled and we end up receiving the event anyway
             // Yay!
-            console.log("WebSocket connection established");
+            if (bcrtt._debugEnabled) {
+                console.log("WebSocket connection established");
+            }
 
             // Send a connect request
             var request = {
@@ -17404,7 +17763,9 @@ function BrainCloudWrapper(wrapperName) {
             bcw.setStoredSessionId(sessionId);
         }
 
-        console.log("Updated saved profileId to " + profileId);
+        if (bcw._debugEnabled) {
+            console.log("Updated saved profileId to " + profileId);
+        }
 
         responseHandler(result);
     };

@@ -828,16 +828,16 @@ function BCAuthentication() {
 			callback);
 	};
 
-	bc.authentication.retryPreviousAuthenticate = function (callback) {
+    bc.authentication.retryPreviousAuthenticate = function(callback) {
 		bc.authentication.authenticate(
 			bc.authentication.previousAuthParams.externalId,
 			bc.authentication.previousAuthParams.authenticationToken,
 			bc.authentication.previousAuthParams.authenticationType,
 			bc.authentication.previousAuthParams.externalAuthName,
 			bc.authentication.previousAuthParams.forceCreate,
-			bc.authentication.previousAuthParams.extraJson,
+            bc.authentication.previousAuthParams.extraJson,
 			callback);
-	};
+    };
 
 	/** Method allows a caller to authenticate with bc. Note that
 	 * callers should use the other authenticate methods in this class as
@@ -870,6 +870,12 @@ function BCAuthentication() {
 		_navLangCode = _navLangCode.split("-");
 		var languageCode =  bc.languageCode == null ? _navLangCode[0] : bc.languageCode;
 		var countryCode = bc.countryCode == null ? _navLangCode[1] : bc.countryCode;
+		if (countryCode === "419") {
+			countryCode = "_LA_"
+		}
+		if (countryCode === "Hans" || countryCode === "Hant") {
+			countryCode = "CN"
+		}
 
 		var now = new Date();
 		var timeZoneOffset = -now.getTimezoneOffset() / 60.0;
