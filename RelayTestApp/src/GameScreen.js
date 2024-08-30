@@ -29,7 +29,8 @@ class GameScreen extends Component
 
     onMouseMove(e)
     {
-        var rect = this.refs.GamePlayArea.getBoundingClientRect();
+        let elem = document.querySelector(".GamePlayArea")
+        let rect = elem.getBoundingClientRect();
         this.mousePos.x = ((e.clientX - rect.left) / 800);
         this.mousePos.y = ((e.clientY - rect.top) / 600);
 
@@ -71,7 +72,7 @@ class GameScreen extends Component
                 {/** Info Area */}
                 <div>
                     {/** Players List */}
-                    <div className="OptionPanel" ref="OptionPanel" style={{paddingRight: 32, textAlign: "left" }}>
+                    <div className="OptionPanel" style={{paddingRight: 32, textAlign: "left" }}>
                         <p>Player Mask (For shockwaves)</p>
                         {
                             this.props.lobby.members.map(member => (
@@ -111,7 +112,7 @@ class GameScreen extends Component
                 {/** Game Side */}
                 <div>
                     {/** Cursor Party */}
-                    <div className="GamePlayArea" ref="GamePlayArea" style={{ cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float: "left" }}
+                    <div className="GamePlayArea" style={{ cursor: `url('arrow${this.props.user.colorIndex}.png'), auto`, float: "left" }}
                         onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseClick.bind(this)} onContextMenu={(e) => e.preventDefault()}>
                         {
                             this.props.shockwaves.map(shockwave => (

@@ -14,9 +14,17 @@ class MainMenuScreen extends Component
         this.props.onLogout()
     }
     
-    onPlay()
-    {
-        this.props.onPlay(this.refs.lobbyTypes.options[this.refs.lobbyTypes.selectedIndex].value)
+    onPlay(e) {
+        
+        // Prevent the browser from reloading the page
+        e.preventDefault();
+
+        const form = e.target
+        const formData = new FormData(form)
+
+        const formJson = Object.fromEntries(formData.entries());
+
+        this.props.onPlay(formJson.lobbyTypes)
     }
 
     render()
@@ -38,22 +46,25 @@ class MainMenuScreen extends Component
         }
         return (
             <div id="main-wrapper">
-                <p className="text-small">Logged in as {this.props.user.name}</p>
-                <label>Choose lobby type:</label>
-                <select name="lobbyTypes" ref="lobbyTypes">
-                    {
-                        this.props.appLobbies.map((lobby, index) =>
-                            <option key={index} value={lobby.lobby}>{lobby.lobby}</option>
-                        )
-                    }
-                    
-                    {/** Game Lift usage requires additional configuration (i.e. using pings/regions) that has not yet been added to the other versions, so this lobby type is added manually */}
-                    <option value="CursorPartyGameLift">CursorPartyGameLift</option>
-                </select>
-                <div className="btn-frame">
-                    <button className="Button" onClick={this.onLogout.bind(this)}>LOG OUT</button>
-                    <button className="Button" onClick={this.onPlay.bind(this)}>PLAY</button>
-                </div>
+                <form onSubmit={this.onPlay.bind(this)}>
+                    <p className="text-small">Logged in as {this.props.user.name}</p>
+                    <label>Choose lobby type:</label>
+                    <select name="lobbyTypes">
+                        {
+                            this.props.appLobbies.map((lobby, index) =>
+                                <option key={index} value={lobby.lobby}>{lobby.lobby}</option>
+                            )
+                        }
+
+                        {/** Game Lift usage requires additional configuration (i.e. using pings/regions) that has not yet been added to the other versions, so this lobby type is added manually */}
+                        <option value="CursorPartyGameLift">CursorPartyGameLift</option>
+                    </select>
+                    <div className="btn-frame">
+                        <button className="Button" onClick={this.onLogout.bind(this)}>LOG OUT</button>
+                        <button className="Button" type="submit">PLAY</button>
+                    </div>
+                </form>
+
 
                 <div className="bottomText">
                     <small className="ver-text">Version: {packageJson.version}{versionSuffix}</small>
