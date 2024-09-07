@@ -7,8 +7,7 @@ import ids from './ids'
 class LoginScreen extends Component
 {
     onLogin(e) {
-        console.log("hello")
-
+       
         // Prevent the browser from reloading the page
         e.preventDefault();
 
@@ -58,7 +57,7 @@ class LoginScreen extends Component
                                 Password: <input type="password" name="password" className="input-field" />
                             </div>
                             <div>
-                            <button className="Button" type="submit">LOG IN</button>
+                                <button className="Button" type="submit">LOG IN</button>
                             </div>
                         </form>
                     </div>

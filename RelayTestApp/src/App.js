@@ -67,9 +67,13 @@ class App extends Component
                         this.dieWithMessage("No player name")
                     }
                 }
-                else{
+                else {
                     console.log("Reconnect failed, displaying login screen. Error: " + reconnectResponse)
-                    this.dieWithMessage("Reconnect failed")
+                    // Initialize BC libs and start over
+                    this.initBC()
+
+                    // Go back to default login state
+                    this.setState(this.makeDefaultState())
                 }
             })
         }
