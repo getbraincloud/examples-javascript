@@ -3,7 +3,7 @@
   "version": "5.4.0",
   "private": true,
   "dependencies": {
-    "braincloud": "file:../../../js/deploy/node",
+    "braincloud": "^5.4.0",
     "isomorphic-ws": "^4.0.1",
     "react": "^16.8.6",
     "react-dom": "^16.4.2",

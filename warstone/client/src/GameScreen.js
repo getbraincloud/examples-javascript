@@ -33,6 +33,8 @@ class GameScreen extends Component {
     constructor() {
         super()
 
+        this.glCanvasRef = React.createRef()
+
         this._service = null // Service that talks to the server
         this._gameState = null // The actual game data
         this._intervaleId = null // Update/Render main loop logic
@@ -298,7 +300,7 @@ class GameScreen extends Component {
     }
 
     initialize() {
-        Renderer.initialize(this.refs.glCanvas)
+        Renderer.initialize(this.glCanvasRef.current)
         this._gameView = new GameView()
         this._gameView.onClicked = this.onBGClicked.bind(this)
 
@@ -675,7 +677,7 @@ class GameScreen extends Component {
     render() {
         return (
             <div className="GameScreen">
-                <canvas ref="glCanvas"
+                <canvas ref={this.glCanvasRef}
                     onMouseDown={this.onMouseDown.bind(this)}
                     onMouseUp={this.onMouseUp.bind(this)}
                     onMouseMove={this.onMouseMove.bind(this)}

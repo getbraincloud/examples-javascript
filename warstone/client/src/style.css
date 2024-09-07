@@ -34,15 +34,6 @@ body{
   margin-top: 24px;
 }
 
-form{
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 360px;
-  font-size: 14px;
-  padding: 28px;
-}
 
 #formFrame{
   align-self: center;
