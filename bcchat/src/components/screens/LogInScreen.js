@@ -23,10 +23,6 @@ class LogInScreen extends Component
         const form = e.target;
         const formData = new FormData(form);
         const formJson = Object.fromEntries(formData.entries());
-        console.log(formJson);
-        console.log("Username: " + formJson.username)
-        console.log("Password: " + formJson.password)
-        console.log("App Name: " + formJson.app)
 
         if (formJson.username === '') {
             alert('Username is required');

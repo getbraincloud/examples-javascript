@@ -16,6 +16,10 @@ class SettingsScreen extends Component
         this.picUrl = null;
         this.imgReader = null;
         this.imgFile = null;
+
+        this.settingsScreenRef = React.createRef()
+        this.imageRef = React.createRef()
+        this.nameRef = React.createRef()
     }
     onKeyPress(e)
     {
@@ -27,7 +31,7 @@ class SettingsScreen extends Component
 
     onClickedOuside(e)
     {
-        if (e.target === this.refs.SettingsScreen)
+        if (e.target === this.settingsScreenRef.current)
         {
             this.props.onDismiss();
         }
@@ -46,7 +50,7 @@ class SettingsScreen extends Component
     handleSubmit(e)
     {
         let settings = {
-            name: this.refs.name.value,
+            name: this.nameRef.current.value,
             picFile: this.imgFile
         };
         if (this.props.onSettingsChanged)
@@ -60,7 +64,7 @@ class SettingsScreen extends Component
 
     onImageLoaded()
     {
-        this.refs.image.src = this.imgReader.result;
+        this.imageRef.current.src = this.imgReader.result;
         this.imgReader = null;
     }
 
@@ -80,7 +84,7 @@ class SettingsScreen extends Component
     render()
     {
         return (
-            <div className="SettingsScreen" ref="SettingsScreen" onClick={this.onClickedOuside.bind(this)} >
+            <div className="SettingsScreen" ref={this.settingsScreenRef} onClick={this.onClickedOuside.bind(this)} >
                 <div className="form" style={{...Theme.FormStyle, marginTop:"25vh", textAlign:"left"}}>
                     <h1 className="noselect" style={{...Theme.DefaultStyle}}>
                         Settings
@@ -89,12 +93,12 @@ class SettingsScreen extends Component
                     <form onSubmit={this.handleSubmit.bind(this)}>
                         <div className="block">
                             <label>Profile Picture:</label><br/>
-                            <img className="dropZonePic" ref="image" alt="" src={this.props.user.pic} width="128" height="128"/>
+                            <img className="dropZonePic" ref={this.imageRef} alt="" src={this.props.user.pic} width="128" height="128"/>
                             <div className="dropZone"><Dropzone accept="image/*" onDrop={this.onDrop.bind(this)} /></div>
                         </div>
                         <div className="block">
                             <label>Name:</label>
-                            <input type="text" ref="name" placeholder="name" style={{...Theme.TextInputStyle}} defaultValue={this.props.user.name} />
+                            <input type="text" ref={this.nameRef} placeholder="name" style={{...Theme.TextInputStyle}} defaultValue={this.props.user.name} />
                         </div>
                         <input type="submit" value="Save"
                             style={{...Theme.ButtonStyle, display:"block", margin:"16px 0px 16px auto"}} />

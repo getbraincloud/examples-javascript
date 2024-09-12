@@ -23,9 +23,16 @@ var remark = require('remark'),
 //  onAction()
 class ChatMsg extends Component
 {
+    constructor(props)
+    {
+        super(props)
+
+        this.actionPickerRef = React.createRef()
+    }
+
     showActionPicker()
     {
-        this.refs.actionPicker.open();
+        this.actionPickerRef.current.open();
     }
 
     onAction(action)
@@ -45,7 +52,7 @@ class ChatMsg extends Component
 
         return (
             <div className="ChatMsg">
-                <div className="ActionPicker"><ActionPicker ref="actionPicker" actions={this.props.actions} onAction={this.onAction.bind(this)} /></div>
+                <div className="ActionPicker"><ActionPicker ref={this.actionPickerRef} actions={this.props.actions} onAction={this.onAction.bind(this)} /></div>
                 {this.props.user ? (<PictureWord id={this.props.user.id} url={this.props.user.pic} text={this.props.user.name} />) : ""}
                 {this.props.onAction ? (<div className="ChatMsg-RemoveButton"><AddButton onClicked={this.showActionPicker.bind(this)} addText="..." /></div>) : ""}
                 <small className="ChatMsg-Timestamp" style={{color:Theme.DarkTextColor}}>

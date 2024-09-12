@@ -26,6 +26,8 @@ class CreateGroupScreen extends Component
             searchText: "",
             groups: []
         };
+
+        this.createGroupScreenRef = React.createRef()
     }
 
     fetchGroups()
@@ -125,7 +127,7 @@ class CreateGroupScreen extends Component
 
     onClickedOuside(e)
     {
-        if (e.target === this.refs.CreateGroupScreen)
+        if (e.target === this.createGroupScreenRef.current)
         {
             this.props.onDismiss();
         }
@@ -167,13 +169,13 @@ class CreateGroupScreen extends Component
         let searchString = this.state.searchText.toLowerCase();
 
         return (
-            <div className="CreateGroupScreen" ref="CreateGroupScreen" onClick={this.onClickedOuside.bind(this)} >
+            <div className="CreateGroupScreen" ref={this.createGroupScreenRef} onClick={this.onClickedOuside.bind(this)} >
                 <div style={{...Theme.FormStyle, marginTop:"25vh"}}>
                     <h4 style={{...Theme.DefaultStyle, display:"block"}}>
                         Create private group named:
                     </h4>
                     <form onSubmit={this.handleSubmit.bind(this)}>
-                        <Search ref="Search"
+                        <Search
                             placeholder="Group Name"
                             onClearSearch={this.onClearSearch.bind(this)} 
                             onSearch={this.onSearch.bind(this)}
@@ -185,7 +187,7 @@ class CreateGroupScreen extends Component
                                 ""
                         }
                     </form>
-                    <div ref="results" className="CreateGroupScreen-Results">
+                    <div className="CreateGroupScreen-Results">
                         {
                             this.state.groups.filter(group => group.name.toLowerCase().includes(searchString)).map(group =>
                             {

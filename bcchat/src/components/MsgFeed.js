@@ -24,13 +24,18 @@ class MsgFeed extends Component
         this.state = {
             editingMessage: null
         };
+
+        this.parentRef = React.createRef()
+        this.contentRef = React.createRef()
+        this.msgIdRef = React.createRef()
+        this.editingMsgIdRef = React.createRef()
     }
 
     componentWillUpdate()
     {
-        if (this.refs.Parent)
+        if (this.parentRef.current)
         {
-            this.isAtBottom = this.refs.Parent.scrollTop >= (this.refs.Parent.scrollHeight - this.refs.Parent.clientHeight) - 200;
+            this.isAtBottom = this.parentRef.current.scrollTop >= (this.parentRef.current.scrollHeight - this.parentRef.current.clientHeight) - 200;
         }
         else
         {
@@ -47,13 +52,13 @@ class MsgFeed extends Component
 
             // Tell it to look for new children that will change the height.
             var config = {childList: true};
-            this.observer.observe(this.refs.Content, config);
+            this.observer.observe(this.contentRef.current, config);
         }
 
         // Are we editing?
         if (this.state.editingMessage)
         {
-            this.refs[this.state.editingMessage.msgId].scrollIntoView(false, {behavior: "smooth"});
+            this.editingMsgIdRef.current.scrollIntoView(false, {behavior: "smooth"})
         }
     }
     
@@ -61,7 +66,7 @@ class MsgFeed extends Component
     {
         if (this.isAtBottom)
         {
-            this.refs.Parent.scrollTop = this.refs.Parent.scrollHeight;
+            this.parentRef.current.scrollTop = this.parentRef.current.scrollHeight;
         }
     }
 
@@ -143,20 +148,21 @@ class MsgFeed extends Component
         }, []);
 
         return (
-            <div className="MsgFeed-Parent" ref="Parent" style={{...Theme.DefaultStyle}}>
-                <div className="MsgFeed-Content" ref="Content">
+            <div className="MsgFeed-Parent" ref={this.parentRef} style={{...Theme.DefaultStyle}}>
+                <div className="MsgFeed-Content" ref={this.contentRef}>
                     {
                         messageGroups.map(messageGroup => {
                             let firstMessage = messageGroup[0];
                             return messageGroup.map(message =>
                             {
+                                this.msgIdRef.current = message.msgId
                                 let roundTrip = (message.content.rich) ? message.content.rich.roundTrip : null;
                                 let apiRoundTrip = (message.content.rich) ? message.content.rich.apiRoundTrip : null;
                                 let showActionButton = firstMessage.from.id === this.props.userId && !message.hideRemoveBtn;
                                 let isFirstMessage = message === firstMessage;
 
                                 return (
-                                    <div key={message.msgId} ref={message.msgId}>
+                                    <div key={message.msgId} ref={this.msgIdRef}>
                                         <ChatMsg 
                                                 msgId={message.msgId} 
                                                 user={isFirstMessage ? firstMessage.from : null}
@@ -170,7 +176,7 @@ class MsgFeed extends Component
                                             (message === this.state.editingMessage) ? (
                                                 <div>
                                                     <div className="EditMsg-ScreenBlocker" onClick={this.onEditClickedOuside.bind(this)} />
-                                                    <div className="EditMsg-TextArea">
+                                                    <div className="EditMsg-TextArea" ref={this.editingMsgIdRef}>
                                                         <MultilineTextInput placeholder="Enter message" onTextEntered={this.onTextEntered.bind(this)} defaultText={this.state.editingMessage.content.text} />
                                                     </div>
                                                 </div>) :
