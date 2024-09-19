@@ -34,21 +34,31 @@ class App extends Component {
         if (this.bc.canReconnect()) {
             console.log("Attempting reconnect . . .")
             this.bc.reconnect(response => {
-                console.log("Reconnect success")
-                if (response.data.playerName) {
+                console.log("Reconnect response: " + JSON.stringify(response))
+                console.log("Status: " + response.status)
+                if (response.status === 200) {
+                    console.log("Reconnect success")
+                    if (response.data.playerName) {
 
-                    // Connect to braincloud
-                    this.username = response.data.playerName
+                        // Connect to braincloud
+                        this.username = response.data.playerName
 
-                    this.onLoggedIn(response)
+                        this.onLoggedIn(response)
+                    }
+                    else {
+                        // TODO:  should be impossible since universal authentication is only option for new users
+                        this.dieWithMessage("No player name")
+                    }
                 }
                 else {
-                    // TODO:  should be impossible since universal authentication is only option for new users
-                    this.dieWithMessage("No player name")
+                    console.log("Reconnect fail")
+                    
+                    // Initialize BC libs and start over
+                    this.initBC()
+
+                    // Go back to default login state
+                    this.setState(this.makeDefaultState())
                 }
-            }, error => {
-                console.log("Reconnect failed, displaying login screen. Error: " + error)
-                this.state = this.makeDefaultState()
             })
         }
         else {

@@ -83,13 +83,13 @@ class AddFriendScreen extends Component
                     <h4 style={{...Theme.DefaultStyle, display:"block"}}>
                         Search users
                     </h4>
-                    <Search ref="Search"
+                    <Search
                         placeholder="Enter name"
                         minCharCount="3"
                         onClearSearch={this.onClearSearch.bind(this)} 
                         onSearch={this.onSearch.bind(this)}
                         autofocus={true} />
-                    <div ref="results" className="AddFriendScreen-Results">
+                    <div className="AddFriendScreen-Results">
                         {
                             this.state.searchResults.map(friend =>
                             {

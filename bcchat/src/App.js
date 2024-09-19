@@ -56,6 +56,8 @@ class App extends Component
         this.feedUpdating = false;
 
         this.state = this.getDefaultState();
+
+        this.reconnectPossible = false
     }
 
     getDefaultState()
@@ -85,7 +87,9 @@ class App extends Component
         this.bcWrapper.brainCloudClient.resetCommunication();
 
         // Pop alert message
-        alert(message);
+        if(this.canReconnect){
+            alert(message);
+        }
 
         // Go back to default loading state
         this.setState(this.getDefaultState());
@@ -111,18 +115,9 @@ class App extends Component
             return;
         });
 
+        this.canReconnect = false
         this.initBC();
-        this.bcWrapper.restoreSession(result =>
-        {
-            if (result.status === 200)
-            {
-                this.handlePlayerState(result);
-            }
-            else
-            {
-                this.attemptReconnect()
-            }
-        });
+        this.attemptReconnect()
     }
 
     attemptReconnect() {
@@ -131,11 +126,9 @@ class App extends Component
         state.loadingText = "Reconnecting ...";
         this.setState(state);
 
-        console.log("Checking if reconnect is possible . . .")
         if (this.bcWrapper.canReconnect()) {
-            console.log("Attempting reconnect . . .")
+            this.canReconnect = true
             this.bcWrapper.reconnect(this.handlePlayerState.bind(this), error => {
-                console.log("Reconnect failed, displaying login screen. Error: " + error)
                 this.state = this.makeDefaultState()
             })
         }

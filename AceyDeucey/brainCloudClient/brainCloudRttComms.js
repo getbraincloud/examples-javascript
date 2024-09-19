@@ -142,7 +142,7 @@ function BrainCloudRttComms (m_client) {
 //+         socket.on('message', bcrtt.onSocketMessage);
 //+         socket.on('binaryMessage', msg =>
 //+         {
-//+             var message = Utf8ArrayToStr(new Uint8Array(msg))
+//+             var message = String.fromCharCode.apply(null, new Uint8Array(msg));
 //+             bcrtt.onSocketMessage(message);
 //+         });
 //+     });
@@ -179,7 +179,9 @@ function BrainCloudRttComms (m_client) {
     bcrtt.onSocketOpen = function(e) {
         if (bcrtt.isRTTEnabled()) { // This should always be true, but just in case user called disabled and we end up receiving the event anyway
             // Yay!
-            console.log("WebSocket connection established");
+            if (bcrtt._debugEnabled) {
+                console.log("WebSocket connection established");
+            }
 
             // Send a connect request
             var request = {

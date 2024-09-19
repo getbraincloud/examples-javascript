@@ -2,7 +2,7 @@
 
 Test chat app built in ReactJS that uses brainCloud Real-time Tech Tech (RTT).
 
-![](screenshots/Capture.png)
+![](Screenshots/bcchat-GamePlay.png)
 
 ### How to test this app yourself
 

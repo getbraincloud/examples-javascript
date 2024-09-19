@@ -24,6 +24,7 @@ function BrainCloudClient() {
         BCGlobalApp.apply(bcc);
         BCGlobalStatistics.apply(bcc);
         BCGlobalEntity.apply(bcc);
+        BCGroupFile.apply(bcc);
         BCGroup.apply(bcc);
         BCIdentity.apply(bcc);
         BCItemCatalog.apply(bcc);
@@ -54,6 +55,7 @@ function BrainCloudClient() {
         BCTournament.apply(bcc);
         BCGlobalFile.apply(bcc);
         BCCustomEntity.apply(bcc);
+        BCBlockchain.apply(bcc);
 
         BCTimeUtils.apply(bcc);
 
@@ -74,6 +76,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.globalApp = bcc.globalApp;
         bcc.brainCloudManager.globalStatistics = bcc.globalStatistics;
         bcc.brainCloudManager.globalEntity = bcc.globalEntity;
+        bcc.brainCloudManager.groupFile = bcc.groupFile;
         bcc.brainCloudManager.group = bcc.group;
         bcc.brainCloudManager.identity = bcc.identity;
         bcc.brainCloudManager.lobby = bcc.lobby;
@@ -104,8 +107,9 @@ function BrainCloudClient() {
         bcc.brainCloudManager.itemCatalog = bcc.itemCatalog;
         bcc.brainCloudManager.userItems = bcc.userItems;
         bcc.brainCloudManager.customEntity = bcc.customEntity;
+        bcc.brainCloudManager.blockchain = bcc.blockchain;
         bcc.brainCloudManager.timeUtils = bcc.timeUtils;
-        
+
         bcc.brainCloudRttComms.rtt = bcc.rtt;
         bcc.brainCloudRttComms.brainCloudClient = bcc; // Circular reference
         bcc.brainCloudRelayComms.brainCloudClient = bcc;
@@ -130,6 +134,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.globalApp = bcc.brainCloudClient.globalApp = bcc.brainCloudClient.globalApp || {};
         bcc.brainCloudManager.globalStatistics = bcc.brainCloudClient.globalStatistics = bcc.brainCloudClient.globalStatistics || {};
         bcc.brainCloudManager.globalEntity = bcc.brainCloudClient.globalEntity = bcc.brainCloudClient.globalEntity || {};
+        bcc.brainCloudManager.groupFile = bcc.brainCloudClient.groupFile = bcc.brainCloudClient.groupFile || {};
         bcc.brainCloudManager.group = bcc.brainCloudClient.group = bcc.brainCloudClient.group || {};
         bcc.brainCloudManager.identity = bcc.brainCloudClient.identity = bcc.brainCloudClient.identity || {};
         bcc.brainCloudManager.lobby = bcc.brainCloudClient.lobby = bcc.brainCloudClient.lobby || {};
@@ -161,6 +166,7 @@ function BrainCloudClient() {
         bcc.brainCloudManager.itemCatalog = bcc.brainCloudClient.itemCatalog = bcc.brainCloudClient.itemCatalog || {};
         bcc.brainCloudManager.userItems = bcc.brainCloudClient.userItems = bcc.brainCloudClient.userItems || {};
         bcc.brainCloudManager.customEntity = bcc.brainCloudClient.customEntity = bcc.brainCloudClient.customEntity || {};
+        bcc.brainCloudManager.blockchain = bcc.brainCloudClient.blockchain = bcc.brainCloudClient.blockchain || {};
         bcc.brainCloudManager.timeUtils = bcc.brainCloudClient.timeUtils = bcc.brainCloudClient.timeUtils || {};
 
         bcc.brainCloudRttComms.rtt = bcc.brainCloudClient.rtt = bcc.brainCloudClient.rtt || {};
@@ -169,7 +175,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "4.10.0";
+    bcc.version = "5.4.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -266,7 +272,7 @@ function BrainCloudClient() {
 
     /**
      * Returns the app version
-     * 
+     *
      * @return {string} - The application version
      */
     bcc.getAppVersion = function() {
@@ -452,7 +458,7 @@ function BrainCloudClient() {
      * @param languageCode ISO 639-1 two-letter language code
      */
     bcc.overrideLanguageCode = function(languageCode) {
-        brainCloudClient.languageCode = languageCode;
+        bcc.languageCode = languageCode;
     }
 
     bcc.heartbeat = function(callback) {
@@ -462,7 +468,7 @@ function BrainCloudClient() {
             callback : callback
         });
     };
-    
+
     /**
      * If the library is used through a command line nodejs app, the app need to be able to stop the heartbeat interval
      * otherwise the app can never exit once it's done processing.

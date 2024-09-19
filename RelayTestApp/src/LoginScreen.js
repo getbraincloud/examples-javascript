@@ -6,41 +6,61 @@ import ids from './ids'
 // onLogin(user, pass)
 class LoginScreen extends Component
 {
-    onLogin(e)
-    {
-        if (this.refs.username.value.trim() === '')
-        {
+    onLogin(e) {
+       
+        // Prevent the browser from reloading the page
+        e.preventDefault();
+
+        // Read the login data
+        const loginForm = e.target;
+        const loginData = new FormData(loginForm);
+
+        const loginJson = Object.fromEntries(loginData.entries());
+
+        if (loginJson.username.trim() === '') {
             alert('Username is required');
         }
-        else if (this.refs.password.value === '')
-        {
+        else if (loginJson.password === '') {
             alert('Password is required');
         }
-        else
-        {
-            this.props.onLogin(this.refs.username.value.trim(), this.refs.password.value);
+        else {
+            this.props.onLogin(loginJson.username.trim(), loginJson.password);
         }
-
-        e.preventDefault();
     }
 
     render()
     {
-        let versionSuffix = (ids.url) ? " - dev" : " - prod"
+        let versionSuffix = ""
+        switch(ids.url){
+            case "https://api.internal.braincloudservers.com":
+                versionSuffix = " - internal"
+                break
+            case "https://api.internalg.braincloudservers.com":
+                versionSuffix = " - internalg"
+                break
+            case "https://api.internala.braincloudservers.com":
+                versionSuffix = " - internala"
+                break
+            default:
+                versionSuffix = " - prod"
+                break
+        }
         return (
             <div className="LoginScreen">
                 <div id="login-area">
                     <div id="field-area">
-                        <form>
+                        <form onSubmit={this.onLogin.bind(this)}>
                             <div id="user-wrapper">
-                                Username: <input type="text" ref="username" name="Username" className="input-field" />
+                                Username: <input type="text" name="username" className="input-field" />
                             </div>
                             <div id="pass-wrapper">
-                                Password: <input type="password" ref="password" name="Password" className="input-field" />
+                                Password: <input type="password" name="password" className="input-field" />
+                            </div>
+                            <div>
+                                <button className="Button" type="submit">LOG IN</button>
                             </div>
                         </form>
                     </div>
-                    <button className="Button" onClick={this.onLogin.bind(this)}>LOG IN</button>
                 </div>
 
                 <div className="bottomText">

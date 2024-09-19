@@ -7,14 +7,21 @@ import Theme from '../Theme';
 //  onTextEntered("")
 class MultilineTextInput extends Component
 {
+    constructor()
+    {
+        super()
+
+        this.textAreaRef = React.createRef()
+    }
+
     onKeyDown(e)
     {
         if (e.key === "Enter")
         {
             if (!e.ctrlKey && !e.shiftKey)
             {
-                let message = this.refs.TextArea.value.trim();
-                this.refs.TextArea.value = "";
+                let message = this.textAreaRef.current.value.trim();
+                this.textAreaRef.current.value = "";
 
                 if (message.length > 0)
                 {
@@ -37,7 +44,7 @@ class MultilineTextInput extends Component
                     height:"calc(100% - 8px)",
                     padding:"4px"
                 }}>
-                <textarea ref="TextArea" placeholder={this.props.placeholder ? this.props.placeholder : "Enter text here - /me Message that will not persist in history"}
+                <textarea ref={this.textAreaRef} placeholder={this.props.placeholder ? this.props.placeholder : "Enter text here - /me Message that will not persist in history"}
                     style={{
                         ...Theme.TextInputStyle,
                         fontFamily:"sans-serif",

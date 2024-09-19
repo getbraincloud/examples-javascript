@@ -14,28 +14,33 @@ class LogInScreen extends Component
         };
     }
 
-    handleSubmit(e)
-    {
-        if (this.refs.username.value === '')
-        {
+    handleSubmit(e) {
+        
+        // Prevent the browser from reloading the page
+        e.preventDefault();
+
+        // Read the form data
+        const form = e.target;
+        const formData = new FormData(form);
+        const formJson = Object.fromEntries(formData.entries());
+
+        if (formJson.username === '') {
             alert('Username is required');
         }
-        else if (this.refs.password.value === '')
-        {
+        else if (formJson.password === '') {
             alert('Password is required');
         }
-        else
-        {
-            this.setState({login:{
-                username: this.refs.username.value,
-                password: this.refs.password.value,
-                appName: this.refs.appName.value
-            }}, function() {
+        else {
+            this.setState({
+                login: {
+                    username: formJson.username,
+                    password: formJson.password,
+                    appName: formJson.app
+                }
+            }, function () {
                 this.props.onLogin(this.state.login);
             });
         }
-        
-        e.preventDefault();
     }
 
     render()
@@ -49,7 +54,7 @@ class LogInScreen extends Component
                     A new user will be created if it doesn't exist. 
                 </p>
                 <form onSubmit={this.handleSubmit.bind(this)}>
-                    <select name="app" ref="appName" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}}>
+                    <select name="app" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}}>
                         {
                             this.props.games.map(app =>
                             {
@@ -61,12 +66,9 @@ class LogInScreen extends Component
                             })
                         }
                     </select>
-                    <input type="text" ref="username" placeholder="Username"
-                        style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
-                    <input type="password" ref="password" placeholder="Password"
-                        style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
-                    <input type="submit" value="Login"
-                        style={{...Theme.ButtonStyle, display:"block", margin:"16px 0px 16px auto"}} />
+                    <input type="text" name="username" placeholder="Username" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
+                    <input type="password" name="password" placeholder="Password" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
+                    <input type="submit" value="Login" style={{...Theme.ButtonStyle, display:"block", margin:"16px 0px 16px auto"}} />
                 </form>
             </div>
         );

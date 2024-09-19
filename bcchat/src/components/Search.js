@@ -15,11 +15,13 @@ class Search extends Component
         this.locked = false;
         this.searchText = "";
         this.currentText = "";
+
+        this.txtNameRef = React.createRef()
     }
 
     onTextChanged()
     {
-        this.currentText = this.refs.txtName.value;
+        this.currentText = this.txtNameRef.current.value;
         if (!this.locked)
         {
             this.updateSearch();
@@ -42,14 +44,14 @@ class Search extends Component
 
     componentDidMount()
     {
-        this.refs.txtName.value = "";
+        this.txtNameRef.current.value = "";
         this.searchText = "";
         this.currentText = "";
         this.locked = false;
 
         if (this.props.autofocus)
         {
-            this.refs.txtName.focus();
+            this.txtNameRef.current.focus();
         }
     }
 
@@ -65,7 +67,7 @@ class Search extends Component
     render()
     {
         return (
-            <input type="text" ref="txtName" placeholder={this.props.placeholder}
+            <input type="text" ref={this.txtNameRef} placeholder={this.props.placeholder}
                         style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}}
                         onChange={this.onTextChanged.bind(this)} />
         );

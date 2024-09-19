@@ -11,9 +11,16 @@ import ActionPicker from './ActionPicker';
 //  onLogoutClicked()
 class StatusBar extends Component
 {
+    constructor(props)
+    {
+        super(props)
+
+        this.actionPickerRef = React.createRef()
+    }
+
     onUserClicked(channel)
     {
-        this.refs.actionPicker.open();
+        this.actionPickerRef.current.open();
     }
 
     onAction(action)
@@ -32,7 +39,7 @@ class StatusBar extends Component
             <div style={{backgroundColor:Theme.TabColor, height:"100%", padding:"0 16px"}}>
                 <div style={{float:"right"}}>
                     <Channel channel={this.props.user} onSelected={this.onUserClicked.bind(this)} />
-                    <div className="ActionPicker"><ActionPicker ref="actionPicker" actions={["settings", "logout"]} onAction={this.onAction.bind(this)} /></div>
+                    <div className="ActionPicker"><ActionPicker ref={this.actionPickerRef} actions={["settings", "logout"]} onAction={this.onAction.bind(this)} /></div>
                 </div>
             </div>
         );

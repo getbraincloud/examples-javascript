@@ -15,19 +15,27 @@ class EnterNameScreen extends Component
 
     handleSubmit(e)
     {
-        if (this.refs.firstname.value === '')
+         // Prevent the browser from reloading the page
+         e.preventDefault();
+
+         // Read the form data
+         const form = e.target;
+         const formData = new FormData(form);
+         const formJson = Object.fromEntries(formData.entries());
+
+        if (formJson.firstname === '')
         {
             alert('First name is required');
         }
-        else if (this.refs.lastname.value === '')
+        else if (formJson.lastname === '')
         {
             alert('Last name is required');
         }
         else
         {
             this.setState({name:{
-                firstname: this.refs.firstname.value,
-                lastname: this.refs.lastname.value
+                firstname: formJson.firstname,
+                lastname: formJson.lastname
             }}, function() {
                 this.props.onSubmitName(this.state.name);
             });
@@ -47,9 +55,9 @@ class EnterNameScreen extends Component
                     Please enter your full name.
                 </p>
                 <form onSubmit={this.handleSubmit.bind(this)}>
-                    <input type="text" ref="firstname" placeholder="First name"
+                    <input type="text" name="firstname" placeholder="First name"
                         style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
-                    <input type="text" ref="lastname" placeholder="Last name"
+                    <input type="text" name="lastname" placeholder="Last name"
                         style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
                     <input type="submit" value="Submit"
                         style={{...Theme.ButtonStyle, display:"block", margin:"16px 0px 16px auto"}} />

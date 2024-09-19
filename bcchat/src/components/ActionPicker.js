@@ -14,6 +14,8 @@ class ActionPicker extends Component
             right: 0,
             top: 0
         };
+
+        this.actionPickerRef = React.createRef()
     }
 
     onClickedOuside()
@@ -52,7 +54,7 @@ class ActionPicker extends Component
         let state = this.state;
         state.visible = true;
 
-        let parentRect = this.refs.ActionPicker.getClientRects()[0];
+        let parentRect = this.actionPickerRef.current.getClientRects()[0];
         state.right = parentRect.right - 44;
         state.top = parentRect.top;
         state.height = this.props.actions.length * 48 + 6;
@@ -65,12 +67,12 @@ class ActionPicker extends Component
         if (this.state.visible)
         {
             return (
-                <div className="ActionPicker" ref="ActionPicker">
+                <div className="ActionPicker" ref={this.actionPickerRef}>
                     <div className="ActionPicker-ScreenBlocker" onClick={this.onClickedOuside.bind(this)} />
                     <div className="ActionPicker-Panel-Container">
                         <div className="ActionPicker-Panel" style={{top:Math.min(document.body.clientHeight - this.state.height, this.state.top) + "px", right:"calc(100vw - " + this.state.right + "px)"}}>
                             {
-                                this.props.actions.map(action => (<div key={action} ref={action} onClick={this.onActionClicked.bind(this, action)} className="ActionPicker-ActionItem no-select">{action}</div>))
+                                this.props.actions.map(action => (<div key={action} onClick={this.onActionClicked.bind(this, action)} className="ActionPicker-ActionItem no-select">{action}</div>))
                             }
                         </div>
                     </div>
@@ -80,7 +82,7 @@ class ActionPicker extends Component
         else
         {
             return (
-                <div className="ActionPicker" ref="ActionPicker">
+                <div className="ActionPicker" ref={this.actionPickerRef}>
                 </div>
             );
         }

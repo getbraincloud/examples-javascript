@@ -5,18 +5,31 @@ import ids from './ids'
 
 // onLogin(user, pass)
 class LoginScreen extends Component {
+    
     onLogin(e) {
-        if (this.refs.username.value.trim() === '') {
+
+        // Prevent the browser from reloading the page
+        e.preventDefault();
+
+        // Read the form data
+        const form = e.target;
+        const formData = new FormData(form);
+        const formJson = Object.fromEntries(formData.entries())
+
+        console.log(JSON.stringify(formJson))
+
+        console.log("Username: " + formJson.username)
+        console.log("Password: " + formJson.password)
+
+        if (formJson.username === '') {
             alert('Username is required');
         }
-        else if (this.refs.password.value === '') {
+        else if (formJson.password === '') {
             alert('Password is required');
         }
         else {
-            this.props.onLogin(this.refs.username.value.trim(), this.refs.password.value);
+            this.props.onLogin(formJson.username, formJson.password);
         }
-
-        e.preventDefault();
     }
 
     componentDidMount() {
@@ -27,24 +40,27 @@ class LoginScreen extends Component {
         let versionSuffix = (ids.url) ? " - dev" : " - prod"
         return (
             <div className="LoginScreen">
-                <div id="login-area">
-                    <div id="field-area">
-                        <form>
-                            <div id="user-wrapper">
-                                Username: <input type="text" ref="username" name="Username" class="input-field" />
+                <form onSubmit={this.onLogin.bind(this)}>
+                    <div id="login-area">
+                        <div id="field-area">
+                            <div id="user-wrapper" style={{ marginTop: 24 }}>
+                                Username: <input type="text" name="username" className="input-field" />
                             </div>
                             <div id="pass-wrapper">
-                                Password: <input type="password" ref="password" name="Password" class="input-field" />
+                                Password: <input type="password" name="password" className="input-field" />
                             </div>
-                        </form>
-                    </div>
-                    <input type="submit" name="submit" value="LOG IN" id="btn-login" onClick={this.onLogin.bind(this)} />
-                </div>
+                        </div>
 
-                <div class="bottomText">
-                    <p>A user will be created if not already registered.</p>
-                    <p class="ver-text">Version: {packageJson.version}{versionSuffix}</p>
-                </div>
+                        <div>
+                            <button type="submit" id="btn-login">LOG IN</button>
+                        </div>
+                    </div>
+
+                    <div className="bottomText">
+                        <p>A user will be created if not already registered.</p>
+                        <p className="ver-text">Version: {packageJson.version}{versionSuffix}</p>
+                    </div>
+                </form>
             </div>
         )
     }
