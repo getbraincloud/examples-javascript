@@ -834,7 +834,8 @@ function BrainCloudManager ()
                 {
                     if (bcm._inProgressQueue[i].operation == "AUTHENTICATE" || 
                         bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD" || 
-                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD_ADVANCED")
+                        bcm._inProgressQueue[i].operation == "RESET_EMAIL_PASSWORD_ADVANCED" ||
+                        bcm._inProgressQueue[i].operation == "GET_SERVER_VERSION")
                     {
                         isAuth = true;
                         break;
@@ -1628,6 +1629,7 @@ function BCAuthentication() {
 	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED = "RESET_UNIVERSAL_ID_PASSWORD_ADVANCED";
 	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_WITH_EXPIRY = "RESET_UNIVERSAL_ID_PASSWORD_WITH_EXPIRY";
 	bc.authentication.OPERATION_RESET_UNIVERSAL_ID_PASSWORD_ADVANCED_WITH_EXPIRY = "RESET_UNIVERSAL_ID_PASSWORD_ADVANCED_WITH_EXPIRY";
+	bc.authentication.OPERATION_GET_SERVER_VERSION = "GET_SERVER_VERSION"
 
 	bc.authentication.AUTHENTICATION_TYPE_ANONYMOUS = "Anonymous";
 	bc.authentication.AUTHENTICATION_TYPE_EMAIL = "Email";
@@ -2384,6 +2386,29 @@ function BCAuthentication() {
 		};
 		bc.brainCloudManager.sendRequest(request);
     };
+
+	/**
+	 * Get server version
+	 * 
+	 * Service - authenticationV2
+	 * Operation - GET_SERVER_VERSION
+	 * 
+	 * @param {function} responseHandler The user callback method
+	 */
+	bc.authentication.getServerVersion = function(responseHandler) {
+		var appId = bc.brainCloudManager.getAppId()
+		
+		var request = {
+			service: bc.SERVICE_AUTHENTICATION,
+			operation: bc.authentication.OPERATION_GET_SERVER_VERSION,
+			data: {
+				gameId: appId
+			},
+			callback: responseHandler
+		}
+
+		bc.brainCloudManager.sendRequest(request)
+	}
     
 	/**
 	 * Authenticate the user using a Pase userid and authentication token
@@ -4168,6 +4193,7 @@ function BCEvents() {
 	bc.SERVICE_EVENT = "event";
 
 	bc.event.OPERATION_SEND = "SEND";
+	bc.event.OPERATION_SEND_EVENT_TO_PROFILES = "SEND_EVENT_TO_PROFILES";
 	bc.event.OPERATION_UPDATE_EVENT_DATA = "UPDATE_EVENT_DATA";
 	bc.event.OPERATION_UPDATE_EVENT_DATA_IF_EXISTS = "UPDATE_EVENT_DATA_IF_EXISTS";
 	bc.event.OPERATION_DELETE_INCOMING = "DELETE_INCOMING";
@@ -4208,6 +4234,32 @@ function BCEvents() {
 			service: bc.SERVICE_EVENT,
 			operation: bc.event.OPERATION_SEND,
 			data: message,
+			callback: callback
+		});
+	};
+
+	/**
+	 * Sends an event to multiple users with the attached json data.
+	 * 
+	 * Service Name - Event
+	 * Service Operation - SEND_EVENT_TO_PROFILES
+	 * 
+	 * @param toIds The profile ids of the users to send the event
+	 * @param eventType The user-defined type of the event
+	 * @param eventData The user-defined data for this event encoded in JSON
+	 * @param callback The method to be invoked when the server response is received
+	 */
+	bc.event.sendEventToProfiles = function (toIds, eventType, eventData, callback) {
+		var data = {
+			toIds: toIds,
+			eventType: eventType,
+			evemtData: eventData
+		};
+
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_EVENT,
+			operation: bc.event.OPERATION_SEND_EVENT_TO_PROFILES,
+			data: data,
 			callback: callback
 		});
 	};
@@ -4693,7 +4745,9 @@ function BCFriend() {
 
 	bc.friend.OPERATION_GET_FRIEND_PROFILE_INFO_FOR_EXTERNAL_ID = "GET_FRIEND_PROFILE_INFO_FOR_EXTERNAL_ID";
 	bc.friend.OPERATION_GET_PROFILE_INFO_FOR_CREDENTIAL = "GET_PROFILE_INFO_FOR_CREDENTIAL";
+	bc.friend.OPERATION_GET_PROFILE_INFO_FOR_CREDENTIAL_IF_EXISTS = "GET_PROFILE_INFO_FOR_CREDENTIAL_IF_EXISTS";
 	bc.friend.OPERATION_GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID = "GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID";
+	bc.friend.OPERATION_GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID_IF_EXISTS = "GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID_IF_EXISTS";
 	bc.friend.OPERATION_GET_EXTERNAL_ID_FOR_PROFILE_ID = "GET_EXTERNAL_ID_FOR_PROFILE_ID";
 	bc.friend.OPERATION_READ_FRIENDS = "READ_FRIENDS";
 	bc.friend.OPERATION_READ_FRIEND_ENTITY = "READ_FRIEND_ENTITY";
@@ -4740,6 +4794,28 @@ function BCFriend() {
 	};
 
 	/**
+	 * Retrieves profile information for the specified user. Silently fails, if profile does not exist, just returns null and success, instead of an error.
+	 *
+	 * Service Name - friend
+	 * Service Operation - GET_PROFILE_INFO_FOR_CREDENTIAL_IF_EXISTS
+	 *
+	 * @param externalId The users's external ID
+	 * @param authenticationType The authentication type of the user ID
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.getProfileInfoForCredentialIfExists = function (externalId, authenticationType, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_GET_PROFILE_INFO_FOR_CREDENTIAL_IF_EXISTS,
+			data: {
+				externalId: externalId,
+				authenticationType: authenticationType
+			},
+			callback: callback
+		});
+	};
+
+	/**
 	 * Retrieves profile information for the specified external auth user.
 	 *
 	 * Service Name - friend
@@ -4756,6 +4832,29 @@ function BCFriend() {
 			data : {
 				externalId : externalId,
 				externalAuthType : externalAuthType
+			},
+			callback: callback
+		});
+	};
+
+	/**
+	 * Retrieves profile information for the specified user.
+	 * Silently fails, if profile does not exist, just returns null and success, instead of an error.
+	 *
+	 * Service Name - Friend
+	 * Service Operation - GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID_IF_EXISTS
+	 *
+	 * @param externalId External ID of the friend to find
+	 * @param externalAuthType The external authentication type used for this friend's external ID
+	 * @param callback Method to be invoked when the server response is received.
+	 */
+	bc.friend.getProfileInfoForExternalAuthIdIfExists = function (externalId, externalAuthType, callback) {
+		bc.brainCloudManager.sendRequest({
+			service: bc.SERVICE_FRIEND,
+			operation: bc.friend.OPERATION_GET_PROFILE_INFO_FOR_EXTERNAL_AUTH_ID_IF_EXISTS,
+			data: {
+				externalId: externalId,
+				externalAuthType: externalAuthType
 			},
 			callback: callback
 		});
@@ -6725,6 +6824,7 @@ function BCGroup() {
     bc.group.OPERATION_SET_GROUP_OPEN = "SET_GROUP_OPEN";
     bc.group.OPERATION_UPDATE_GROUP_ACL = "UPDATE_GROUP_ACL";
     bc.group.OPERATION_UPDATE_GROUP_DATA = "UPDATE_GROUP_DATA";
+    bc.group.OPERATION_UPDATE_GROUP_ENTITY_ACL = "UPDATE_GROUP_ENTITY_ACL";
     bc.group.OPERATION_UPDATE_GROUP_ENTITY = "UPDATE_GROUP_ENTITY_DATA";
     bc.group.OPERATION_UPDATE_GROUP_MEMBER = "UPDATE_GROUP_MEMBER";
     bc.group.OPERATION_UPDATE_GROUP_NAME = "UPDATE_GROUP_NAME";
@@ -7530,6 +7630,30 @@ function BCGroup() {
     };
 
     /**
+     * Set a group's access conditions.
+     * 
+     * Service Name - Group
+     * Service Operation - UPDATE_GROUP_ACL
+     * 
+     * @param groupId ID of the group
+     * @param acl The group's access control list. A null ACL implies default
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.group.updateGroupAcl = function (groupId, acl, callback) {
+        var data = {
+            groupId: groupId,
+            acl: acl
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP,
+            operation: bc.group.OPERATION_UPDATE_GROUP_ACL,
+            data: data,
+            callback: callback
+        });
+    }
+
+    /**
      * Updates a group's data.
      *
      * Service Name - group
@@ -7554,6 +7678,29 @@ function BCGroup() {
             callback : callback
         });
     };
+
+    /**
+     * Update the acl settings for a group entity, enforcing ownership.
+     * 
+     * @param groupId The id of the group
+     * @param entityId The id of the entity to update
+     * @param acl Access control list for the group entity
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.group.updateGroupEntityAcl = function (groupId, entityId, acl, callback) {
+        var message = {
+            groupId: groupId,
+            entityId: entityId,
+            acl : acl
+        }
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_GROUP,
+            operation: bc.group.OPERATION_UPDATE_GROUP_ENTITY_ACL,
+            data: message,
+            callback: callback
+        })
+    }
 
     /**
      * Update a group entity.
@@ -7721,6 +7868,7 @@ function BCIdentity() {
     bc.identity.OPERATION_SWITCH_TO_PARENT_PROFILE = "SWITCH_TO_PARENT_PROFILE";
     bc.identity.OPERATION_GET_CHILD_PROFILES = "GET_CHILD_PROFILES";
     bc.identity.OPERATION_GET_IDENTITIES = "GET_IDENTITIES";
+    bc.identity.OPERATION_GET_IDENTITY_STATUS = "GET_IDENTITY_STATUS";
     bc.identity.OPERATION_GET_EXPIRED_IDENTITIES = "GET_EXPIRED_IDENTITIES";
     bc.identity.OPERATION_REFRESH_IDENTITY = "REFRESH_IDENTITY";
     bc.identity.OPERATION_CHANGE_EMAIL_IDENTITY = "CHANGE_EMAIL_IDENTITY";
@@ -7884,8 +8032,8 @@ function BCIdentity() {
             authenticationToken : ids.authenticationToken
         }
 
-        if (externalAuthName) {
-            data["externalAuthName"] = externalAuthName;
+        if (ids.authenticationSubType !== null || ids.authenticationSubType !== "") {
+            data["externalAuthName"] = ids.authenticationSubType;
         };
 
         if (extraJson) {
@@ -7920,8 +8068,8 @@ function BCIdentity() {
             authenticationToken : ids.authenticationToken
         }
 
-        if (externalAuthName) {
-            data["externalAuthName"] = externalAuthName;
+        if (ids.authenticationSubType !== null || ids.authenticationSubType !== "") {
+            data["externalAuthName"] = ids.authenticationSubType;
         };
 
         if (extraJson) {
@@ -8689,6 +8837,24 @@ function BCIdentity() {
 		});
 	};
 
+    /**
+     * Retrieves identity status for given identity type for this profile.
+     * @param  authenticationType Type of authentication
+     * @param  externalAuthName The name of the external authentication mechanism (optional, used for custom authentication types)
+     * @param  callback The method to be invoked when the server response is received
+     */
+    bc.identity.getIdentityStatus = function(authenticationType, externalAuthName, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_IDENTITY,
+            operation: bc.identity.OPERATION_GET_IDENTITY_STATUS,
+            data: {
+                authenticationType: authenticationType,
+                externalAuthName: externalAuthName
+            },
+            callback: callback
+        })
+    }
+
 	/**
 	 * Retrieve list of expired identities
 	 *
@@ -9280,6 +9446,49 @@ function BCLobby() {
         attachPingDataAndSend(data, bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY_WITH_PING_DATA, callback);
     };
 
+    //> ADD IF K6
+    //+ /**
+    //+  * Adds the caller to the lobby entry queue and will create a lobby if none are found.  Allows caller to directly provide the ping data. Useful for automated testing.
+    //+  *
+    //+  * Service Name - Lobby
+    //+  * Service Operation - FIND_OR_CREATE_LOBBY_WITH_PING_DATA
+    //+  *
+    //+  * @param lobbyType The type of lobby to look for. Lobby types are defined in the portal.
+    //+  * @param rating The skill rating to use for finding the lobby. Provided as a separate parameter because it may not exactly match the user's rating (especially in cases where parties are involved).
+    //+  * @param maxSteps The maximum number of steps to wait when looking for an applicable lobby. Each step is ~5 seconds.
+    //+  * @param algo The algorithm to use for increasing the search scope.
+    //+  * @param filterJson Used to help filter the list of rooms to consider. Passed to the matchmaking filter, if configured.
+    //+  * @param otherUserCxIds Array of other users (i.e. party members) to add to the lobby as well. Will constrain things so that only lobbies with room for all players will be considered.
+    //+  * @param settings Configuration data for the room.
+    //+  * @param isReady Initial ready-status of this user.
+    //+  * @param extraJson Initial extra-data about this user.
+    //+  * @param teamCode Preferred team for this user, if applicable. Send "" or null for automatic assignment.
+    //+  * @param pingData Manually provided ping data.
+    //+  */
+    //+ bc.lobby.findOrCreateLobbyWithManualPingData = function (lobbyType, rating, maxSteps, algo, filterJson, otherUserCxIds, settings, isReady, extraJson, teamCode, pingData, callback) {
+    //+     var data = {
+    //+         lobbyType: lobbyType,
+    //+         rating: rating,
+    //+         maxSteps: maxSteps,
+    //+         algo: algo,
+    //+         filterJson: filterJson,
+    //+         otherUserCxIds: otherUserCxIds,
+    //+         settings: settings,
+    //+         isReady: isReady,
+    //+         extraJson: extraJson,
+    //+         teamCode: teamCode,
+    //+         pingData: pingData
+    //+     };
+    //+
+    //+     bc.brainCloudManager.sendRequest({
+    //+         service: bc.SERVICE_LOBBY,
+    //+         operation: bc.lobby.OPERATION_FIND_OR_CREATE_LOBBY_WITH_PING_DATA,
+    //+         data: data,
+    //+         callback: callback
+    //+     });
+    //+ };
+    //> END
+
     /**
      * Returns the data for the specified lobby, including member data.
      *
@@ -9496,10 +9705,28 @@ function BCLobby() {
 
     /// <summary>
     /// Cancel this members Find, Join and Searching of Lobbies
+    /// Deprecated: Use cancelFindRequest with entryId parameter
     /// </summary>
     bc.lobby.cancelFindRequest = function(lobbyType, callback) {
         var data = {
             lobbyType: lobbyType
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LOBBY,
+            operation: bc.lobby.OPERATION_CANCEL_FIND_REQUEST,
+            data: data,
+            callback: callback
+        });
+    };
+
+    /// <summary>
+    /// Cancel this members Find, Join and Searching of Lobbies
+    /// </summary>
+    bc.lobby.cancelFindRequest = function(lobbyType, entryId, callback) {
+        var data = {
+            lobbyType: lobbyType,
+            entryId: entryId
         };
 
         bc.brainCloudManager.sendRequest({
@@ -9797,6 +10024,7 @@ function BCMail() {
     bc.mail.OPERATION_SEND_BASIC_EMAIL = "SEND_BASIC_EMAIL";
     bc.mail.OPERATION_SEND_ADVANCED_EMAIL = "SEND_ADVANCED_EMAIL";
     bc.mail.OPERATION_SEND_ADVANCED_EMAIL_BY_ADDRESS = "SEND_ADVANCED_EMAIL_BY_ADDRESS";
+    bc.mail.OPERATION_SEND_ADVANCED_EMAIL_BY_ADDRESSES = "SEND_ADVANCED_EMAIL_BY_ADDRESSES";
 
     /**
      * Sends a simple text email to the specified player
@@ -9862,6 +10090,28 @@ function BCMail() {
             operation: bc.mail.OPERATION_SEND_ADVANCED_EMAIL_BY_ADDRESS,
             data: {
                 emailAddress: emailAddress,
+                serviceParams: serviceParams
+            },
+            callback: callback
+        });
+    };
+
+    /**
+     * Sends an advanced email to the specified email addresses
+     *
+     * Service Name - Mail
+     * Service Operation - SEND_ADVANCED_EMAIL_BY_ADDRESSES
+     *
+     * @param emailAddresses The list of addresses to send the email to
+     * @param serviceParams Set of parameters dependant on the mail service configured
+     * @param in_callback The method to be invoked when the server response is received
+     */
+    bc.mail.sendAdvancedEmailByAddresses = function (emailAddresses, serviceParams, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_MAIL,
+            operation: bc.mail.OPERATION_SEND_ADVANCED_EMAIL_BY_ADDRESSES,
+            data: {
+                emailAddresses: emailAddresses,
                 serviceParams: serviceParams
             },
             callback: callback
@@ -10546,6 +10796,7 @@ function BCPlaybackStream() {
     bc.playbackStream.OPERATION_GET_STREAM_SUMMARIES_FOR_TARGET_PLAYER = "GET_STREAM_SUMMARIES_FOR_TARGET_PLAYER";
     bc.playbackStream.OPERATION_GET_RECENT_STREAMS_FOR_INITIATING_PLAYER = "GET_RECENT_STREAMS_FOR_INITIATING_PLAYER";
     bc.playbackStream.OPERATION_GET_RECENT_STREAMS_FOR_TARGET_PLAYER = "GET_RECENT_STREAMS_FOR_TARGET_PLAYER";
+    bc.playbackStream.OPERATION_PROTECT_STREAM_UNTIL = "PROTECT_STREAM_UNTIL";
 
     /**
      * Method starts a new playback stream.
@@ -10708,6 +10959,29 @@ function BCPlaybackStream() {
             callback : callback
         });
     };
+
+    /**
+     * Protects a playback stream from being purged (but not deleted) for the given number of days (from now). 
+     * If the number of days given is less than the normal purge interval days (from createdAt), the longer protection date is applied. 
+     * Can only be called by users involved in the playback stream.
+     * 
+     * @param playbackStreamId Identifies the stream to protect
+     * @param numDays The number of days the stream is to be protected (from now)
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.playbackStream.protectStreamUntil = function(playbackStreamId, numDays, callback){
+        var message = {
+            playbackStreamId : playbackStreamId,
+            numDays : numDays
+        }
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_PLAYBACK_STREAM,
+            operation : bc.playbackStream.OPERATION_PROTECT_STREAM_UNTIL,
+            data : message,
+            callback : callback
+        })
+    }
 
 }
 
@@ -13839,6 +14113,7 @@ function BCSocialLeaderboard() {
     bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW = "GET_GROUP_LEADERBOARD_VIEW";
     bc.socialLeaderboard.OPERATION_GET_GROUP_LEADERBOARD_VIEW_BY_VERSION = "GET_GROUP_LEADERBOARD_VIEW_BY_VERSION";
     bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD = "POST_GROUP_SCORE_DYNAMIC"
+    bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD_USING_CONFIG = "POST_GROUP_SCORE_DYNAMIC_USING_CONFIG"
 
 
 
@@ -14605,6 +14880,35 @@ function BCSocialLeaderboard() {
                 },
                 callback : callback
             });
+    };
+
+    /**
+     * Post the group's score to the given social leaderboard, dynamically creating the group leaderboard if it does not exist yet.
+     * To create new leaderboard, configJson must specify leaderboardType, rotationType, resetAt, and retainedCount, at a minimum, with support to optionally specify an expiry in minutes.
+     * 
+     * Service Name - Leaderboard
+     * Service Operation - POST_GROUP_SCORE_DYNAMIC_USING_CONFIG
+     * 
+     * @param leaderboardId The leaderboard to post to
+     * @param groupId The id of the group
+     * @param score A score to post
+     * @param scoreData Optional user-defined data to post with the score
+     * @param configJson Configuration for the leaderboard if it does not exist yet, specified as JSON object. The supporting configuration fields are listed in the following table of configJson fields
+     * @param callback The method to be invoked when the server response is received
+     */
+    bc.socialLeaderboard.postScoreToDynamicGroupLeaderboardUsingConfig = function (leaderboardId, groupId, score, scoreData, configJson, callback) {
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_LEADERBOARD,
+            operation: bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD_USING_CONFIG,
+            data: {
+                leaderboardId: leaderboardId,
+                groupId: groupId,
+                score: score,
+                scoreData: scoreData,
+                configJson: configJson
+            },
+            callback: callback
+        });
     };
 
     /**
@@ -16301,7 +16605,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "5.4.0";
+    bcc.version = "5.5.0";
     bcc.countryCode;
     bcc.languageCode;
 
