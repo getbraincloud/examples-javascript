@@ -1152,7 +1152,7 @@ function BrainCloudWrapper(wrapperName) {
      * @returns True if a saved profile and anonymous ID exist in localStorage
      */
     bcw.canReconnect = function () {
-        return bcw.getStoredProfileId() !== "" && bcw.getStoredAnonymousId() !== ""
+        return bcw.getStoredProfileId().length !== 0 && bcw.getStoredAnonymousId().length !== 0
     }
 
     /** Method authenticates the user using universal credentials

@@ -560,7 +560,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				$scope.showLeaderboard = false
 			})
 
-			if (_bc.canReconnect()) {
+			if (!_bc.canReconnect()) {
 				$mdDialog.show(
 					$mdDialog.alert()
 						.content('Authentication Error')
@@ -682,8 +682,6 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Checks for saved Profile/Anonymous IDs.
 	 */
 	$scope.reconnectUser = function () {
-		console.log("Looking for saved IDs to see if Reconnect Authentication is possible . . .")
-
 		if (_bc.canReconnect()) {
 			console.log("Profile and Anonymous IDs found. Attempting Reconnect Authentication . . .")
 			_bc.reconnect(loginCallback)
