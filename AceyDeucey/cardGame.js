@@ -560,7 +560,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 				$scope.showLeaderboard = false
 			})
 
-			if (!_bc.canReconnect()) {
+			if (_bc.canReconnect()) {
 				$mdDialog.show(
 					$mdDialog.alert()
 						.content('Authentication Error')
