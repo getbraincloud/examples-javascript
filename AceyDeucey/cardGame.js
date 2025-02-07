@@ -1,6 +1,8 @@
 
 var app = angular.module('CardGame', ['ngMaterial', 'ngSanitize']);
 
+let brainCloud = require("braincloud")
+
 app.filter('stateLabel', function () {
 	return function (state) {
 		if ((state == undefined || state == null)) {
@@ -48,7 +50,7 @@ var appId = "yourAppId"
 var appSecret = "yourAppSecret"
 var url = "yourServerURL"
 
-var _bc = new BrainCloudWrapper("_mainWrapper");
+var _bc = new brainCloud.BrainCloudWrapper("_mainWrapper");
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
