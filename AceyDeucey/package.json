@@ -1,0 +1,14 @@
+{
+  "name": "aceydeucey",
+  "version": "1.0.0",
+  "description": "Acey Deucey is a casino-style game in which players bet on whether a drawn card will be between two others. In general, the greater the gap between the two cards, the higher a bet should be.",
+  "main": "cardGame.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "braincloud": "^5.5.0"
+  }
+}
