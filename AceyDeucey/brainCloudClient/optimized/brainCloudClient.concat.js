@@ -65,11 +65,7 @@ function BrainCloudManager ()
     bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
     bcm._appVersion = "";
     bcm._debugEnabled = false;
-<<<<<<< HEAD
     bcm._compressionEnabled = true;
-=======
-    bcm._compressionEnabled = false;
->>>>>>> master
 
     bcm._requestInProgress = false;
     bcm._bundleDelayActive = false;
@@ -725,11 +721,6 @@ function BrainCloudManager ()
                     })
                         .then(function (response) {
                             var status = response.status;
-<<<<<<< HEAD
-=======
-                            var encoding = response.headers.get("Content-Encoding");
-                            bcm.debugLog("Response Content-Encoding: " + encoding);
->>>>>>> master
 
                             return response.arrayBuffer().then(function (buffer) {
                                 return { status: status, buffer: buffer }; 
@@ -1737,11 +1728,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_HANDOFF = "Handoff";
 	bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF = "SettopHandoff";
 
-<<<<<<< HEAD
 	bc.authentication.compressResponses = true;
-=======
-	bc.authentication.compressResponses = false;
->>>>>>> master
 	bc.authentication.profileId = "";
 	bc.authentication.anonymousId = "";
     bc.authentication.previousAuthParams = {
@@ -16373,11 +16360,7 @@ function BrainCloudClient() {
     }
 
 
-<<<<<<< HEAD
     bcc.version = "5.8.0";
-=======
-    bcc.version = "5.7.0";
->>>>>>> master
     bcc.countryCode;
     bcc.languageCode;
 

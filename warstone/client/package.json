@@ -1,16 +1,9 @@
 {
   "name": "warstone",
-<<<<<<< HEAD
   "version": "5.8.0",
   "private": true,
   "dependencies": {
     "braincloud": "^5.8.0",
-=======
-  "version": "5.7.0",
-  "private": true,
-  "dependencies": {
-    "braincloud": "^5.7.0",
->>>>>>> master
     "isomorphic-ws": "^4.0.1",
     "react": "^16.8.6",
     "react-dom": "^16.4.2",
