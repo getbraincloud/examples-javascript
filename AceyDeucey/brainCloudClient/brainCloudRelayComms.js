@@ -1,14 +1,5 @@
 function BrainCloudRelayComms(_client) {
     var bcr = this;
-//> REMOVE IF K6
-
-// TODO:  verify that this is unneeded
-// Check window and document objects to determine if environment is browser or node
-if ([typeof window, typeof document].includes('undefined')) {
-    var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
-}
-//var Buffer = require('buffer/').Buffer  // note: the trailing slash is important!
-//> END
 
     bcr.CONTROL_BYTES_SIZE = 1;
 
@@ -48,7 +39,7 @@ if ([typeof window, typeof document].includes('undefined')) {
     bcr._netId = bcr.INVALID_NET_ID; // My net Id
     bcr._systemCallback = null;
     bcr._relayCallback = null;
-    bcr._pingIntervalMS = 1000;
+    bcr._pingIntervalSeconds = 1;
     bcr._pingIntervalId = null;
     bcr._pingInFlight = false;
     bcr._pingTime = null;
@@ -139,6 +130,7 @@ if ([typeof window, typeof document].includes('undefined')) {
 //+     });
 //> END
 //> REMOVE IF K6
+
         bcr.socket = new WebSocket(uri);
         bcr.socket.addEventListener('error', bcr.onSocketError);
         bcr.socket.addEventListener('close', bcr.onSocketClose);
@@ -199,7 +191,15 @@ if ([typeof window, typeof document].includes('undefined')) {
     }
 
     bcr.setPingInterval = function(interval) {
-        bcr._pingIntervalMS = Math.max(1000, interval);
+        if(interval > 999){
+            bc.brainCloudManager.debugLog("Warning: setPingInterval value should be in seconds. Values greater than 999 are automatically converted to seconds.");
+
+            bcr._pingIntervalSeconds = interval / 1000;
+        }
+        else{
+            bcr._pingIntervalSeconds = interval;
+        }
+        
         if (bcr.isConnected) {
             bcr.stopPing();
             bcr.startPing();
@@ -232,7 +232,7 @@ if ([typeof window, typeof document].includes('undefined')) {
             if (!bcr._pingInFlight) {
                 bcr.sendPing();
             }
-        }, bcr._pingIntervalMS);
+        }, bcr._pingIntervalSeconds);
     }
 
     bcr.onSocketError = function(e) {

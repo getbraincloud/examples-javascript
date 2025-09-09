@@ -65,7 +65,7 @@ function BrainCloudManager ()
     bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
     bcm._appVersion = "";
     bcm._debugEnabled = false;
-    bcm._compressionEnabled = false;
+    bcm._compressionEnabled = true;
 
     bcm._requestInProgress = false;
     bcm._bundleDelayActive = false;
@@ -721,8 +721,6 @@ function BrainCloudManager ()
                     })
                         .then(function (response) {
                             var status = response.status;
-                            var encoding = response.headers.get("Content-Encoding");
-                            bcm.debugLog("Response Content-Encoding: " + encoding);
 
                             return response.arrayBuffer().then(function (buffer) {
                                 return { status: status, buffer: buffer }; 
@@ -1002,12 +1000,39 @@ function BCAppStore() {
 
     bc.SERVICE_APP_STORE = "appStore";
 
-    bc.appStore.OPERATION_VERIFY_PURCHASE = "VERIFY_PURCHASE";
+    bc.appStore.OPERATION_CACHE_PURCHASE_PAYLOAD_CONTEXT = "CACHE_PURCHASE_PAYLOAD_CONTEXT";
+    bc.appStore.OPERATION_FINALIZE_PURCHASE = "FINALIZE_PURCHASE";
     bc.appStore.OPERATION_GET_ELIGIBLE_PROMOTIONS = "ELIGIBLE_PROMOTIONS";
     bc.appStore.OPERATION_GET_SALES_INVENTORY = "GET_INVENTORY";
-    bc.appStore.OPERATION_START_PURCHASE = "START_PURCHASE";
-    bc.appStore.OPERATION_FINALIZE_PURCHASE = "FINALIZE_PURCHASE";
     bc.appStore.OPERATION_REFRESH_PROMOTIONS = "REFRESH_PROMOTIONS";
+    bc.appStore.OPERATION_START_PURCHASE = "START_PURCHASE";
+    bc.appStore.OPERATION_VERIFY_PURCHASE = "VERIFY_PURCHASE";
+
+    /**
+     * Caches a payload context to retreive as fallback if the store API cannot provide the payload.
+     * 
+     * Service Name - AppStore
+     * Service Operation - CACHE_PURCHASE_PAYLOAD_CONTEXT
+     * 
+     * @param {string} storeId The store platform. Ex: "googlePlay".
+     * @param {string} iapId In-app product id.
+     * @param {string} payload The payload string to cache.
+     * @param {function} callback The function to be invoked when the server response is received.
+     */
+    bc.appStore.cachePurchasePayloadContext = function (storeId, iapId, payload, callback) {
+        var data = {
+            storeId: storeId,
+            iapId: iapId,
+            payload: payload
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_APP_STORE,
+            operation: bc.appStore.OPERATION_CACHE_PURCHASE_PAYLOAD_CONTEXT,
+            data: data,
+            callback: callback
+        });
+    };
 
     /**
     * Verifies that purchase was properly made at the store.
@@ -1703,7 +1728,7 @@ function BCAuthentication() {
 	bc.authentication.AUTHENTICATION_TYPE_HANDOFF = "Handoff";
 	bc.authentication.AUTHENTICATION_TYPE_SETTOP_HANDOFF = "SettopHandoff";
 
-	bc.authentication.compressResponses = false;
+	bc.authentication.compressResponses = true;
 	bc.authentication.profileId = "";
 	bc.authentication.anonymousId = "";
     bc.authentication.previousAuthParams = {
@@ -3118,44 +3143,6 @@ function BCCustomEntity() {
     };
 
     /**
-     * Retrieves first page of custom entities from the server based on the custom entity type and specified query context
-     *
-     * @param entityType
-     *              {string} The entity type as defined by the user
-     * @param rowsPerPage
-     *              {int}
-     * @param searchJson
-     *              {json} data to look for
-     * @param sortJson
-     *              {json} data to sort by
-     * @param doCount
-     *              {bool}
-     * @param callback
-     *              {function} The callback handler.
-     */
-
-	/**
-     * @deprecated Use getEntityPage() instead - Removal after October 21 2021
-     */
-    bc.customEntity.getPage = function(entityType, rowsPerPage, searchJson, sortJson, doCount, callback) {
-        var message = {
-            entityType : entityType,
-            rowsPerPage : rowsPerPage,
-            doCount : doCount
-        };
-
-        if(searchJson) message.searchJson = searchJson;
-        if(sortJson) message.sortJson = sortJson;
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_CUSTOM_ENTITY,
-            operation : bc.customEntity.OPERATION_GET_PAGE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
     * @param context The json context for the page request.
     *                   See the portal appendix documentation for format.
     * @param entityType
@@ -3170,37 +3157,6 @@ function BCCustomEntity() {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_CUSTOM_ENTITY,
             operation : bc.customEntity.OPERATION_GET_ENTITY_PAGE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
-     * Creates new custom entity.
-     *
-     * @param entityType
-     *              {string} The entity type as defined by the user
-     * @param context
-     *              {string} context
-     * @param pageOffset
-     *              {int}
-     * @param callback
-     *              {function} The callback handler.
-     */
-
-     /**
-     * @deprecated Use getEntityPageOffset() instead - Removal after October 21 2021
-     */
-    bc.customEntity.getPageOffset = function(entityType, context, pageOffset, callback) {
-        var message = {
-            entityType : entityType,
-            context : context,
-            pageOffset : pageOffset
-        };
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_CUSTOM_ENTITY,
-            operation : bc.customEntity.OPERATION_GET_PAGE_OFFSET,
             data : message,
             callback : callback
         });
@@ -4495,13 +4451,6 @@ function BCFile() {
     bc.file.OPERATION_GET_CDN_URL = "GET_CDN_URL";
 
     /**
-     * @deprecated Use prepareUserUpload instead - Removal after October 21 2021
-     */
-    bc.file.prepareFileUpload = function(cloudPath, cloudFilename, shareable, replaceIfExists, fileSize, callback) {
-        bc.file.prepareUserUpload(cloudPath, cloudFilename, shareable, replaceIfExists, fileSize, callback);
-    };
-
-    /**
      * Prepares a user file upload. On success an uploadId will be returned which
      * can be used to upload the file using the bc.file.uploadFile method.
      *
@@ -4971,20 +4920,6 @@ function BCFriend() {
 			operation: bc.friend.OPERATION_READ_FRIENDS_ENTITIES,
 			data: {
 				entityType: entityType
-			},
-			callback: callback
-		});
-	};
-
-	/**
-     * @deprecated Use readFriendUserState() instead - Removal after March 1 2022
-	 */
-	bc.friend.readFriendPlayerState = function(friendId, callback) {
-		bc.brainCloudManager.sendRequest({
-			service: bc.SERVICE_FRIEND,
-			operation: bc.friend.OPERATION_READ_FRIEND_PLAYER_STATE,
-			data: {
-				friendId: friendId
 			},
 			callback: callback
 		});
@@ -5507,34 +5442,6 @@ function BCGamification() {
             callback: callback
         });
     };
-
-    /**
-     * @deprecated - Removal after October 21 2021
-     *
-     * Resets the specified milestones' statuses to LOCKED.
-     *
-     * Service Name - Gamification
-     * Service Operation - ResetMilestones
-     *
-     * @param milestoneIds Comma separate list of milestones to reset
-     * @param callback Method to be invoked when the server response is received.
-     */
-    bc.gamification.resetMilestones = function(milestones, callback, includeMetaData) {
-        var message = {};
-        message["milestones"] = milestones;
-
-        if (includeMetaData) {
-            message["includeMetaData"] = includeMetaData;
-        }
-
-        bc.brainCloudManager.sendRequest({
-            service: bc.gamification.SERVICE_GAMIFICATION,
-            operation: bc.gamification.OPERATION_RESET_MILESTONES,
-            data: message,
-            callback: callback
-        });
-    };
-
 
     /**
      * Method retrieves all of the quests defined for the game.
@@ -6321,26 +6228,6 @@ function BCGlobalEntity() {
 			.sendRequest({
 				service : bc.SERVICE_GLOBAL_ENTITY,
 				operation : bc.globalEntity.OPERATION_UPDATE_ACL,
-				data : message,
-				callback : callback
-			});
-	};
-
-	/**
-     * @deprecated Use updateEntityTimeToLive() instead - Removal after March 1 2022
-	 */
-	bc.globalEntity.updateEntityUpdateTimeToLive = function(entityId,
-																		  timeToLive, version, callback) {
-		var message = {
-			entityId : entityId,
-			version : version,
-			timeToLive : timeToLive
-		};
-
-		bc.brainCloudManager
-			.sendRequest({
-				service : bc.SERVICE_GLOBAL_ENTITY,
-				operation : bc.globalEntity.OPERATION_UPDATE_TIME_TO_LIVE,
 				data : message,
 				callback : callback
 			});
@@ -11079,17 +10966,6 @@ function BCPlayerState() {
     bc.playerState.OPERATION_UPDATE_LANGUAGE_CODE = "UPDATE_LANGUAGE_CODE";
 
     /**
-     * @deprecated Use deleteUser instead - Will be removed after October 21 2021
-     */
-    bc.playerState.userPlayer = function(callback) {
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_PLAYERSTATE,
-            operation : bc.playerState.OPERATION_FULL_PLAYER_RESET,
-            callback : callback
-        });
-    };
-
-    /**
      * Completely deletes the user record and all data fully owned
      * by the user. After calling this method, the player will need
      * to re-authenticate and create a new profile.
@@ -11285,15 +11161,6 @@ function BCPlayerState() {
     };
 
     /**
-     * @deprecated Use updateUserName instead - Will be removed after October 21 2021
-     */
-    bc.playerState.updateName = function(name, callback) {
-        bc.playerState.updateUserName(name, callback);
-    };
-
-
-
-    /**
      * Updates the "friend summary data" associated with the logged in user.
      * Some operations will return this summary data. For instance the social
      * leaderboards will return the player's score in the leaderboard along
@@ -11468,21 +11335,6 @@ function BCPlayerStatisticsEvent() {
     bc.playerStatisticsEvent.OPERATION_TRIGGER_MULTIPLE = "TRIGGER_MULTIPLE";
 
     /**
-     * @deprecated Use triggerStatsEvent instead - Removal September 1, 2021
-     */
-    bc.playerStatisticsEvent.triggerUserStatsEvent = function(eventName, eventMultiplier, callback) {
-        bc.brainCloudManager.sendRequest({
-            service: bc.SERVICE_PLAYER_STATISTICS_EVENT,
-            operation: bc.playerStatisticsEvent.OPERATION_TRIGGER,
-            data: {
-                eventName : eventName,
-                eventMultiplier : eventMultiplier
-            },
-            callback: callback
-        });
-    };
-
-    /**
      * Trigger an event server side that will increase the users statistics.
      * This may cause one or more awards to be sent back to the user -
      * could be achievements, experience, etc. Achievements will be sent by this
@@ -11506,20 +11358,6 @@ function BCPlayerStatisticsEvent() {
             data: {
                 eventName : eventName,
                 eventMultiplier : eventMultiplier
-            },
-            callback: callback
-        });
-    };
-
-    /**
-     * @deprecated Use triggerStatsEvents instead - Removal September 1, 2021
-     */
-    bc.playerStatisticsEvent.triggerUserStatsEvents = function(events, callback) {
-        bc.brainCloudManager.sendRequest({
-            service: bc.SERVICE_PLAYER_STATISTICS_EVENT,
-            operation: bc.playerStatisticsEvent.OPERATION_TRIGGER_MULTIPLE,
-            data: {
-                events : events
             },
             callback: callback
         });
@@ -13686,13 +13524,6 @@ function BCRTT() {
     }
 
     /**
-     * @deprecated Use isRTTEnabled instead. Will be removed on March 1 2022
-     */
-    bc.rttService.getRTTEnabled = function() {
-        return bc.brainCloudRttComms.isRTTEnabled();
-    }
-
-    /**
      * Returns true if RTT is enabled
      */
     bc.rttService.isRTTEnabled = function() {
@@ -13930,22 +13761,6 @@ function BCScript() {
             data: {
                 scriptName: scriptName,
                 scriptData: scriptData
-            },
-            callback: callback
-        });
-    };
-
-    /**
-     * @deprecated Use ScheduleRunScriptMillisUTC instead - Removal September 1, 2021
-     */
-    bc.script.scheduleRunScriptUTC = function(scriptName, scriptData, startDateInUTC, callback) {
-        bc.brainCloudManager.sendRequest({
-            service: bc.SERVICE_SCRIPT,
-            operation: bc.script.OPERATION_SCHEDULE_CLOUD_SCRIPT,
-            data: {
-                scriptName: scriptName,
-                scriptData: scriptData,
-                startDateUTC: startDateInUTC.getTime()
             },
             callback: callback
         });
@@ -14761,28 +14576,6 @@ function BCSocialLeaderboard() {
     };
 
     /**
-     * @deprecated Use postScoreToDynamicLeaderboardUTC instead - Will be removed on March 1, 2022
-     */
-    bc.socialLeaderboard.postScoreToDynamicLeaderboard = function(leaderboardName, score,
-                                                                                data, leaderboardType, rotationType, rotationReset, retainedCount, callback ) {
-        bc.brainCloudManager
-            .sendRequest({
-                service : bc.SERVICE_LEADERBOARD,
-                operation : bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC,
-                data : {
-                    leaderboardId : leaderboardName,
-                    score : score,
-                    data : data,
-                    leaderboardType : leaderboardType,
-                    rotationType : rotationType,
-                    rotationResetTime : rotationReset.getTime().toFixed(0),
-                    retainedCount : retainedCount
-                },
-                callback : callback
-            });
-    };
-
-    /**
      * Post the players score to the given social leaderboard.
      * Pass leaderboard config data to dynamically create if necessary.
      * You can optionally send a user-defined json string of data
@@ -14850,29 +14643,6 @@ function BCSocialLeaderboard() {
             callback: callback
         })
     }
-
-    /**
-     *@deprecated Use postScoreToDynamicLeaderboardDaysUTC instead - Will be removed on March 1, 2022
-     */
-    bc.socialLeaderboard.postScoreToDynamicLeaderboardDays = function(leaderboardName, score,
-                                                                                    data, leaderboardType, rotationReset, retainedCount, numDaysToRotate, callback ) {
-        bc.brainCloudManager
-            .sendRequest({
-                service : bc.SERVICE_LEADERBOARD,
-                operation : bc.socialLeaderboard.OPERATION_POST_SCORE_DYNAMIC,
-                data : {
-                    leaderboardId : leaderboardName,
-                    score : score,
-                    data : data,
-                    leaderboardType : leaderboardType,
-                    rotationType : "DAYS",
-                    rotationResetTime : rotationReset.getTime().toFixed(0),
-                    retainedCount : retainedCount,
-                    numDaysToRotate : numDaysToRotate
-                },
-                callback : callback
-            });
-    };
 
     /**
      * Post the players score to the given social leaderboard.
@@ -15372,29 +15142,6 @@ function BCSocialLeaderboard() {
     }
 
     /**
-     * @deprecated Use postScoreToDynamicGroupLeaderboardUTC instead - Will be removed on March 1 2022
-     */
-    bc.socialLeaderboard.postScoreToDynamicGroupLeaderboard = function(leaderboardId, groupId, score, data, leaderboardType, rotationType, rotationResetTime, retainedCount, callback) {
-        var message = {
-            leaderboardId : leaderboardId,
-            groupId : groupId,
-            score : score,
-            data : data,
-            leaderboardType : leaderboardType,
-            rotationType : rotationType,
-            rotationResetTime : rotationResetTime,
-            retainedCount : retainedCount
-        };
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_LEADERBOARD,
-            operation : bc.socialLeaderboard.OPERATION_POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD,
-            data : message,
-            callback : callback
-        });
-    }
-
-    /**
      * Post the group score to the given group leaderboard and dynamically create if necessary. LeaderboardType, rotationType, rotationReset, and retainedCount are required.     *
      * Service Name - leaderboard
      * Service Operation - POST_SCORE_TO_DYNAMIC_GROUP_LEADERBOARD
@@ -15720,26 +15467,6 @@ function BCTournament() {
     };
 
     /**
-     * @deprecated use postTournamentScoreUTC instead. Will be removed on March 1 2022
-     */
-    bc.tournament.postTournamentScore = function(leaderboardId, score, data, roundStartedTime, callback) {
-        var message = {
-            leaderboardId : leaderboardId,
-            score : score,
-            roundStartedEpoch: roundStartedTime.getTime()
-        };
-
-        if(data) message.data = data;
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_TOURNAMENT,
-            operation : bc.tournament.OPERATION_POST_TOURNAMENT_SCORE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
      * Post the users score to the leaderboard
      *
      * Service Name - tournament
@@ -15763,39 +15490,6 @@ function BCTournament() {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_TOURNAMENT,
             operation : bc.tournament.OPERATION_POST_TOURNAMENT_SCORE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
-     * @deprecated use postTournamentScoreWithResultsUTC instead. Will be removed on March 1 2022
-     */
-    bc.tournament.postTournamentScoreWithResults = function(
-        leaderboardId,
-        score,
-        data,
-        roundStartedTime,
-        sort,
-        beforeCount,
-        afterCount,
-        initialScore,
-        callback) {
-        var message = {
-            leaderboardId : leaderboardId,
-            score : score,
-            roundStartedEpoch: roundStartedTime.getTime(),
-            sort: sort,
-            beforeCount : beforeCount,
-            afterCount : afterCount,
-            initialScore : initialScore
-        };
-
-        if(data) message.data = data;
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_TOURNAMENT,
-            operation : bc.tournament.OPERATION_POST_TOURNAMENT_SCORE_WITH_RESULTS,
             data : message,
             callback : callback
         });
@@ -15982,23 +15676,6 @@ function BCUserItems() {
     };
 
     /**
-     * @deprecated Use getUserItemsPage instead. Will be removed on March 1 2022
-     */
-    bc.userItems.getUserInventoryPage = function(context, includeDef, callback) {
-        var message = {
-            context : context,
-            includeDef : includeDef
-        };
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_USER_ITEMS,
-            operation : bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
      * Retrieves the page of user's inventory from the server 
      * based on the context. If includeDef is true, response
      *  includes associated itemDef with each user item, with 
@@ -16022,24 +15699,6 @@ function BCUserItems() {
         bc.brainCloudManager.sendRequest({
             service : bc.SERVICE_USER_ITEMS,
             operation : bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE,
-            data : message,
-            callback : callback
-        });
-    };
-
-    /**
-     * @deprecated Use getUserItemsPageOffset instead. Will be removed on March 1 2022
-     */
-    bc.userItems.getUserInventoryPageOffset = function(context, pageOffset, includeDef, callback) {
-        var message = {
-            context : context,
-            pageOffset : pageOffset,
-            includeDef : includeDef
-        };
-
-        bc.brainCloudManager.sendRequest({
-            service : bc.SERVICE_USER_ITEMS,
-            operation : bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE_OFFSET,
             data : message,
             callback : callback
         });
@@ -16678,7 +16337,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "5.7.0";
+    bcc.version = "5.8.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -16887,13 +16546,6 @@ function BrainCloudClient() {
     };
 
     /**
-     * @deprecated Use registerGlobalErrorCallback() instead - Removal after March 1 2022
-     */
-    bcc.setErrorCallback = function(errorCallback) {
-        bcc.brainCloudManager.setErrorCallback(errorCallback);
-    };
-
-    /**
      * Sets a callback handler for any error messages that come from brainCloud.
      * This will include any networking errors as well as requests from the client
      * which do not register a callback handler.
@@ -17064,7 +16716,7 @@ var Buffer = require('buffer/').Buffer  // note: the trailing slash is important
     bcr._netId = bcr.INVALID_NET_ID; // My net Id
     bcr._systemCallback = null;
     bcr._relayCallback = null;
-    bcr._pingIntervalMS = 1000;
+    bcr._pingIntervalSeconds = 1;
     bcr._pingIntervalId = null;
     bcr._pingInFlight = false;
     bcr._pingTime = null;
@@ -17155,6 +16807,7 @@ var Buffer = require('buffer/').Buffer  // note: the trailing slash is important
 //+     });
 //> END
 //> REMOVE IF K6
+
         bcr.socket = new WebSocket(uri);
         bcr.socket.addEventListener('error', bcr.onSocketError);
         bcr.socket.addEventListener('close', bcr.onSocketClose);
@@ -17215,7 +16868,15 @@ var Buffer = require('buffer/').Buffer  // note: the trailing slash is important
     }
 
     bcr.setPingInterval = function(interval) {
-        bcr._pingIntervalMS = Math.max(1000, interval);
+        if(interval > 999){
+            bc.brainCloudManager.debugLog("Warning: setPingInterval value should be in seconds. Values greater than 999 are automatically converted to seconds.");
+
+            bcr._pingIntervalSeconds = interval / 1000;
+        }
+        else{
+            bcr._pingIntervalSeconds = interval;
+        }
+        
         if (bcr.isConnected) {
             bcr.stopPing();
             bcr.startPing();
@@ -17248,7 +16909,7 @@ var Buffer = require('buffer/').Buffer  // note: the trailing slash is important
             if (!bcr._pingInFlight) {
                 bcr.sendPing();
             }
-        }, bcr._pingIntervalMS);
+        }, bcr._pingIntervalSeconds);
     }
 
     bcr.onSocketError = function(e) {
