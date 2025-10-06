@@ -2,11 +2,6 @@
 
 Acey Deucey is a casino-style game in which players bet on whether a drawn card will be between two others. In general, the greater the gap between the two cards, the higher a bet should be. 
 
-## Getting Started
-After creating your app in the brainCloud portal, add your App ID and Secret at cardGame.js L47.
-The acey-deucey.bcconfig file can be imported into your app via the brainCloud portal (Design > Admin Tools > Configuration Data) to add the necessary Global Properties, Scripts, etc.
-
-## How to Play
 There are three outcomes when the third card is flipped:
 <ol>
   <li>The card is between the other two. Win 1.5x bet.</li>

@@ -14,9 +14,6 @@ The RS approach is the simpler of the two scenarios while the RSM version is sli
 
 The following sections describe the protocols and requirements for the RS approach. The RSM approach will be described in a separate article.
 
-## Getting Started
-The warstone.bcconfig file can be imported into your app via the brainCloud portal (Design > Admin Tools > Configuration Data) to add the necessary Global Properties, Scripts, etc.
-
 
 ## How matchmaking works
 Room Server instances in brainCloud are launched when the matchmaking requirements are satified for a particular lobby instance. Lobby matchmaking details are outside the scope of this article however you can find them [here](https://getbraincloud.com/apidocs/api-modules/multiplayer/lobbies/) if you haven't been exposed to it before.
