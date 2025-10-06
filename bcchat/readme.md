@@ -37,3 +37,5 @@ If you don't have it already, install NodeJS https://nodejs.org/.
    ```
 
 The terminal should launch BCChat into a tab in your browser, and it should just work! Enjoy.
+
+The bc-chat.bcconfig file can be imported into your app via the brainCloud portal (Design > Admin Tools > Configuration Data) to add the necessary Global Properties, Scripts, etc.

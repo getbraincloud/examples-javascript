@@ -43,11 +43,10 @@ app.filter('card', function () {
 	}
 });
 
-// Application IDs defined in PortalX: App > Design > Core App Info
+// TODO:  Application IDs defined in PortalX: App > Design > Core App Info
 var appId = "yourAppId"
 var appSecret = "yourAppSecret"
-var url = "yourServerURL"
-
+var url = "https://api.braincloudservers.com"
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
