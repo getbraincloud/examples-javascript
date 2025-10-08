@@ -1,0 +1,144 @@
+"use strict";
+
+let identityProxy = bridge.getIdentityServiceProxy();
+let friendProxy = bridge.getFriendServiceProxy();
+let scriptProxy = bridge.getScriptServiceProxy();
+let samlProxy = bridge.getSamlServiceProxy();
+
+let PRE_REGISTRATION_ENABLED = true;
+let PRE_REGISTRATION_AUTH_TYPE = "Email";
+
+let EXTERNAL_AUTH_TYPE = "saml-sso";
+
+let SUB_ATTRIBUTE = "NameID";
+let SLO_ENABLED = false;
+
+function findUser(externalId) {
+  let lookupResult = friendProxy.getProfileInfoForExternalAuthIdIfExists(externalId, EXTERNAL_AUTH_TYPE);
+
+  if (lookupResult.status === 200) {
+    return lookupResult.data?.profileId || null;
+  }
+
+  return null;
+}
+
+function findPreRegisteredUser(externalId) {
+  let lookupResult = friendProxy.getProfileInfoForCredentialIfExists(externalId, PRE_REGISTRATION_AUTH_TYPE);
+
+  if (lookupResult.status === 200) {
+    return lookupResult.data?.profileId || null;
+  }
+
+  return null;
+}
+
+function main() {
+  bridge.logInfo("Attempting to authenticate user: " + data.externalId);
+
+  let authenticationToken = data.authenticationToken;
+
+  let runningInAttachIdentityContext = false;
+
+  if (authenticationToken.startsWith("PRE-REGISTERED:")) {
+    authenticationToken = authenticationToken.substring("PRE-REGISTERED:".length);
+
+    runningInAttachIdentityContext = true;
+  }
+
+  let attributesResp = samlProxy.sysGetResponseAttributes(authenticationToken);
+
+  if (attributesResp.status !== 200) {
+    bridge.logErrorJson("Token not valid: " + authenticationToken, attributesResp);
+    
+    return false;
+  }
+
+  let attributes = attributesResp.data.responseAttributes;
+
+  let subList = attributes[SUB_ATTRIBUTE];
+
+  if (subList == null || subList.length === 0) {
+    bridge.logErrorJson("No valid sub's found using attribute: " + SUB_ATTRIBUTE, attributes);
+
+    return false;
+  }
+
+  let externalId = subList[0];
+
+  if (externalId !== data.externalId) {
+    bridge.logError("The identified sub '" + externalId + "' does not match the external id '" + data.externalId + "'");
+
+    return false;
+  }
+
+  let profileId = findUser(externalId);
+
+  let preRegisteredProfileId = null;
+
+  if (!runningInAttachIdentityContext) {
+    if (profileId == null && PRE_REGISTRATION_ENABLED) {
+      bridge.logInfo("Checking for pre-registration ("+ PRE_REGISTRATION_AUTH_TYPE +"): " + externalId);
+
+      preRegisteredProfileId = findPreRegisteredUser(externalId);
+
+      if (preRegisteredProfileId != null) {
+        bridge.logInfo("Found pre-registration ("+ PRE_REGISTRATION_AUTH_TYPE +"): " + externalId + " (" + preRegisteredProfileId + ")");
+      } else {
+        bridge.logInfo("No pre-registration found ("+ PRE_REGISTRATION_AUTH_TYPE +"): " + externalId);
+      }
+    }
+
+    if (preRegisteredProfileId != null) {
+      let attachIdentityResp = scriptProxy.runScript("attach_external_identity", {
+        profileId: preRegisteredProfileId,
+        externalId: externalId,
+        authenticationToken: authenticationToken,
+        externalAuthName: EXTERNAL_AUTH_TYPE
+      });
+
+      if (attachIdentityResp.status !== 200 || !attachIdentityResp.data.success) {
+        bridge.logWarningJson("Could not attach external identity", attachIdentityResp);
+
+        preRegisteredProfileId = null;
+      }
+    }
+  }
+
+  let response = {
+    valid: true,
+    profileId: profileId,
+    useProfileId: preRegisteredProfileId,
+  };
+
+  // OPTIONAL: Support for SAML SLO (Single lLogout).
+  if (SLO_ENABLED) {
+    response.authPayload = {
+      sloEnabled: true,
+      logoutUrl: null
+    };
+
+    let logoutRequestUrl = samlProxy.sysGetLogoutRequestUrl(data.authenticationToken);
+
+    if (logoutRequestUrl != null && logoutRequestUrl.length > 0) {
+      response.authPayload.logoutUrl = logoutRequestUrl;
+    }
+  }
+
+  bridge.logInfo("Successfully authenticated user (" + externalId + "): " + (preRegisteredProfileId || profileId));
+
+  return response;
+}
+
+main();
+
+//*** ------------- brainCloud meta-data begins now - do not hand-edit -----------------
+// "scriptName":"external_auth",
+// "clientCallable":false,
+// "s2sCallable":false,
+// "peerCallable":false,
+// "scriptTimeout":20,
+// "description":"",
+// "parms":"{\\n    \\\"externalId\\\": \\\"<external id>\\\",\\n    \\\"authenticationToken\\\": \\\"<saml response id>\\\"\\n}",
+// "version":55,
+// "updatedAt":1759951648324
