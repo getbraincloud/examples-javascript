@@ -773,7 +773,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <h1>Relay Server Test App</h1>
+                            <h1>Cursor Party</h1>
                             <LoginScreen onLogin={this.onLoginClicked.bind(this)}/>
                         </header>
                     </div>
@@ -794,7 +794,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <h1>Relay Server Test App</h1>
+                            <h1>Cursor Party</h1>
                             <MainMenuScreen 
                                 user={this.state.user}
                                 appLobbies={this.state.appLobbies}
@@ -819,7 +819,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <h1>Relay Server Test App</h1>
+                            <h1>Cursor Party</h1>
                             <LobbyScreen 
                                 user={this.state.user}
                                 lobby={this.state.lobby}
@@ -849,7 +849,7 @@ class App extends Component
                 return (
                     <div className="App">
                         <header className="App-header">
-                            <h1>Relay Server Test App</h1>
+                            <h1>Cursor Party</h1>
                             <small>Move mouse around and click to create shockwaves.</small>
                             <GameScreen
                                 user={this.state.user}
