@@ -11,7 +11,8 @@ import CreateGroupScreen from './components/screens/CreateGroupScreen';
 import EnterNameScreen from './components/screens/EnterNameScreen';
 import LogInScreen from './components/screens/LogInScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
-import { getEnv } from './ids';
+import { getEnv } from './credentials';
+
 
 let ids = getEnv("BCChat", "internal");
 
