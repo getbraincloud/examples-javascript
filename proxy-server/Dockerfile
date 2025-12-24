@@ -7,6 +7,6 @@ RUN npm install
 
 COPY src ./src
 
-EXPOSE 3015
+EXPOSE 80
 
 CMD ["npm", "start"]

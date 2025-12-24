@@ -25,6 +25,7 @@ let GAMES = {
 let currentApp = GAMES.bcchat;
 */
 let MAX_HISTORY = 100;
+let PROXY_URL = "http://clientdemos.braincloudservers.com:3002";
 
 
 let defaultChannelsInitState = {
@@ -93,17 +94,19 @@ class App extends Component
         // Close RTT connection
         this.bcWrapper.rttService.deregisterAllRTTCallbacks();
         this.bcWrapper.brainCloudClient.resetCommunication();
+        this.bcWrapper.resetStoredAnonymousId();
+        this.bcWrapper.resetStoredProfileId();
 
         // Pop alert message
         if(this.canReconnect){
-            alert(message);
+            //alert(message);
         }
 
         // Go back to default loading state
-        this.setState(this.getDefaultState());
+        //this.setState(this.getDefaultState());
 
         // Initialize BC libs and start over
-        this.initBC();
+        //this.initBC();
         this.setState({appState: AppState.LogIn});
     }
 
@@ -114,7 +117,7 @@ class App extends Component
         //this.bcWrapper.initialize(currentApp.appId, currentApp.appSecret, packageJson.version);
         //if (currentApp.url) this.bcWrapper.brainCloudClient.setServerUrl(currentApp.url);
         this.bcWrapper.setUseProxy(true);
-        this.bcWrapper.setProxyHost("http://localhost:3015");
+        this.bcWrapper.setProxyHost(PROXY_URL);
         //default value - really just for giving it the appName so we can look for available envs
         this.bcWrapper.setProxyParams(this.appName, "internal");
         this.bcWrapper.brainCloudClient.enableLogging(true);
@@ -179,7 +182,9 @@ class App extends Component
         if (this.bcWrapper.canReconnect()) {
             this.canReconnect = true
             this.bcWrapper.reconnect(this.handlePlayerState.bind(this), error => {
-                this.state = this.makeDefaultState()
+                this.bcWrapper.resetStoredProfileId();
+                this.bcWrapper.resetStoredAnonymousId();
+                this.setState({appState: AppState.LogIn});
             })
         }
         else {

@@ -22,8 +22,8 @@ app.get("/test", requireAuth, (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3015;
+const PORT = 80;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`brainCloud proxy running on port ${PORT}`);
 });

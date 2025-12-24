@@ -1,7 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { signToken } from "./jwt.js";
-import { SECURITY } from "../config/security.js";
 
 const router = express.Router();
 
@@ -12,10 +11,6 @@ const limiter = rateLimit({
 
 router.get("/bootstrap", limiter, (req, res) => {
   const origin = req.headers.host.split(':')[0];
-  if (!SECURITY.ALLOWED_ORIGINS.includes(origin)) {
-    return res.status(403).json({ error: "Forbidden origin" });
-  }
-
   const token = signToken({
     origin,
     ua: req.headers["user-agent"]
