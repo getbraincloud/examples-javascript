@@ -11,11 +11,9 @@ import CreateGroupScreen from './components/screens/CreateGroupScreen';
 import EnterNameScreen from './components/screens/EnterNameScreen';
 import LogInScreen from './components/screens/LogInScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
-import { getEnv } from './credentials';
+import SelectEnvScreen from './components/screens/SelectEnvScreen';
 
-
-let ids = getEnv("BCChat", "internal");
-
+/*
 let GAMES = {
     bcchat: {
         env: ids.name,
@@ -24,10 +22,11 @@ let GAMES = {
         url: ids.serverUrl
     }
 }
-
+let currentApp = GAMES.bcchat;
+*/
 let MAX_HISTORY = 100;
 
-let currentApp = GAMES.bcchat;
+
 let defaultChannelsInitState = {
     names: [],
     connected: 0,
@@ -43,7 +42,8 @@ const AppState = {
     AddFriend: 4,
     CreateGroup: 5,
     InviteMember: 6,
-    Settings: 7
+    Settings: 7,
+    SelectEnv: 8
 }
 
 let pendingOutgoingMessages = [];
@@ -58,6 +58,8 @@ class App extends Component
         this.bcScriptLoadedCount = 0;
         this.pendingMsgs = [];
         this.feedUpdating = false;
+        this.selectedEnv = {};
+        this.appName = "BCChat";
 
         this.state = this.getDefaultState();
 
@@ -80,7 +82,9 @@ class App extends Component
                 name: "",
                 pic: "",
                 id: ""
-            }
+            },
+            envs: null,
+            envsLoading: false
         };
     }
 
@@ -106,9 +110,52 @@ class App extends Component
     initBC()
     {
         this.bcWrapper = new BC.BrainCloudWrapper("bcchat");
-        this.bcWrapper.initialize(currentApp.appId, currentApp.appSecret, packageJson.version);
-        if (currentApp.url) this.bcWrapper.brainCloudClient.setServerUrl(currentApp.url);
+        
+        //this.bcWrapper.initialize(currentApp.appId, currentApp.appSecret, packageJson.version);
+        //if (currentApp.url) this.bcWrapper.brainCloudClient.setServerUrl(currentApp.url);
+        this.bcWrapper.setUseProxy(true);
+        this.bcWrapper.setProxyHost("http://localhost:3015");
+        //default value - really just for giving it the appName so we can look for available envs
+        this.bcWrapper.setProxyParams(this.appName, "internal");
         this.bcWrapper.brainCloudClient.enableLogging(true);
+        this.bcWrapper.brainCloudClient.enableCompression(false);
+        this.setState({appState:AppState.Loading, loadingText: "Loading envs"});
+        this.initProxySession();
+    }
+
+    async initProxySession(){
+        await this.bcWrapper.initProxySession();
+        console.log("Initialized proxy");
+        this.showSelectEnvScreen();
+    }
+
+    async showSelectEnvScreen() {
+        this.setState({
+            appState: AppState.SelectEnv,
+            envsLoading: true,
+            envs: null
+        });
+
+        const envs = await this.bcWrapper.getAvailableProxyEnvs();
+
+        this.setState({
+            envs,
+            envsLoading: false
+        });
+    }
+
+    handleEnvSelected(env){
+        this.selectedEnv = env;
+        console.log(`Updated app selected env ${JSON.stringify(this.selectedEnv)}`);
+        this.bcWrapper.setProxyParams(this.appName, this.selectedEnv.name);
+        this.bcWrapper.initialize(this.selectedEnv.appId, "<not-the-secret>", packageJson.version);
+        this.bcWrapper.brainCloudClient.setServerUrl(this.selectedEnv.serverUrl);
+        this.attemptReconnect();
+    }
+
+    backToSelectEnv(){
+        console.log(`go back to select envs screen`);
+        this.showSelectEnvScreen();
     }
 
     componentDidMount()
@@ -121,7 +168,6 @@ class App extends Component
 
         this.canReconnect = false
         this.initBC();
-        this.attemptReconnect()
     }
 
     attemptReconnect() {
@@ -174,8 +220,8 @@ class App extends Component
 
     handleLogin(login)
     {
-        currentApp = GAMES[login.appName];
-        this.initBC();
+        //currentApp = GAMES[login.appName];
+        //this.initBC();
 
         console.log("BC: authenticateUniversal");
         this.bcWrapper.authenticateUniversal(login.username, login.password, true, this.handlePlayerState.bind(this));
@@ -1114,6 +1160,21 @@ class App extends Component
     {
         switch (this.state.appState)
         {
+            case AppState.SelectEnv:
+            {
+                return(
+                    <div className="App">
+                        <SelectEnvScreen
+                            envs={this.state.envs || []}
+                            loading={this.state.envsLoading}
+                            onEnvSelected={this.handleEnvSelected.bind(this)}
+                        />
+                        <div style={{color:Theme.DarkTextColor, marginTop:"16px"}}>
+                            {`version: ${packageJson.version}`}
+                        </div>
+                    </div>
+                );
+            }
             case AppState.Loading:
             {
                 return (
@@ -1126,12 +1187,13 @@ class App extends Component
             }
             case AppState.LogIn:
             {
-                let versionSuffix = currentApp.url ? " - dev" : " - prod"
+                let versionSuffix = this.selectedEnv.name;
                 return (
                     <div className="App">
-                        <LogInScreen onLogin={this.handleLogin.bind(this)} games={Object.keys(GAMES)} />
+                        <LogInScreen onLogin={this.handleLogin.bind(this)} 
+                        onBackButton={this.showSelectEnvScreen.bind(this)} />
                         <div style={{color:Theme.DarkTextColor, marginTop:"16px"}}>
-                            {`version: ${packageJson.version}${versionSuffix}`}
+                            {`version: ${packageJson.version}-${versionSuffix}`}
                         </div>
                     </div>
                 );

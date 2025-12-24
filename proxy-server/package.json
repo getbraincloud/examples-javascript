@@ -1,0 +1,20 @@
+{
+  "name": "bcwrapperserver",
+  "version": "5.8.1",
+  "description": "A node.js server that relays API calls to and from brainCloud",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "braincloud": "file:../../js/deploy/node",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "express": "^4.22.1",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "scripts": {
+    "start": "node src/server.js"
+  }
+}

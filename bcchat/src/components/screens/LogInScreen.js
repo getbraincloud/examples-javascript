@@ -14,6 +14,10 @@ class LogInScreen extends Component
         };
     }
 
+    onBackButton(){
+        this.props.onBackButton();
+    }
+
     handleSubmit(e) {
         
         // Prevent the browser from reloading the page
@@ -34,8 +38,7 @@ class LogInScreen extends Component
             this.setState({
                 login: {
                     username: formJson.username,
-                    password: formJson.password,
-                    appName: formJson.app
+                    password: formJson.password
                 }
             }, function () {
                 this.props.onLogin(this.state.login);
@@ -54,22 +57,11 @@ class LogInScreen extends Component
                     A new user will be created if it doesn't exist. 
                 </p>
                 <form onSubmit={this.handleSubmit.bind(this)}>
-                    <select name="app" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}}>
-                        {
-                            this.props.games.map(app =>
-                            {
-                                return (
-                                    <option key={app} value={app} style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}}>
-                                        {app}
-                                    </option>
-                                )
-                            })
-                        }
-                    </select>
                     <input type="text" name="username" placeholder="Username" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
                     <input type="password" name="password" placeholder="Password" style={{...Theme.TextInputStyle, display:"block", margin:"16px 0"}} />
                     <input type="submit" value="Login" style={{...Theme.ButtonStyle, display:"block", margin:"16px 0px 16px auto"}} />
                 </form>
+                <button name='backButton' onClick={this.props.onBackButton}> Switch Environment </button>
             </div>
         );
     }

@@ -23,6 +23,44 @@ exports.FormStyle = {
     display: "inline-block"
 };
 
+exports.ListContainer = {
+    minHeight: "100vh",
+    backgroundColor: "#121212",
+    color: "#e0e0e0",
+    padding: "40px",
+    fontFamily: "Arial, sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
+};
+
+exports.List = {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    width: "100%",
+    maxWidth: "400px"
+}
+
+exports.ListItem = {
+    padding: "14px 18px",
+    marginBottom: "12px",
+    backgroundColor: "#1e1e1e",
+    border: "1px solid #2a2a2a",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease, border 0.15s ease"
+}
+
+exports.SelectedListItem = {
+    backgroundColor: "#2b3a55",
+    border: "1px solid #4c6ef5"
+}
+
+exports.ItemHover = {
+    backgroundColor: "#252525"
+}
+
 exports.TextInputStyle = {
     backgroundColor: this.MainBGColor,
     color: this.TextColor,
@@ -42,3 +80,31 @@ exports.ButtonStyle = {
     borderRadius: "3px",
     border: "solid 1px " + this.TrimColor
 };
+
+exports.ButtonSecondaryStyle = {
+    marginTop: "24px",
+    padding: "12px 24px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    color: "#ffffff",
+    backgroundColor: "#4c6ef5",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease"
+}
+
+exports.ButtonDisabledStyle = {
+    backgroundColor: "#3a3a3a",
+    cursor: "not-allowed"
+}
+
+exports.Error = {
+    color: "#ff6b6b",
+    marginTop: "16px"
+}
+
+exports.SubtleText = {
+    color: "#a0a0a0",
+    fontSize: "14px"
+}
