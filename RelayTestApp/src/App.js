@@ -97,7 +97,7 @@ class App extends Component
     {
         // Create brainCloud Wrapper and initialize it
         this.bc = new brainCloud.BrainCloudWrapper("relayservertest")
-        this.bc.initialize(ids.appId, ids.appSecret, "5.2.5")
+        this.bc.initialize(ids.appId, ids.appSecret, "5.9.0")
 
         // Set server URL if specified in ids.txt
         if (ids.url) this.bc.brainCloudClient.setServerUrl(ids.url)

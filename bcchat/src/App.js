@@ -11,17 +11,13 @@ import CreateGroupScreen from './components/screens/CreateGroupScreen';
 import EnterNameScreen from './components/screens/EnterNameScreen';
 import LogInScreen from './components/screens/LogInScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
-import { getEnv } from './credentials';
-
-
-let ids = getEnv("BCChat", "internal");
+import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 
 let GAMES = {
     bcchat: {
-        env: ids.name,
         appId: ids.appId, 
         appSecret: ids.appSecret, 
-        url: ids.serverUrl
+        url: ids.url
     }
 }
 
