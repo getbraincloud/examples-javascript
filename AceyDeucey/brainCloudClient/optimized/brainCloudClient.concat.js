@@ -1,3 +1,5 @@
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 //> ADD IF K6
 //+ import crypto from 'k6/crypto';
 //+ import http from 'k6/http';
@@ -908,6 +910,8 @@ function BrainCloudManager ()
 BrainCloudManager.apply(window.brainCloudManager = window.brainCloudManager || {});
 //> END
 
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 /**
 * @status complete
 */
@@ -992,6 +996,7 @@ function BCAbTest() {
 //> REMOVE IF K6
 BCAbTest.apply(window.brainCloudClient = window.brainCloudClient || {});
 //> END
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCAppStore() {
     var bc = this;
@@ -1232,6 +1237,7 @@ function BCAppStore() {
 //> REMOVE IF K6
 BCAppStore.apply(window.brainCloudClient = window.brainCloudClient || {});
 //> END
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCAsyncMatch() {
     var bc = this;
@@ -1674,6 +1680,8 @@ function BCAsyncMatch() {
 //> REMOVE IF K6
 BCAsyncMatch.apply(window.brainCloudClient = window.brainCloudClient || {});
 //> END
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 // User language
 if (typeof window === "undefined" || window === null) {
     window = {}
@@ -2688,6 +2696,7 @@ function BCAuthentication() {
 }
 
 BCAuthentication.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCBlockchain(){
   var bc = this;
@@ -2733,6 +2742,7 @@ function BCBlockchain(){
     });
   };
 }
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCChat() {
     var bc = this;
@@ -3029,6 +3039,7 @@ function BCChat() {
 }
 
 BCChat.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCCustomEntity() {
     var bc = this;
@@ -3512,6 +3523,7 @@ bc.customEntity.incrementData = function(entityType, entityId, fieldsJson, callb
 }
 
 BCCustomEntity.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCDataStream() {
     var bc = this;
@@ -3653,6 +3665,7 @@ function BCDataStream() {
 }
 
 BCDataStream.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCEntity() {
     var bc = this;
@@ -4194,6 +4207,7 @@ function BCEntity() {
 }
 
 BCEntity.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCEvents() {
     var bc = this;
@@ -4423,6 +4437,8 @@ function BCEvents() {
 }
 
 BCEvents.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 // FormData
 if (typeof window === "undefined" || window === null) {
     window = {}
@@ -4738,6 +4754,7 @@ function BCFile() {
 }
 
 BCFile.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCFriend() {
     var bc = this;
@@ -5201,6 +5218,7 @@ function BCFriend() {
 }
 
 BCFriend.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCGamification() {
     var bc = this;
@@ -5632,6 +5650,7 @@ function BCGamification() {
 }
 
 BCGamification.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCGlobalApp() {
     var bc = this;
@@ -5707,6 +5726,7 @@ function BCGlobalApp() {
 }
 
 BCGlobalApp.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCGlobalFile() {
     var bc = this;
@@ -5807,6 +5827,8 @@ function BCGlobalFile() {
 }
 
 BCGlobalFile.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 /**
  * @status - incomplete - see STUB
  */
@@ -5949,6 +5971,7 @@ function BCGlobalStatistics() {
 }
 
 BCGlobalStatistics.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCGlobalEntity() {
     var bc = this;
@@ -6450,6 +6473,8 @@ function BCGlobalEntity() {
 }
 
 BCGlobalEntity.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BCGroupFile() {
     var bc = this;
 
@@ -6724,6 +6749,7 @@ function BCGroupFile() {
 }
 
 BCGroupFile.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCGroup() {
     var bc = this;
@@ -7777,6 +7803,8 @@ function BCGroup() {
 }
 
 BCGroup.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 // User language
 if (typeof window === "undefined" || window === null) {
     window = {}
@@ -9060,6 +9088,7 @@ function BCIdentity() {
 }
 
 BCIdentity.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCItemCatalog() {
     var bc = this;
@@ -9143,6 +9172,7 @@ function BCItemCatalog() {
 }
 
 BCItemCatalog.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCLobby() {
     var bc = this;
@@ -9954,6 +9984,7 @@ function BCLobby() {
 }
 
 BCLobby.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCMail() {
     var bc = this;
@@ -10062,6 +10093,7 @@ function BCMail() {
 }
 
 BCMail.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCMatchMaking() {
     var bc = this;
@@ -10412,6 +10444,7 @@ function BCMatchMaking() {
 }
 
 BCMatchMaking.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCMessaging() {
     var bc = this;
@@ -10640,6 +10673,7 @@ function BCMessaging() {
 }
 
 BCMessaging.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCOneWayMatch() {
     var bc = this;
@@ -10720,6 +10754,7 @@ function BCOneWayMatch() {
 }
 
 BCOneWayMatch.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCPlaybackStream() {
     var bc = this;
@@ -10927,6 +10962,7 @@ function BCPlaybackStream() {
 }
 
 BCPlaybackStream.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCPlayerState() {
     var bc = this;
@@ -11323,6 +11359,7 @@ function BCPlayerState() {
 }
 
 BCPlayerState.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCPlayerStatisticsEvent() {
     var bc = this;
@@ -11392,6 +11429,8 @@ function BCPlayerStatisticsEvent() {
 }
 
 BCPlayerStatisticsEvent.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 /**
  * @status - complete
  */
@@ -11629,6 +11668,8 @@ function BCPlayerStatistics() {
 }
 
 BCPlayerStatistics.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BCPresence() {
     var bc = this;
 
@@ -11894,6 +11935,7 @@ function BCPresence() {
 }
 
 BCPresence.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCProfanity() {
     var bc = this;
@@ -12031,6 +12073,7 @@ function BCProfanity() {
 }
 
 BCProfanity.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCPushNotifications() {
     var bc = this;
@@ -12538,9 +12581,10 @@ function BCPushNotifications() {
 }
 
 BCPushNotifications.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BCReasonCodes() {
     var bc = this;
-
     bc.reasonCodes = {};
     bc.reasonCodes.NO_REASON_CODE = 0;
     bc.reasonCodes.INVALID_NOTIFICATION = 20200;
@@ -12613,8 +12657,8 @@ function BCReasonCodes() {
     bc.reasonCodes.ENTITY_VERSION_MISMATCH = 40344;
     bc.reasonCodes.MISSING_RECORD = 40345;
     bc.reasonCodes.INSUFFICIENT_PERMISSIONS = 40346;
-    bc.reasonCodes.MISSING_IN_QUERY = 40347;
     bc.reasonCodes.INVALID_DATABASE_FIELD_NAME = 40347;
+    bc.reasonCodes.MISSING_IN_QUERY = 40347;
     bc.reasonCodes.RECORD_EXPIRED = 40348;
     bc.reasonCodes.INVALID_WHERE = 40349;
     bc.reasonCodes.S3_ERROR = 40350;
@@ -12633,6 +12677,7 @@ function BCReasonCodes() {
     bc.reasonCodes.MISSING_SCRIPT = 40363;
     bc.reasonCodes.SCRIPT_SECURITY_ERROR = 40364;
     bc.reasonCodes.SERVER_SESSION_EXPIRED = 40365;
+    bc.reasonCodes.STREAM_DOES_NOT_EXIST = 40366;
     bc.reasonCodes.STREAM_DOES_NOT_EXIT = 40366;
     bc.reasonCodes.STREAM_ACCESS_ERROR = 40367;
     bc.reasonCodes.STREAM_COMPLETE = 40368;
@@ -12911,6 +12956,7 @@ function BCReasonCodes() {
     bc.reasonCodes.INVALID_TOURNAMENT_JOB_ID = 40641;
     bc.reasonCodes.LEADERBOARD_ROTATION_ERROR = 40642;
     bc.reasonCodes.CLOUD_COMPUTING_ERROR = 40643;
+    bc.reasonCodes.DOCKER_ERROR = 40644;
     bc.reasonCodes.ROOM_SERVER_HOST_NOT_FOUND = 40645;
     bc.reasonCodes.INVALID_ATTACHMENT_DATA = 40646;
     bc.reasonCodes.SCRIPT_PARSING_ERROR = 40647;
@@ -12994,6 +13040,7 @@ function BCReasonCodes() {
     bc.reasonCodes.UPLOLAD_IN_PROGRESS = 40724;
     bc.reasonCodes.REFRESH_IN_PROGRESS = 40725;
     bc.reasonCodes.REFRESH_INTERRUPTED = 40726;
+    bc.reasonCodes.GAMELIFT_ERROR = 40727;
     bc.reasonCodes.GAMELIFT_LAUNCH_ERROR = 40728;
     bc.reasonCodes.MAX_HOSTED_SERVERS_REACHED = 40729;
     bc.reasonCodes.DUPLICATE_PACKET_ID = 40730;
@@ -13003,6 +13050,9 @@ function BCReasonCodes() {
     bc.reasonCodes.PENDING_MEMBER_REQUEST_NOT_FOUND = 40734;
     bc.reasonCodes.EVENT_TO_PROFILE_IDS_SIZE_EXCEEDS_MAXIMUM = 40735;
     bc.reasonCodes.INVALID_CC_AND_BCC_EMAIL_ADDRESS = 40736;
+    bc.reasonCodes.ROOM_SERVER_RATE_LIMIT = 40737;
+    bc.reasonCodes.EDGEGAP_ERROR = 40738;
+    bc.reasonCodes.PORTAL_SESSION_EXPIRED = 40739;
     bc.reasonCodes.NO_FRIENDS_FOUND = 40740;
     bc.reasonCodes.PRODUCT_TRANSACTION_NOT_FOUND = 40741;
     bc.reasonCodes.ITEM_DEF_NOT_FOUND = 40742;
@@ -13032,12 +13082,36 @@ function BCReasonCodes() {
     bc.reasonCodes.REDEMPTION_CODE_BLOCKCHAIN_PROXY_ERROR = 40766;
     bc.reasonCodes.REDEMPTION_CODE_TYPE_NOT_ASYNC = 40767;
     bc.reasonCodes.REDEMPTION_CODE_ASYNC_PROCESSING_TIMEOUT = 40768;
+    bc.reasonCodes.CODE_TYPE_SCAN_CODE_MISMATCH_FOR_MULTI_USE_CODE = 40769;
     bc.reasonCodes.DUPLICATE_DIVISION_SET_CONFIG = 40770;
     bc.reasonCodes.DIVISION_SET_INSTANCE_LEADERBOARDS_STILL_EXIST = 40771;
     bc.reasonCodes.SINGLETON_ALREADY_EXISTS_FOR_USER = 40772;
     bc.reasonCodes.CUSTOM_ENTITY_INCREMENT_SINGLETON_DATA_ERROR = 40773;
     bc.reasonCodes.CUSTOM_ENTITY_COLLECTIONS_MAX_EXCEEDED = 40774;
+    bc.reasonCodes.REDEMPTION_CODE_TYPE_CODE_USE_ERROR = 40775;
+    bc.reasonCodes.MULTI_USE_CODE_REDEMPTION_ATTEMPTED_BEFORE_START = 40776;
+    bc.reasonCodes.MULTI_USE_CODE_REDEMPTION_ATTEMPTED_AFTER_END = 40777;
+    bc.reasonCodes.MULTI_USE_CODE_MAX_REDEMPTIONS_REACHED = 40778;
+    bc.reasonCodes.REDEMPTION_CODE_TYPE_MUST_BE_SINGLE_USE = 40779;
     bc.reasonCodes.IMPORT_PRECONDITION_ERROR = 40780;
+    bc.reasonCodes.INVALID_SCAN_CODE_LENGTH = 40781;
+    bc.reasonCodes.REDEMPTION_FAILED_MAX_RETRIES_FOR_USER = 40782;
+    bc.reasonCodes.SINGLE_USE_CODE_REDEMPTION_ATTEMPTED_OUTSIDE_TIMEFRAME = 40783;
+    bc.reasonCodes.PRODUCT_DELETE_ERROR = 40784;
+    bc.reasonCodes.INVALID_QUANTITY = 40785;
+    bc.reasonCodes.PRODUCT_NOT_FOUND = 40786;
+    bc.reasonCodes.PRODUCT_ALREADY_PURCHASED = 40787;
+    bc.reasonCodes.BAD_LOGIN_ATTEMPTS_MAX_EXCEEDED = 40788;
+    bc.reasonCodes.INVALID_SCRIPT_CONTEXT = 40789;
+    bc.reasonCodes.USER_BLOCKED = 40790;
+    bc.reasonCodes.NEWRELIC_ERROR = 40791;
+    bc.reasonCodes.ITEM_IMAGE_EXISTS = 40792;
+    bc.reasonCodes.INVALID_SEGMENT_ID_LIST = 40793;
+    bc.reasonCodes.I3D_ERROR = 40794;
+    bc.reasonCodes.INVALID_START_TIME = 40795;
+    bc.reasonCodes.ITEM_TYPE_NOT_APPLICABLE = 40796;
+    bc.reasonCodes.ITEM_PURCHASE_LIST_PRICE_DISABLED = 40797;
+    bc.reasonCodes.BUNDLE_DEF_INVALID = 40798;
     bc.reasonCodes.REQUEST_FAILED = 40801;
     bc.reasonCodes.RESET_QUESTS_FAILED = 40802;
     bc.reasonCodes.RESET_ALL_QUESTS_AND_MILESTONES_FAILED = 40803;
@@ -13054,10 +13128,15 @@ function BCReasonCodes() {
     bc.reasonCodes.QUEST_ADD_MILESTONE_ERROR = 40814;
     bc.reasonCodes.QUEST_DELETE_MILESTONE_ERROR = 40815;
     bc.reasonCodes.QUEST_REORDER_MILESTONES_ERROR = 40816;
+    bc.reasonCodes.MILESTONE_HAS_DEPENDENCIES = 40817;
+    bc.reasonCodes.ACHIEVEMENT_HAS_DEPENDENCIES = 40818;
     bc.reasonCodes.PROMOTION_NOT_FOUND = 40820;
     bc.reasonCodes.VERSION_MISMATCH = 40821;
     bc.reasonCodes.UNSUPPORTED_CRITERIA_FOR_SHARDED_COLLECTIONS = 40822;
+    bc.reasonCodes.USER_RATE_LIMIT_EXCEEDED = 40823;
+    bc.reasonCodes.PROMOTION_CONFIG_INCOMPLETE = 40824;
     bc.reasonCodes.STEAM_ERROR = 40830;
+    bc.reasonCodes.AZURE_AD_NOT_CONFIGURED = 40831;
     bc.reasonCodes.INVALID_LEADERBOARD_TOURNAMENT_SETTING = 40840;
     bc.reasonCodes.LEADERBOARD_EDIT_TOURNAMENT_SETTINGS_ERROR = 40841;
     bc.reasonCodes.LEADERBOARD_SCORES_EXIST = 40842;
@@ -13065,6 +13144,11 @@ function BCReasonCodes() {
     bc.reasonCodes.LEADERBOARD_DBVERSION_MISMATCH = 40844;
     bc.reasonCodes.LEADERBOARD_API_DOES_NOT_APPLY = 40845;
     bc.reasonCodes.LEADERBOARD_EXPIRED = 40846;
+    bc.reasonCodes.LEADERBOARD_DELETE_ERROR = 40847;
+    bc.reasonCodes.LEADERBOARD_CHANGES_IN_PROGRESS = 40848;
+    bc.reasonCodes.LEADERBOARD_ROTATION_EXIT_PROCESSING_ERROR = 40849;
+    bc.reasonCodes.LEADERBOARD_ENTRY_COUNTS_PROCESSING_ERROR = 40850;
+    bc.reasonCodes.LEADERBOARD_ENTRIES_COUNT_ALL_ERROR = 40851;
     bc.reasonCodes.MISSING_CONFIG = 40900;
     bc.reasonCodes.INVALID_SAML_RESP = 40901;
     bc.reasonCodes.MISSING_PAGE_NAME = 40902;
@@ -13078,10 +13162,16 @@ function BCReasonCodes() {
     bc.reasonCodes.SCRIPT_TIMEOUT_ERROR = 40910;
     bc.reasonCodes.SCRIPT_RHINO_ERROR = 40911;
     bc.reasonCodes.SCRIPT_JAVA_ERROR = 40912;
+    bc.reasonCodes.CONFIG_BACKUP_PREVIEW_ERROR = 40913;
     bc.reasonCodes.GROUP_FILE_EXISTS = 40950;
     bc.reasonCodes.OTHER_USER_ACL_REQUIRED = 40951;
     bc.reasonCodes.GROUP_MEMBER_ACCESS_INVALID = 40952;
     bc.reasonCodes.REUSED_PACKET_ID = 40953;
+    bc.reasonCodes.SEGMENT_REFRESH_RUNNING = 410000;
+    bc.reasonCodes.REFRESH_JOB_ALREADY_TRIGGERED = 410001;
+    bc.reasonCodes.ROOM_SERVER_LAUNCH_FAILURE = 41001;
+    bc.reasonCodes.ROOM_SERVER_UPDATE_LOCK_TIMEOUT = 41002;
+    bc.reasonCodes.ROOM_SERVER_CREATE_LOCK_TIMEOUT = 41003;
     bc.reasonCodes.NO_TWITTER_CONSUMER_KEY = 500001;
     bc.reasonCodes.NO_TWITTER_CONSUMER_SECRET = 500002;
     bc.reasonCodes.INVALID_CONFIGURATION = 500003;
@@ -13095,6 +13185,22 @@ function BCReasonCodes() {
     bc.reasonCodes.FACEBOOK_APPLICATION_TOKEN_REQUEST_ERROR = 500013;
     bc.reasonCodes.FACEBOOK_BAD_APPLICATION_TOKEN_SIGNATURE = 500014;
     bc.reasonCodes.UNSUPPORTED_SOCIAL_PLATFORM_CODE = 500020;
+    bc.reasonCodes.PLAYER_LAST_PURCHASED_AT_ERROR = 500021;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_SUMMARY_BY_DATE_AND_TYPE_ERROR = 500022;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_SUMMARY_BY_DATE_AND_ITEM_ERROR = 500023;
+    bc.reasonCodes.ITEM_PURCHASES_ANALYTICS_SUMMARY_ERROR = 500024;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_PROMOTION_SUMMARY_FOR_ITEM_ERROR = 500025;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_PROMOTION_SUMMARY_FOR_ITEM_DAYS_ERROR = 500026;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_SUMMARY_BY_ITEM_ERROR = 500027;
+    bc.reasonCodes.SCAN_PURCHASES_AND_TOTAL_REVENUE_ALL_TIME = 500028;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_STATS_BY_COUNTRY_ERROR = 500029;
+    bc.reasonCodes.USERS_BY_COUNTRY_STATS_ERROR = 500030;
+    bc.reasonCodes.USERS_BY_LANGUAGE_STATS_ERROR = 500031;
+    bc.reasonCodes.PRODUCT_TRANSACTIONS_SUMMARY_BY_APP_STORE_ERROR = 500032;
+    bc.reasonCodes.USERS_WITH_SINGLE_FIELD_PROJECTION_ERROR = 500033;
+    bc.reasonCodes.SCRIPT_USAGE_FOR_RANGE_ERROR = 500034;
+    bc.reasonCodes.PRODUCT_TRANSACTION_SPENDERS_BY_STORE = 500035;
+    bc.reasonCodes.REAL_AND_MOCK_PURCHASE_COUNTS_FOR_PRODUCT = 500036;
     bc.reasonCodes.MEMCACHED_TIMEOUT = 503000;
     bc.reasonCodes.NOT_TEAM_ADMIN = 550000;
     bc.reasonCodes.NO_TEAM_ACCESS = 550001;
@@ -13121,6 +13227,7 @@ function BCReasonCodes() {
     bc.reasonCodes.INVALID_PASSWORD_CONTENT = 550022;
     bc.reasonCodes.INVALID_APP_ACCESS = 550023;
     bc.reasonCodes.INVALID_TEAM_ID = 550024;
+    bc.reasonCodes.TEAM_APPS_CHART_STATS = 550025;
     bc.reasonCodes.MONGO_DB_EXCEPTION = 600001;
     bc.reasonCodes.CONCURRENT_LOCK_ERROR = 600002;
     bc.reasonCodes.USER_EXPORT_ERROR = 600003;
@@ -13149,6 +13256,9 @@ function BCReasonCodes() {
     bc.reasonCodes.PLAYSTATION_NETWORK_ERROR = 60200;
     bc.reasonCodes.EMAIL_CC_MAX_SIZE_EXCEEDED = 60201;
     bc.reasonCodes.EMAIL_BCC_MAX_SIZE_EXCEEDED = 60202;
+    bc.reasonCodes.INVALID_DATE_FORMAT = 60203;
+    bc.reasonCodes.TEAM_USAGE_REPORT_ERROR = 60204;
+    bc.reasonCodes.GLOBAL_PROPERTY_MAX_SIZE_EXCEEDED = 60205;
     bc.reasonCodes.RTT_LEFT_BY_CHOICE = 80000;
     bc.reasonCodes.LEFT_BY_CHOICE = 80000;
     bc.reasonCodes.RTT_EVICTED = 80001;
@@ -13168,8 +13278,6 @@ function BCReasonCodes() {
     bc.reasonCodes.RTT_BY_REQUEST = 80105;
     bc.reasonCodes.BY_REQUEST = 80105;
     bc.reasonCodes.ROOM_READY_TIMEOUT = 80106;
-    bc.reasonCodes.DOCKER_ERROR = 80107;
-    bc.reasonCodes.GAMELIFT_ERROR = 80108;
     bc.reasonCodes.NO_ROOM_SERVER_CONFIGURED = 80109;
     bc.reasonCodes.RTT_NO_LOBBIES_FOUND = 80200;
     bc.reasonCodes.NO_LOBBIES_FOUND = 80200;
@@ -13181,8 +13289,8 @@ function BCReasonCodes() {
     bc.reasonCodes.CLIENT_UPLOAD_FILE_UNKNOWN = 90102;
     bc.reasonCodes.CLIENT_DISABLED = 90200;
 }
-
 BCReasonCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCRedemptionCodes() {
     var bc = this;
@@ -13252,6 +13360,8 @@ function BCRedemptionCodes() {
 }
 
 BCRedemptionCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BCRelay() {
     var bc = this;
 
@@ -13485,6 +13595,7 @@ function BCRelay() {
 }
 
 BCRelay.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCRTT() {
     var bc = this;
@@ -13650,6 +13761,7 @@ function BCRTT() {
 }
 
 BCRTT.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCS3Handler() {
     var bc = this;
@@ -13725,6 +13837,7 @@ function BCS3Handler() {
 }
 
 BCS3Handler.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCScript() {
     var bc = this;
@@ -13959,6 +14072,8 @@ function BCScript() {
 }
 
 BCScript.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 /**
  * @status complete
  */
@@ -15178,6 +15293,8 @@ function BCSocialLeaderboard() {
 }
 
 BCSocialLeaderboard.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BCStatusCodes() {
     var bc = this;
 
@@ -15193,6 +15310,7 @@ function BCStatusCodes() {
 }
 
 BCStatusCodes.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCTimeUtils() {
     var bc = this;
@@ -15215,6 +15333,7 @@ function BCTimeUtils() {
 
 }
 BCTimeUtils.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCTime() {
     var bc = this;
@@ -15250,6 +15369,7 @@ function BCTime() {
 }
 
 BCTime.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCTournament() {
     var bc = this;
@@ -15591,6 +15711,7 @@ function BCTournament() {
 }
 
 BCTournament.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCUserItems() {
     var bc = this;
@@ -15601,20 +15722,21 @@ function BCUserItems() {
 
     bc.userItems.OPERATION_AWARD_USER_ITEM = "AWARD_USER_ITEM";
     bc.userItems.OPERATION_DROP_USER_ITEM = "DROP_USER_ITEM";
+    bc.userItems.OPERATION_GET_ITEM_PROMOTION_DETAILS = "GET_ITEM_PROMOTION_DETAILS";
+    bc.userItems.OPERATION_GET_ITEMS_ON_PROMOTION = "GET_ITEMS_ON_PROMOTION";
     bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE = "GET_USER_ITEMS_PAGE";
     bc.userItems.OPERATION_GET_USER_INVENTORY_PAGE_OFFSET = "GET_USER_ITEMS_PAGE_OFFSET";
     bc.userItems.OPERATION_GET_USER_ITEM = "GET_USER_ITEM";
     bc.userItems.OPERATION_GIVE_USER_ITEM_TO = "GIVE_USER_ITEM_TO";
+    bc.userItems.OPERATION_OPEN_BUNDLE = "OPEN_BUNDLE";
+    bc.userItems.OPERATION_PUBLISH_USER_ITEM_TO_BLOCKCHAIN = "PUBLISH_USER_ITEM_TO_BLOCKCHAIN";
     bc.userItems.OPERATION_PURCHASE_USER_ITEM = "PURCHASE_USER_ITEM";
     bc.userItems.OPERATION_RECEIVE_USER_ITEM_FROM = "RECEIVE_USER_ITEM_FROM";
+    bc.userItems.OPERATION_REFRESH_BLOCKCHAIN_USER_ITEMS = "REFRESH_BLOCKCHAIN_USER_ITEMS";
+    bc.userItems.OPERATION_REMOVE_USER_ITEM_FROM_BLOCKCHAIN = "REMOVE_USER_ITEM_FROM_BLOCKCHAIN";
     bc.userItems.OPERATION_SELL_USER_ITEM = "SELL_USER_ITEM";
     bc.userItems.OPERATION_UPDATE_USER_ITEM_DATA = "UPDATE_USER_ITEM_DATA";
     bc.userItems.OPERATION_USE_USER_ITEM = "USE_USER_ITEM";
-    bc.userItems.OPERATION_PUBLISH_USER_ITEM_TO_BLOCKCHAIN = "PUBLISH_USER_ITEM_TO_BLOCKCHAIN";
-    bc.userItems.OPERATION_REFRESH_BLOCKCHAIN_USER_ITEMS = "REFRESH_BLOCKCHAIN_USER_ITEMS";
-    bc.userItems.OPERATION_REMOVE_USER_ITEM_FROM_BLOCKCHAIN = "REMOVE_USER_ITEM_FROM_BLOCKCHAIN";
-
-
 
     /**
      * Allows item(s) to be awarded to a user without collecting
@@ -15646,6 +15768,47 @@ function BCUserItems() {
     };
 
     /**
+     * Allows item(s) to be awarded to a user without collecting the purchase 
+     * amount. If includeDef is true, response includes associated itemDef with
+     * language fields limited to the current or default language.
+     * 
+     * Service Name - User Items
+     * Service Operation - AWARD_USER_ITEM
+     * 
+     * @param defId         The unique id of the item definition to award.
+     * @param quantity      The quantity of the item to award.
+     * @param includeDef    If true, the associated item definition will be included 
+     *                      in the response.
+     * @param optionsJson   Optional support for specifying 
+     *                      'blockIfExceedItemMaxStackable' indicating how to process 
+     *                      the award if the defId is for a stackable item with a max 
+     *                      stackable quantity and the specified quantity to award is 
+     *                      too high. If true and the quantity is too high, the call 
+     *                      is blocked and an error is returned. If false (default) 
+     *                      and quantity is too high, the quantity is adjusted to the 
+     *                      allowed maximum and the quantity not awarded is reported 
+     *                      in response key 'itemsNotAwarded' - unless the adjusted 
+     *                      quantity would be 0, in which case the call is blocked and 
+     *                      an error is returned.
+     * @param callback      The function to be invoked when the server response is received.
+     */
+    bc.userItems.awardUserItemWithOptions = function (defId, quantity, includeDef, optionsJson, callback) {
+        var message = {
+            defId: defId,
+            quantity: quantity,
+            includeDef: includeDef,
+            optionsJson: optionsJson
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_USER_ITEMS,
+            operation: bc.userItems.OPERATION_AWARD_USER_ITEM,
+            data: message,
+            callback: callback
+        });
+    };
+
+    /**
      * Allows a quantity of a specified user item to be dropped, 
      * without any recovery of the money paid for the item. 
      * If any quantity of the user item remains, it will be returned,
@@ -15672,6 +15835,72 @@ function BCUserItems() {
             operation : bc.userItems.OPERATION_DROP_USER_ITEM,
             data : message,
             callback : callback
+        });
+    };
+
+    /**
+     * Returns list of promotional details for the specified item definition, for promotions available to the current user.
+     * 
+     * Service Name - User Items
+     * Service Operation - GET_ITEMS_ON_PROMOTION
+     * 
+     * @param shopId                    The id identifying the store the item is from, if applicable.
+     * @param includeDef                If true, the associated item definition info of the promotional items will be included in the response.
+     * @param includePromotionDetails   If true, the promotion details of the eligible promotions will be included in the response.
+     * @param optionsJson               Optional support for specifying
+     *                                  'blockIfExceedItemMaxStackable' indicating how to process
+     *                                  the purchase if the defId is for a stackable item with a
+     *                                  max stackable quantity and the specified quantity being
+     *                                  purchased is too high. If true and the quantity is too
+     *                                  high, the call is blocked and an error is returned. If
+     *                                  false (default) and quantity is too high, the quantity is
+     *                                  adjusted to the allowed maximum and the quantity not
+     *                                  purchased is reported in response key 'itemsNotPurchased'
+     *                                  - unless the adjusted quantity would be 0, in which case
+     *                                  the call is blocked and an error is returned.
+     * @param callback                  The function to be invoked when the server response is received. 
+     */
+    bc.userItems.getItemsOnPromotion = function (shopId, includeDef, includePromotionDetails, optionsJson, callback) {
+        var message = {
+            shopId: shopId,
+            includeDef: includeDef,
+            includePromotionDetails: includePromotionDetails,
+            optionsJson: optionsJson
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_USER_ITEMS,
+            operation: bc.userItems.OPERATION_GET_ITEMS_ON_PROMOTION,
+            data: message,
+            callback: callback
+        });
+    };
+
+    /**
+     * Returns list of promotional details for the specified item definition, for promotions available to the current user.
+     * 
+     * Service Name - User Items
+     * Service Operation - GET_ITEM_PROMOTION_DETAILS
+     * 
+     * @param defId                     The unique id of the item definition to check.
+     * @param shopId                    The id identifying the store the item is from, if applicable.
+     * @param includeDef                If true, the associated item definition will be included in the response.
+     * @param includePromotionDetails   If true, the promotion details of the eligible promotions will be included in the response.
+     * @param callback                  The function to be invoked when the server response is received.
+     */
+    bc.userItems.getItemPromotionDetails = function (defId, shopId, includeDef, includePromotionDetails, callback) {
+        var message = {
+            defId: defId,
+            shopId: shopId,
+            includeDef: includeDef,
+            includePromotionDetails: includePromotionDetails
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_USER_ITEMS,
+            operation: bc.userItems.OPERATION_GET_ITEM_PROMOTION_DETAILS,
+            data: message,
+            callback: callback
         });
     };
 
@@ -15791,6 +16020,57 @@ function BCUserItems() {
     };
 
     /**
+     * Allows a quantity of a specified bundle user item to be opened. Response
+     * indicates any items and currency awards configured for the associated bundle
+     * user item's BUNDLE type item definition, plus any 'items' awarded and any
+     * 'currencies' awarded, along with the resulting currency balances. If
+     * includeItemDef is true, the associated item definition will be included in
+     * the response for any user items awarded and for the bundle user item being
+     * opened (if any quantity of the bundle user item remains), with language
+     * fields limited to the current or default language.
+     * 
+     * Service Name - User Items
+     * Service Operation - OPEN_BUNDLE
+     * 
+     * @param itemId        The unique id of the bundle user item.
+     * @param version       The version of the bundle user item being sold. Accepts -1
+     *                      if any version.
+     * @param quantity      The quantity of the bundle user item to open.
+     * @param includeDef    If true, the associated item definition will be included
+     *                      in the response for any user items awarded and if any
+     *                      quantity of the bundle user item remains.
+     * @param optionsJson   Optional support for specifying
+     *                      'blockIfExceedItemMaxStackable' indicating how to process
+     *                      awarding the bundle content items if the defId for any is
+     *                      for a stackable item with a max stackable quantity and the
+     *                      specified quantity to be awarded is too high. If true and
+     *                      the quantity is too high, the call is blocked and an error
+     *                      is returned. If false (default) and quantity is too high,
+     *                      the quantity is adjusted to the allowed maximum and the
+     *                      quantity not awarded is reported in response key
+     *                      'itemsNotAwarded' - unless the adjusted quantity would be
+     *                      0, in which case the call is blocked and an error is
+     *                      returned.
+     * @param callback      The function to be invoked when the server response is received.
+     */
+    bc.userItems.openBundle = function (itemId, version, quantity, includeDef, optionsJson, callback) {
+        var message = {
+            itemId: itemId,
+            version: version,
+            quantity: quantity,
+            includeDef: includeDef,
+            optionsJson: optionsJson
+        }
+
+        bc.brainCloudManager.sendRequest({
+            service: bc.SERVICE_USER_ITEMS,
+            operation: bc.userItems.OPERATION_OPEN_BUNDLE,
+            data: message,
+            callback: callback
+        });
+    }
+
+    /**
      * Retrieves the identified user item from the server. 
      * If includeDef is true, response includes associated
      * itemDef with language fields limited to the current 
@@ -15811,6 +16091,47 @@ function BCUserItems() {
             quantity : quantity,
             shopId : shopId,
             includeDef : includeDef
+        };
+
+        bc.brainCloudManager.sendRequest({
+            service : bc.SERVICE_USER_ITEMS,
+            operation : bc.userItems.OPERATION_PURCHASE_USER_ITEM,
+            data : message,
+            callback : callback
+        });
+    };
+
+    /**
+     * Purchases a quantity of an item from the specified store, if the user has enough funds and purchasing 
+     * for listed buy price is not disabled for associated catalog item definition. If includeDef is true, 
+     * response includes associated itemDef with language fields limited to the current or default language.
+     * 
+     * Service Name - User Items
+     * Service Operation - PURCHASE_USER_ITEM
+     * @param defId       The unique id of the item definition to purchase.
+     * @param quantity    The quantity of the item to purchase.
+     * @param shopId      The id identifying the store the item is being purchased from, if applicable.
+     * @param includeDef  If true, the associated item definition will be included in the response.
+     * @param optionsJson Optional support for specifying
+     *                    'blockIfExceedItemMaxStackable' indicating how to process
+     *                    the purchase if the defId is for a stackable item with a
+     *                    max stackable quantity and the specified quantity being
+     *                    purchased is too high. If true and the quantity is too
+     *                    high, the call is blocked and an error is returned. If
+     *                    false (default) and quantity is too high, the quantity is
+     *                    adjusted to the allowed maximum and the quantity not
+     *                    purchased is reported in response key 'itemsNotPurchased'
+     *                    - unless the adjusted quantity would be 0, in which case
+     *                    the call is blocked and an error is returned.
+     * @param callback    The function to be invoked when the server response is received.
+     */
+    bc.userItems.purchaseUserItemWithOptions = function(defId, quantity, shopId, includeDef, optionsJson, callback) {
+        var message = {
+            defId : defId,
+            quantity : quantity,
+            shopId : shopId,
+            includeDef : includeDef,
+            optionsJson: optionsJson
         };
 
         bc.brainCloudManager.sendRequest({
@@ -16002,6 +16323,7 @@ function BCUserItems() {
 }
 
 BCUserItems.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
 
 function BCVirtualCurrency() {
     var bc = this;
@@ -16160,9 +16482,11 @@ function BCVirtualCurrency() {
 }
 
 BCVirtualCurrency.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 //----------------------------------------------------
 // brainCloud client source code
-// Copyright 2016 bitHeads, inc.
+
 //----------------------------------------------------
 
 function BrainCloudClient() {
@@ -16337,7 +16661,7 @@ function BrainCloudClient() {
     }
 
 
-    bcc.version = "5.8.0";
+    bcc.version = "5.9.0";
     bcc.countryCode;
     bcc.languageCode;
 
@@ -16666,6 +16990,8 @@ function BrainCloudClient() {
  * @deprecated Use of the *singleton* (window.brainCloudClient) has been deprecated. We recommend that you create your own *variable* to hold an instance of the brainCloudWrapper. Explanation here: http://getbraincloud.com/apidocs/release-3-6-5/
  */
 BrainCloudClient.apply(window.brainCloudClient = window.brainCloudClient || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 function BrainCloudRelayComms(_client) {
     var bcr = this;
 //> REMOVE IF K6
@@ -17233,6 +17559,8 @@ var Buffer = require('buffer/').Buffer  // note: the trailing slash is important
 }
 
 BrainCloudRelayComms.apply(window.brainCloudRelayComms = window.brainCloudRelayComms || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 // if (typeof WebSocket === 'undefined') {
 //     try {
 //         WebSocket = require('ws');
@@ -17664,6 +17992,8 @@ function BrainCloudRttComms (m_client) {
 }
 
 BrainCloudRttComms.apply(window.brainCloudRttComms = window.brainCloudRttComms || {});
+// Copyright 2026 bitHeads, Inc. All Rights Reserved.
+
 /**
  * The BrainCloudWrapper provides some convenience functionality to developers when they are
  * getting started with the authentication system.
