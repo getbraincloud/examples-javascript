@@ -1,6 +1,6 @@
 {
   "name": "bcwrapperserver",
-  "version": "5.8.1",
+  "version": "5.9.0",
   "description": "A node.js server that relays API calls to and from brainCloud",
   "license": "ISC",
   "type": "module",

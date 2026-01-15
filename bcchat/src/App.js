@@ -25,7 +25,7 @@ let GAMES = {
 let currentApp = GAMES.bcchat;
 */
 let MAX_HISTORY = 100;
-let PROXY_URL = "http://clientdemos.braincloudservers.com:3002";
+let PROXY_URL = "http://clientdemos.braincloudservers.com:2999";
 
 
 let defaultChannelsInitState = {
