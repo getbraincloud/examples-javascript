@@ -1,0 +1,67 @@
+"use strict";
+
+let profileId = data.profileId || null;
+
+let externalId = data.externalId || null;
+let authenticationToken = data.authenticationToken || null;
+let externalAuthName = data.externalAuthName || null;
+
+let session = profileId != null ? bridge.getSessionForProfile(profileId) : null;
+
+let identityProxy = session != null ? bridge.getIdentityServiceProxy(session) : null;
+
+function attachExternalIdentity() {
+  if (identityProxy == null) return false;
+
+  if (externalId == null) return false;
+  if (authenticationToken == null) return false;
+  if (externalAuthName == null) return false;
+
+  bridge.logInfo("Attaching external identity '" + externalId + "' (" + externalAuthName + ") to profile: " + profileId);
+
+  let identityLookupResult = identityProxy.getIdentities();
+
+  if (identityLookupResult.status !== 200) {
+    return false;
+  }
+
+  let existingIdentity = identityLookupResult.data.identities["External-" + externalAuthName];
+
+  if (existingIdentity != null) {
+    return false;
+  }
+  
+  let attachIdentityResp = identityProxy.attach(externalId, "PRE-REGISTERED:" + authenticationToken, "External", externalAuthName);
+
+  if (attachIdentityResp.status !== 200) {
+    return false;
+  }
+
+  return true;
+}
+
+function main() {
+  let response = {};
+
+  response.success = attachExternalIdentity();
+
+  if (!response.success) {
+    bridge.logError("Failed to attach external identity");
+  }
+  
+  return response;
+}
+
+main();
+
+
+//*** ------------- brainCloud meta-data begins now - do not hand-edit -----------------
+// "scriptName":"attach_external_identity",
+// "clientCallable":false,
+// "s2sCallable":true,
+// "peerCallable":false,
+// "scriptTimeout":20,
+// "description":"",
+// "parms":"{\\n  \\\"profileId\\\": \\\"<profile_id>\\\",\\n  \\\"externalId\\\": \\\"<external_id>\\\",\\n  \\\"authenticationToken\\\": \\\"<authentication_token>\\\",\\n  \\\"externalAuthName\\\": \\\"<external_auth_name>\\\"\\n}",
+// "version":1,
+// "updatedAt":1759948570145

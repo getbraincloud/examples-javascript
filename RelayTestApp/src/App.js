@@ -97,7 +97,7 @@ class App extends Component
     {
         // Create brainCloud Wrapper and initialize it
         this.bc = new brainCloud.BrainCloudWrapper("relayservertest")
-        this.bc.initialize(ids.appId, ids.appSecret, "5.2.5")
+        this.bc.initialize(ids.appId, ids.appSecret, "5.9.0")
 
         // Set server URL if specified in ids.txt
         if (ids.url) this.bc.brainCloudClient.setServerUrl(ids.url)
@@ -682,6 +682,11 @@ class App extends Component
         // If the lobby is gamelift, the port name will be "gamelift"
         let wsPort = 0;
         if (this.state.lobbyType.toLowerCase().includes("gamelift")) wsPort = server.connectData.ports.gamelift;
+        if(this.state.lobbyType.toLowerCase().includes("i3d"))
+        {
+            wsPort = server.connectData.ports.i3d;
+            console.log("i3d detected");
+        }
         else wsPort = server.connectData.ports.ws;
         
         presentWhileStarted = false;
