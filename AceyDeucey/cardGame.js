@@ -44,9 +44,9 @@ app.filter('card', function () {
 });
 
 // Application IDs defined in PortalX: App > Design > Core App Info
-var appId = "39480"
-var appSecret = "7091f81e-3d1e-40b9-9ed0-271f90836d48"
-var url = "https://api.internal.braincloudservers.com"
+var appId = "YourAppId"
+var appSecret = "YourAppSecret"
+var url = "https://api.braincloudservers.com"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
 
