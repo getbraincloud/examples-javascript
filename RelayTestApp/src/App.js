@@ -681,13 +681,17 @@ class App extends Component
         
         // If the lobby is gamelift, the port name will be "gamelift"
         let wsPort = 0;
-        if (this.state.lobbyType.toLowerCase().includes("gamelift")) wsPort = server.connectData.ports.gamelift;
-        if(this.state.lobbyType.toLowerCase().includes("i3d"))
-        {
+        if (this.state.lobbyType.toLowerCase().includes("gamelift")) {
+            wsPort = server.connectData.ports.gamelift;
+        }
+
+        else if (this.state.lobbyType.toLowerCase().includes("i3d")) {
             wsPort = server.connectData.ports.i3d;
             console.log("i3d detected");
         }
-        else wsPort = server.connectData.ports.ws;
+        else {
+            wsPort = server.connectData.ports.ws;
+        }
         
         presentWhileStarted = false;
 
