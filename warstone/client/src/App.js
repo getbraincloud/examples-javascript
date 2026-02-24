@@ -225,6 +225,7 @@ class App extends Component {
         }
 
         if (result.operation === "ROOM_READY") {
+            console.log("[Client] ROOM_READY connectData: " + JSON.stringify(result.data.connectData))
             // Start the game!
             this.setState({ server: result.data, screen: "game" })
         }
@@ -300,7 +301,7 @@ class App extends Component {
                             {
                                 this.state.lobby ? (
                                     <div style={{ margin: "0 auto" }}>
-                                        <p>Lobby: {this.state.lobby.id}</p>
+                                        <p>Lobby: {this.state.lobby.lobbyId || this.state.lobby.id}</p>
                                         <ul>
                                             {(this.state.lobby ? (this.state.lobby.members.map(member => (<li>{member.team + ": " + member.name}</li>))) : (""))}
                                         </ul>
