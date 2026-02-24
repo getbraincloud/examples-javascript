@@ -4,6 +4,8 @@ if (typeof WebSocket === 'undefined')
     var WebSocket = require('isomorphic-ws');
 }
 
+const DEFAULT_WS_PORT = 9313
+
 module.exports = class TurnBasedService
 {
     constructor(profileId, lobby, server,
@@ -24,7 +26,10 @@ module.exports = class TurnBasedService
         this._onCloseCallback = onCloseCallback
 
         // var uri = "ws://" + server.url + ":" + server.wsPort
-        var uri = "ws://" + server.connectData.address + ":" + server.connectData.ports["9313/tcp"]
+        var ports = server.connectData.ports || {}
+        var wsPort = ports[`${DEFAULT_WS_PORT}/tcp`] || ports[`${DEFAULT_WS_PORT}`] || ports[DEFAULT_WS_PORT] || DEFAULT_WS_PORT
+        console.log("[TurnBasedService] connectData=" + JSON.stringify(server.connectData) + ", resolved wsPort=" + wsPort)
+        var uri = "ws://" + server.connectData.address + ":" + wsPort
         this._socket = new WebSocket(uri)
         
         this._socket.addEventListener('error', this.onSocketError.bind(this))
@@ -36,13 +41,13 @@ module.exports = class TurnBasedService
     onSocketError(e)
     {
         if (!this._socket) return;
-        if (this._onCloseCallback) this._onCloseCallback({}, "Connection failed")
+        if (this._onCloseCallback) this._onCloseCallback(null, "Connection failed")
     }
 
     onSocketClosed(e)
     {
         if (!this._socket) return;
-        if (this._onCloseCallback) this._onCloseCallback({}, "Connection closed")
+        if (this._onCloseCallback) this._onCloseCallback(null, "Connection closed")
     }
 
     onSocketOpen(e)
