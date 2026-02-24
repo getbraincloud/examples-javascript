@@ -4,6 +4,8 @@ if (typeof WebSocket === 'undefined')
     var WebSocket = require('isomorphic-ws');
 }
 
+const DEFAULT_WS_PORT = 9313
+
 module.exports = class TurnBasedService
 {
     constructor(profileId, lobby, server,
@@ -25,7 +27,7 @@ module.exports = class TurnBasedService
 
         // var uri = "ws://" + server.url + ":" + server.wsPort
         var ports = server.connectData.ports || {}
-        var wsPort = ports["9313/tcp"] || ports["9313"] || ports[9313] || 9313
+        var wsPort = ports[`${DEFAULT_WS_PORT}/tcp`] || ports[`${DEFAULT_WS_PORT}`] || ports[DEFAULT_WS_PORT] || DEFAULT_WS_PORT
         console.log("[TurnBasedService] connectData=" + JSON.stringify(server.connectData) + ", resolved wsPort=" + wsPort)
         var uri = "ws://" + server.connectData.address + ":" + wsPort
         this._socket = new WebSocket(uri)
