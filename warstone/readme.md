@@ -59,5 +59,66 @@ In addition to these values, any custom values defined in the "Custom Environmen
 ![](Screenshots/warstone_rs_custom_env.png)
 
 
+## Pre-Ready Launch (PRL)
+
+By default, brainCloud waits until all lobby members have marked themselves as "ready" before launching a Room Server instance. **Pre-Ready Launch (PRL)** is an optional mode that inverts this order: brainCloud launches the server instance *before* the lobby has fully transitioned to the "starting" state, allowing the server to warm up in parallel while players are still readying up.
+
+This is useful for latency-sensitive games where every millisecond of startup time matters — the server is already running and authenticated by the time the lobby reaches its launch threshold.
+
+### How it works
+
+When PRL is enabled for a server type, brainCloud sets the `PRE_READY_LAUNCH` environment variable to `"true"` when launching the RS instance. The server is responsible for detecting this flag and executing the PRL handshake before proceeding with normal startup.
+
+The PRL flow, implemented in [`brainclouds2s-prl.js`](server/Scripts/brainclouds2s-prl.js), works as follows:
+
+1. After S2S authentication, the server checks `PRE_READY_LAUNCH`.
+2. If enabled, the server **cancels its death timer** (it must not self-terminate while waiting).
+3. The server enables RTT and subscribes to the lobby's status channel via `chat/SYS_CHANNEL_CONNECT`.
+4. The server notifies brainCloud it is running via `roomServer/SYS_ROOM_SESSION_STARTED`.
+5. The server queries the current lobby state via `lobby/GET_LOBBY_DATA`.
+6. Depending on the lobby state:
+   - **`starting`** — the lobby is ready to launch; the server proceeds normally.
+   - **`disbanded`** or not found — the lobby was cancelled; the server exits cleanly.
+   - **Any other state** — the server waits, monitoring RTT push messages for a state transition.
+7. If the lobby does not reach `starting` within the timeout window, the server exits.
+
+Once the PRL handshake resolves with `proceed = true`, the server continues with the standard launch sequence (retrieving lobby data, calling `SysRoomReady`, accepting client connections).
+
+### PRL environment variables
+
+The following additional environment variables apply when PRL is enabled:
+
+* `PRE_READY_LAUNCH` -- Set to `"true"` by brainCloud when the server is launched in PRL mode.
+* `SERVER_ID` -- The server instance identifier, included in session lifecycle S2S calls.
+* `SERVER_CONTEXT` -- Optional JSON context data passed from brainCloud to the server instance.
+* `PRL_TIMEOUT_SECS` -- How long (in seconds) the server will wait for the lobby to reach `starting` before giving up. Defaults to `60`.
+* `PRE_READY_LAUNCH_TIMEOUT_SECS` -- Alias for `PRL_TIMEOUT_SECS`, checked as a fallback.
+
+### Example (from main.js)
+
+```javascript
+var isPRL = prl.isPreReadyLaunch()
+
+if (isPRL) {
+    ConnectionManager.cancelDeathTimer()
+    prl.start(S2S.context, LOBBY_ID, proceed => {
+        if (!proceed) {
+            process.exit(0)
+        }
+        retreiveLobby()
+    })
+} else {
+    retreiveLobby()
+}
+```
+
+### Session lifecycle S2S calls
+
+PRL introduces two S2S calls that servers must make to keep brainCloud informed of their state:
+
+* `roomServer/SYS_ROOM_SESSION_STARTED` — sent during the PRL handshake to indicate the server is alive and waiting.
+* `roomServer/SYS_ROOM_SESSION_ENDED` — sent if the server exits without completing a match (e.g. lobby disbanded, timeout). Call `prl.sendSessionEnded()` before `process.exit()` in any early-exit path.
+
+
 ## Room Server instance development
 As a Room Server instance developer, you can use the S2S [Logging](https://getbraincloud.com/apidocs/apiref/#s2s-log) interface to log any debugging or info level messages to aid you when developing the Room Server instance docker image.
