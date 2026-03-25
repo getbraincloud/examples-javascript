@@ -114,7 +114,11 @@ class LobbyScreen extends Component {
           </button>
           {this.props.lobby.ownerCxId === this.props.user.cxId &&
           !this.props.user.isReady ? (
-            <button className='Button' onClick={this.onStart.bind(this)}>
+            <button
+              className='Button'
+              onClick={this.onStart.bind(this)}
+              disabled={this.props.lobbyResetting}
+            >
               Start
             </button>
           ) : (

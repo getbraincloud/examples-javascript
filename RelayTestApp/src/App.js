@@ -49,6 +49,7 @@ class App extends Component {
       gameStartTime: null,
       splotchDurationSec: -1,
       round: 0,
+      lobbyResetting: false,
       loadingStatus: '',
       relayOptions: {
         reliable: false,
@@ -58,6 +59,7 @@ class App extends Component {
 
     this.state = state
 
+    console.log('Checking if reconnect is possible . . .')
     if (this.bc.canReconnect()) {
       console.log('Attempting reconnect . . .')
       this.bc.reconnect(reconnectResponse => {
@@ -356,6 +358,8 @@ class App extends Component {
 
       if (this.state.screen === 'joiningLobby') {
         this.setState({ screen: 'lobby' })
+      } else if (this.state.lobbyResetting) {
+        this.setState({ lobbyResetting: false })
       }
     }
 
@@ -372,6 +376,7 @@ class App extends Component {
     } else if (result.operation === 'MEMBER_LEFT') {
       this.setState({ loadingStatus: 'A player left the lobby.' })
     } else if (result.operation === 'STARTING') {
+      loadingTimerStart = Date.now()
       presentWhileStarted = true
       this.updatePresentSinceStart()
       this.setState({
@@ -629,8 +634,13 @@ class App extends Component {
         clearTimeout(autoEndTimer)
         autoEndTimer = null
       }
+      this.bc.relay.deregisterRelayCallback()
+      this.bc.relay.deregisterSystemCallback()
+      this.bc.relay.disconnect()
+      loadingTimerStart = null
       let state = this.state
       state.screen = 'lobby'
+      state.lobbyResetting = true
       state.user.isReady = false
       state.user.presentSinceStart = false
       state.splotches = []
@@ -989,6 +999,7 @@ class App extends Component {
               user={this.state.user}
               lobby={this.state.lobby}
               teams={this.state.teams}
+              lobbyResetting={this.state.lobbyResetting}
               onBack={this.onGameScreenClose.bind(this)}
               onColorChanged={this.onColorChanged.bind(this)}
               onTeamChanged={this.onTeamChanged.bind(this)}
