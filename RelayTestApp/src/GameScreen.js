@@ -23,6 +23,7 @@ class GameScreen extends Component {
   constructor () {
     super()
     this.mousePos = { x: 0, y: 0 }
+    this.localPos = { x: 0, y: 0 }
   }
 
   componentDidMount () {
@@ -49,7 +50,9 @@ class GameScreen extends Component {
     let rect = elem.getBoundingClientRect()
     this.mousePos.x = (e.clientX - rect.left) / 800
     this.mousePos.y = (e.clientY - rect.top) / 600
+    this.localPos = { x: e.clientX - rect.left, y: e.clientY - rect.top }
     this.props.onPlayerMove(this.mousePos)
+    this.forceUpdate()
   }
 
   onMouseClick (e) {
@@ -74,6 +77,21 @@ class GameScreen extends Component {
 
   showClearSplotchesButton () {
     return this.props.lobby.ownerCxId === this.props.user.cxId
+  }
+
+  // Render a colored SVG cursor arrow matching the C++/Java vector arrow shape
+  renderArrow (color) {
+    return (
+      <svg width='14' height='18' viewBox='0 0 14 18' style={{ display: 'block', overflow: 'visible' }}>
+        <polygon
+          points='0,0 0,14 5,9 7,13 9,11 7,7 11,7'
+          fill={color}
+          stroke='rgba(0,0,0,0.6)'
+          strokeWidth='1'
+          strokeLinejoin='round'
+        />
+      </svg>
+    )
   }
 
   // Render the game timer. Shows countdown in the final 10 seconds.
@@ -133,8 +151,6 @@ class GameScreen extends Component {
   }
 
   render () {
-    let numArrows = this.props.numArrowImages || 8
-    let arrowIndex = this.props.user.colorIndex % numArrows
     let numColors = colors.length
 
     return (
@@ -207,7 +223,7 @@ class GameScreen extends Component {
           <div
             className='GamePlayArea'
             style={{
-              cursor: `url('arrow${arrowIndex}.png'), auto`,
+              cursor: 'none',
               float: 'left'
             }}
             onMouseMove={this.onMouseMove.bind(this)}
@@ -225,34 +241,31 @@ class GameScreen extends Component {
             {/** Persistent splotches */}
             {this.renderSplotches()}
 
-            {/** Other players' cursors */}
+            {/** All players' cursors (SVG arrow tinted to exact player color) */}
             {this.props.lobby.members
-              .filter(
-                member => member.pos && member.cxId !== this.props.user.cxId
-              )
-              .map(member => (
-                <div
-                  key={`${member.cxId}_arrow`}
-                  className='Entity'
-                  style={{
-                    left: `${member.pos.x * 800}px`,
-                    top: `${member.pos.y * 600}px`
-                  }}
-                >
-                  <img
-                    className='Arrow'
-                    src={`arrow${member.extra.colorIndex % numArrows}.png`}
-                    alt='arrow'
-                  />
-                  <p
-                    style={{
-                      color: colors[member.extra.colorIndex % numColors]
-                    }}
+              .filter(member => member.isReady)
+              .map(member => {
+                let isLocal = member.cxId === this.props.user.cxId
+                let px = isLocal
+                  ? this.localPos.x
+                  : (member.pos ? member.pos.x * 800 : -999)
+                let py = isLocal
+                  ? this.localPos.y
+                  : (member.pos ? member.pos.y * 600 : -999)
+                let color = colors[member.extra.colorIndex % numColors]
+                return (
+                  <div
+                    key={`${member.cxId}_arrow`}
+                    className='Entity'
+                    style={{ left: `${px}px`, top: `${py}px` }}
                   >
-                    {member.name}
-                  </p>
-                </div>
-              ))}
+                    {this.renderArrow(color)}
+                    <p style={{ color, margin: 0, fontSize: '11px', whiteSpace: 'nowrap' }}>
+                      {member.name}
+                    </p>
+                  </div>
+                )
+              })}
           </div>
 
           {/** Buttons */}
