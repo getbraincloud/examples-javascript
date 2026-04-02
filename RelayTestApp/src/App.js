@@ -14,7 +14,6 @@ var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
 let brainCloud = require('braincloud')
 let colors = require('./Colors').colors
 
-const APP_VERSION = '1.0'
 const MATCH_DURATION_SEC = 90
 const NUM_ARROW_IMAGES = 8
 
@@ -943,7 +942,7 @@ class App extends Component {
   renderVersionOverlay () {
     return (
       <div className='VersionOverlay'>
-        <div>App: v{APP_VERSION}</div>
+        <div>App: {ids.version}</div>
         <div>App ID: {ids.appId}</div>
         <div>Server: {this.getServerLabel()}</div>
       </div>
