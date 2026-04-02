@@ -48,7 +48,7 @@ class LobbyScreen extends Component {
                 style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  maxWidth: '360px',
+                  maxWidth: '320px',
                   justifyContent: 'flex-start'
                 }}
               >
