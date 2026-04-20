@@ -165,22 +165,30 @@ class GameScreen extends Component {
             style={{ paddingRight: 32, textAlign: 'left' }}
           >
             <p>Player Mask (For splotches)</p>
-            {this.props.lobby.members.map(member => (
-              <div key={`${member.cxId}_mask`}>
-                <input
-                  type='checkbox'
-                  name={`${member.cxId}_mask`}
-                  onChange={() => this.onTogglePlayerMask(member.cxId)}
-                  defaultChecked={member.allowSendTo}
-                />
-                <label
-                  htmlFor={`${member.cxId}_mask`}
-                  style={{ color: colors[member.extra.colorIndex % numColors] }}
-                >
-                  {member.isReady ? member.name : member.name + ' (in lobby)'}
-                </label>
-              </div>
-            ))}
+            {this.props.lobby.members.map(member => {
+              const ping = member.activePing
+              let pingText = ''
+              if (ping === undefined || ping === null || ping < 0) pingText = '...'
+              else if (ping >= 999) pingText = 'T/O'
+              else pingText = `${ping} ms`
+              return (
+                <div key={`${member.cxId}_mask`} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type='checkbox'
+                    name={`${member.cxId}_mask`}
+                    onChange={() => this.onTogglePlayerMask(member.cxId)}
+                    defaultChecked={member.allowSendTo}
+                  />
+                  <label
+                    htmlFor={`${member.cxId}_mask`}
+                    style={{ color: colors[member.extra.colorIndex % numColors] }}
+                  >
+                    {member.isReady ? member.name : member.name + ' (in lobby)'}
+                  </label>
+                  <span style={{ color: '#888888', fontSize: '11px' }}>{pingText}</span>
+                </div>
+              )
+            })}
           </div>
 
           {/** Reliable/Ordered Options */}
