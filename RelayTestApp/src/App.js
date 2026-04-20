@@ -21,6 +21,7 @@ let presentWhileStarted = false
 let server = null
 let showJoinButton = false
 let autoEndTimer = null
+let pingInterval = null
 let loadingTimerStart = null // When the user first clicked Play (drives the elapsed timer)
 
 export function getShowJoinButton () {
@@ -50,6 +51,8 @@ class App extends Component {
       round: 0,
       lobbyResetting: false,
       loadingStatus: '',
+      usePingData: false,
+      pingData: {},
       relayOptions: {
         reliable: false,
         ordered: true
@@ -117,11 +120,25 @@ class App extends Component {
       splotchDurationSec: -1,
       round: 0,
       loadingStatus: '',
+      usePingData: false,
+      pingData: {},
       relayOptions: {
         reliable: false,
         ordered: true
       }
     }
+  }
+
+  // Build the extra JSON for lobby join/updateReady calls.
+  // Always includes colorIndex and presentSinceStart; includes per-region pings when available.
+  makeExtraJson (colorIndex, presentSinceStart) {
+    let extra = {
+      colorIndex: colorIndex !== undefined ? colorIndex : this.state.user.colorIndex,
+      presentSinceStart: !!presentSinceStart
+    }
+    let pingData = this.state.pingData || {}
+    if (Object.keys(pingData).length > 0) extra.pings = pingData
+    return extra
   }
 
   // Derive a display label for the brainCloud server environment
@@ -228,87 +245,70 @@ class App extends Component {
   }
 
   // Clicked play from the main menu
-  onPlayClicked (lobbyType) {
+  onPlayClicked (lobbyType, usePingData) {
     loadingTimerStart = Date.now()
     this.setState({
       screen: 'joiningLobby',
       lobbyType: lobbyType,
+      usePingData: !!usePingData,
       loadingStatus: 'Searching...'
     })
+
+    const algo = { strategy: 'ranged-absolute', alignment: 'center', ranges: [1000] }
 
     // Enable RTT service
     this.bc.rttService.enableRTT(
       () => {
         let state = this.state
-        let extraJson = {
-          colorIndex: this.state.user.colorIndex,
-          presentSinceStart: this.state.user.presentSinceStart
-        }
         state.user.cxId = this.bc.rttService.getRTTConnectionId()
         this.setState(state)
 
-        this.bc.rttService.registerRTTLobbyCallback(
-          this.onLobbyEvent.bind(this)
-        )
+        this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
-        // If using gamelift, we will do region pings
-        if (lobbyType.toLowerCase().includes('gamelift')) {
-          console.log('GameLift Lobby')
+        const doFindLobby = (withPingData) => {
+          let extraJson = this.makeExtraJson(
+            this.state.user.colorIndex,
+            this.state.user.presentSinceStart
+          )
+          if (withPingData) {
+            this.bc.lobby.findOrCreateLobbyWithPingData(
+              lobbyType, 0, 1, algo, {}, null, {}, false, extraJson, '',
+              result => {
+                if (result.status !== 200) this.dieWithMessage('Failed to find lobby')
+              }
+            )
+          } else {
+            this.bc.lobby.findOrCreateLobby(
+              lobbyType, 0, 1, algo, {}, null, {}, false, extraJson, '',
+              result => {
+                if (result.status !== 200) this.dieWithMessage('Failed to find lobby')
+              }
+            )
+          }
+        }
+
+        // Ping regions when explicitly requested or for GameLift lobbies
+        const needsPing = usePingData || lobbyType.toLowerCase().includes('gamelift')
+        if (needsPing) {
+          this.setState({ loadingStatus: 'Getting regions...' })
           this.bc.lobby.getRegionsForLobbies([lobbyType], result => {
             if (result.status !== 200) {
-              this.dieWithMessage('Failed to get regions for lobbies')
+              doFindLobby(false)
               return
             }
             this.bc.lobby.pingRegions(result => {
               if (result.status !== 200) {
-                this.dieWithMessage('Failed to ping regions')
+                doFindLobby(false)
                 return
               }
-              this.bc.lobby.findOrCreateLobbyWithPingData(
-                lobbyType,
-                0,
-                1,
-                {
-                  strategy: 'ranged-absolute',
-                  alignment: 'center',
-                  ranges: [1000]
-                },
-                {},
-                null,
-                {},
-                false,
-                extraJson,
-                '',
-                result => {
-                  if (result.status !== 200) {
-                    this.dieWithMessage('Failed to find lobby')
-                  }
-                }
-              )
+              let pingData = result.data || {}
+              this.setState({ pingData, loadingStatus: 'Searching...' }, () => {
+                doFindLobby(true)
+              })
             })
           })
         } else {
-          this.bc.lobby.findOrCreateLobby(
-            lobbyType,
-            0,
-            1,
-            {
-              strategy: 'ranged-absolute',
-              alignment: 'center',
-              ranges: [1000]
-            },
-            {},
-            null,
-            {},
-            false,
-            extraJson,
-            '',
-            result => {
-              if (result.status !== 200) {
-                this.dieWithMessage('Failed to find lobby')
-              }
-            }
-          )
+          doFindLobby(false)
         }
       },
       () => {
@@ -428,6 +428,10 @@ class App extends Component {
       clearTimeout(autoEndTimer)
       autoEndTimer = null
     }
+    if (pingInterval) {
+      clearInterval(pingInterval)
+      pingInterval = null
+    }
     this.bc.relay.deregisterRelayCallback()
     this.bc.relay.deregisterSystemCallback()
     this.bc.relay.disconnect()
@@ -454,10 +458,7 @@ class App extends Component {
   onColorChanged (colorIndex) {
     let state = this.state
     state.user.colorIndex = colorIndex
-    let extraJson = {
-      colorIndex: colorIndex,
-      presentSinceStart: state.user.presentSinceStart
-    }
+    let extraJson = this.makeExtraJson(colorIndex, state.user.presentSinceStart)
     this.setState(state)
     this.bc.lobby.updateReady(
       this.state.lobby.lobbyId,
@@ -490,11 +491,8 @@ class App extends Component {
   // Owner of the lobby clicked the "Start" button
   onStart () {
     let state = this.state
-    let extraJson = {
-      colorIndex: this.state.user.colorIndex,
-      presentSinceStart: this.state.user.presentSinceStart
-    }
     state.user.isReady = true
+    let extraJson = this.makeExtraJson(state.user.colorIndex, state.user.presentSinceStart)
     this.setState(state)
     this.bc.lobby.updateReady(
       this.state.lobby.lobbyId,
@@ -506,11 +504,8 @@ class App extends Component {
   // Player clicked the "Join Match" button to join an in-progress game
   onJoin () {
     let state = this.state
-    let extraJson = {
-      colorIndex: this.state.user.colorIndex,
-      presentSinceStart: this.state.user.presentSinceStart
-    }
     state.user.isReady = true
+    let extraJson = this.makeExtraJson(state.user.colorIndex, state.user.presentSinceStart)
     this.setState(state)
     this.bc.lobby.updateReady(
       this.state.lobby.lobbyId,
@@ -597,6 +592,11 @@ class App extends Component {
         state.splotches = []
         break
 
+      // Live relay RTT broadcast from another player
+      case 'relay_ping':
+        if (member) member.activePing = json.data.ping
+        break
+
       default:
         break
     }
@@ -632,6 +632,10 @@ class App extends Component {
       if (autoEndTimer) {
         clearTimeout(autoEndTimer)
         autoEndTimer = null
+      }
+      if (pingInterval) {
+        clearInterval(pingInterval)
+        pingInterval = null
       }
       this.bc.relay.deregisterRelayCallback()
       this.bc.relay.deregisterSystemCallback()
@@ -817,6 +821,10 @@ class App extends Component {
         } else {
           this.setState(state)
         }
+
+        // Broadcast relay RTT to all players every 2 seconds
+        if (pingInterval) clearInterval(pingInterval)
+        pingInterval = setInterval(() => this.broadcastRelayPing(), 2000)
       },
       error => this.dieWithMessage('Failed to connect to server, msg: ' + error)
     )
@@ -926,16 +934,32 @@ class App extends Component {
     let state = this.state
     state.user.presentSinceStart = true
     state.user.isReady = true
-
-    let extraJson = {
-      colorIndex: this.state.user.colorIndex,
-      presentSinceStart: this.state.user.presentSinceStart
-    }
+    let extraJson = this.makeExtraJson(state.user.colorIndex, true)
     this.bc.lobby.updateReady(
       this.state.lobby.lobbyId,
       this.state.user.isReady,
       extraJson
     )
+  }
+
+  // Broadcast our current relay RTT to all other players (called every 2 seconds while in game)
+  broadcastRelayPing () {
+    if (this.state.screen !== 'game' || !this.bc.relay) return
+    let ping = typeof this.bc.relay.getPing === 'function' ? this.bc.relay.getPing() : -1
+    if (ping < 0) return
+
+    // Update own entry immediately
+    let state = this.state
+    let me = state.lobby.members.find(m => m.cxId === state.user.cxId)
+    if (me) me.activePing = ping
+
+    let msg = { op: 'relay_ping', data: { ping } }
+    this.bc.relay.sendToAll(
+      Buffer.from(JSON.stringify(msg), 'ascii'),
+      false, false,
+      this.bc.relay.CHANNEL_HIGH_PRIORITY_1
+    )
+    this.setState(state)
   }
 
   // Version overlay — always visible in the bottom-left corner on every screen
@@ -973,6 +997,7 @@ class App extends Component {
             <MainMenuScreen
               user={this.state.user}
               appLobbies={this.state.appLobbies}
+              usePingData={this.state.usePingData}
               onLogout={this.onLogout.bind(this)}
               onPlay={this.onPlayClicked.bind(this)}
             />
@@ -999,6 +1024,8 @@ class App extends Component {
               lobby={this.state.lobby}
               teams={this.state.teams}
               lobbyResetting={this.state.lobbyResetting}
+              usePingData={this.state.usePingData}
+              pingData={this.state.pingData}
               onBack={this.onGameScreenClose.bind(this)}
               onColorChanged={this.onColorChanged.bind(this)}
               onTeamChanged={this.onTeamChanged.bind(this)}
