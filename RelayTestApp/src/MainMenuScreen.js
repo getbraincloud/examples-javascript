@@ -25,7 +25,7 @@ class MainMenuScreen extends Component
         const form = e.target
         const formData = new FormData(form)
         const formJson = Object.fromEntries(formData.entries());
-        this.props.onPlay(formJson.lobbyTypes, formJson.usePingData === 'on')
+        this.props.onPlay(formJson.lobbyTypes, formJson.usePingData === 'on', formJson.relayProtocol)
     }
 
     render()
@@ -60,6 +60,13 @@ class MainMenuScreen extends Component
                         {/** Game Lift usage requires additional configuration (i.e. using pings/regions) that has not yet been added to the other versions, so this lobby type is added manually */}
                         <option value="CursorPartyGameLift">CursorPartyGameLift</option>
                     </select>
+                    <div style={{ margin: '8px 0' }}>
+                        <label>Protocol:</label>
+                        <select name="relayProtocol" style={{ marginLeft: '6px' }}>
+                            <option value="ws">WS (WebSocket)</option>
+                            <option value="wss">WSS (WebSocket Secure)</option>
+                        </select>
+                    </div>
                     <div style={{ margin: '8px 0' }}>
                         <input
                             type="checkbox"

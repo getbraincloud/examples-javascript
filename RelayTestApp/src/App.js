@@ -56,7 +56,8 @@ class App extends Component {
       relayOptions: {
         reliable: false,
         ordered: true
-      }
+      },
+      relayProtocol: 'ws'
     }
 
     this.state = state
@@ -207,6 +208,15 @@ class App extends Component {
             )
           }
 
+          if (readPropertiesResponse.data.Colors) {
+            try {
+              const newColors = JSON.parse(readPropertiesResponse.data.Colors.value)
+              if (Array.isArray(newColors) && newColors.length > 0) {
+                colors.splice(0, colors.length, ...newColors)
+              }
+            } catch (e) {}
+          }
+
           this.setState({
             screen: 'mainMenu',
             user: {
@@ -245,12 +255,13 @@ class App extends Component {
   }
 
   // Clicked play from the main menu
-  onPlayClicked (lobbyType, usePingData) {
+  onPlayClicked (lobbyType, usePingData, protocol) {
     loadingTimerStart = Date.now()
     this.setState({
       screen: 'joiningLobby',
       lobbyType: lobbyType,
       usePingData: !!usePingData,
+      relayProtocol: protocol || 'ws',
       loadingStatus: 'Searching...'
     })
 
@@ -785,14 +796,25 @@ class App extends Component {
   }
 
   connectRelay () {
-    let wsPort = 0
-    if (this.state.lobbyType.toLowerCase().includes('gamelift')) {
-      wsPort = server.connectData.ports.gamelift
-    } else if (this.state.lobbyType.toLowerCase().includes('i3d')) {
-      wsPort = server.connectData.ports.i3d
-      console.log('i3d detected')
+    const ports = server.connectData.ports
+    const host = server.connectData.address
+    let port = 0
+    let ssl = false
+
+    // Match C++ priority: gamelift → i3d (both force WS) → user-selected protocol
+    // JS relay client only supports WS/WSS (no TCP/UDP in browsers)
+    if (ports.gamelift) {
+      port = ports.gamelift
+      ssl = false
+      console.log('[DEBUG] relay connect: gamelift port=' + port)
+    } else if (ports.i3d) {
+      port = ports.i3d
+      ssl = false
+      console.log('[DEBUG] relay connect: i3d port=' + port)
     } else {
-      wsPort = server.connectData.ports.ws
+      ssl = this.state.relayProtocol === 'wss'
+      port = ports.ws
+      console.log('[DEBUG] relay connect: protocol=' + this.state.relayProtocol + ' ws=' + ports.ws + ' tcp=' + (ports.tcp || -1) + ' udp=' + (ports.udp || -1))
     }
 
     presentWhileStarted = false
@@ -801,9 +823,9 @@ class App extends Component {
     this.bc.relay.registerSystemCallback(this.onSystemMessage.bind(this))
     this.bc.relay.connect(
       {
-        ssl: false,
-        host: server.connectData.address,
-        port: wsPort,
+        ssl: ssl,
+        host: host,
+        port: port,
         passcode: server.passcode,
         lobbyId: server.lobbyId
       },
