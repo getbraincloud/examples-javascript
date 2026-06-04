@@ -6,6 +6,7 @@ import ids from './ids'
 //  user
 //  appLobbies
 //  usePingData
+//  lastLobbyType  — previously selected lobby type, used to default the dropdown
 //  onPlay
 //  onLogout
 class MainMenuScreen extends Component
@@ -45,20 +46,25 @@ class MainMenuScreen extends Component
                 versionSuffix = " - prod"
                 break
         }
+
+        // Default the dropdown to the last selected lobby type, but only if it is
+        // still a valid option; otherwise fall back to the first available lobby.
+        let defaultLobbyType = this.props.lastLobbyType
+        if (!this.props.appLobbies.some(lobby => lobby.lobby === defaultLobbyType)) {
+            defaultLobbyType = this.props.appLobbies.length > 0 ? this.props.appLobbies[0].lobby : ''
+        }
+
         return (
             <div id="main-wrapper">
                 <form onSubmit={this.onPlay.bind(this)}>
                     <p className="text-small">Logged in as {this.props.user.name}</p>
                     <label>Choose lobby type:</label>
-                    <select name="lobbyTypes">
+                    <select name="lobbyTypes" defaultValue={defaultLobbyType}>
                         {
                             this.props.appLobbies.map((lobby, index) =>
                                 <option key={index} value={lobby.lobby}>{lobby.lobby}</option>
                             )
                         }
-
-                        {/** Game Lift usage requires additional configuration (i.e. using pings/regions) that has not yet been added to the other versions, so this lobby type is added manually */}
-                        <option value="CursorPartyGameLift">CursorPartyGameLift</option>
                     </select>
                     <div style={{ margin: '8px 0' }}>
                         <label>Protocol:</label>

@@ -99,7 +99,7 @@ class App extends Component {
   // Initialize brainCloud library
   initBC () {
     this.bc = new brainCloud.BrainCloudWrapper('relayservertest')
-    this.bc.initialize(ids.appId, ids.appSecret, '5.9.0')
+    this.bc.initialize(ids.appId, ids.appSecret, '6.0.0')
     if (ids.url) this.bc.brainCloudClient.setServerUrl(ids.url)
     this.bc.brainCloudClient.enableLogging(true)
   }
@@ -257,6 +257,8 @@ class App extends Component {
   // Clicked play from the main menu
   onPlayClicked (lobbyType, usePingData, protocol) {
     loadingTimerStart = Date.now()
+    // Remember the last selected lobby type so the main menu defaults to it next time
+    localStorage.setItem('lobbyType', lobbyType)
     this.setState({
       screen: 'joiningLobby',
       lobbyType: lobbyType,
@@ -1020,6 +1022,7 @@ class App extends Component {
               user={this.state.user}
               appLobbies={this.state.appLobbies}
               usePingData={this.state.usePingData}
+              lastLobbyType={localStorage.getItem('lobbyType')}
               onLogout={this.onLogout.bind(this)}
               onPlay={this.onPlayClicked.bind(this)}
             />

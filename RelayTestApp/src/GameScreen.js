@@ -159,6 +159,13 @@ class GameScreen extends Component {
         <div>
           {this.renderTimer()}
 
+          {/** Current lobby id */}
+          {this.props.lobby && this.props.lobby.lobbyId ? (
+            <p style={{ opacity: 0.45, fontSize: '9pt' }}>
+              Lobby: {this.props.lobby.lobbyId}
+            </p>
+          ) : null}
+
           {/** Players List / Mask */}
           <div
             className='OptionPanel'
