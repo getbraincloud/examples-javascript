@@ -424,61 +424,11 @@
     <script src="md5.js"></script>
 
 
-    <!-- Min Version <script src="brainCloudClient.min.js"></script>-->
-
-    <script src="brainCloudClient/brainCloudBase.js"></script>
-    <script src="brainCloudClient/brainCloudClient.js"></script>
-    <script src="brainCloudClient/brainCloudWrapper.js"></script>
-
-
-    <script src="brainCloudClient/brainCloudClient-abtests.js"></script>
-    <script src="brainCloudClient/brainCloudClient-app-store.js"></script>
-    <script src="brainCloudClient/brainCloudClient-async-match.js"></script>
-    <script src="brainCloudClient/brainCloudClient-authentication.js"></script>
-    <script src="brainCloudClient/brainCloudClient-blockchain.js"></script>
-    <script src="brainCloudClient/brainCloudClient-chat.js"></script>
-    <script src="brainCloudClient/brainCloudClient-data-stream.js"></script>
-    <script src="brainCloudClient/brainCloudClient-entity.js"></script>
-    <script src="brainCloudClient/brainCloudClient-custom-entity.js"></script>
-    <script src="brainCloudClient/brainCloudClient-events.js"></script>
-    <script src="brainCloudClient/brainCloudClient-file.js"></script>
-    <script src="brainCloudClient/brainCloudClient-friend.js"></script>
-    <script src="brainCloudClient/brainCloudClient-gamification.js"></script>
-    <script src="brainCloudClient/brainCloudClient-global-app.js"></script>
-    <script src="brainCloudClient/brainCloudClient-global-statistics.js"></script>
-    <script src="brainCloudClient/brainCloudClient-globalentity.js"></script>
-    <script src="brainCloudClient/brainCloudClient-global-file.js"></script>
-    <script src="brainCloudClient/brainCloudClient-time-utils.js"></script>
-    <script src="brainCloudClient/brainCloudClient-group.js"></script>
-    <script src="brainCloudClient/brainCloudClient-group-file.js"></script>
-    <script src="brainCloudClient/brainCloudClient-identity.js"></script>
-    <script src="brainCloudClient/brainCloudClient-item-catalog.js"></script>
-    <script src="brainCloudClient/brainCloudClient-relay.js"></script>
-    <script src="brainCloudClient/brainCloudClient-user-items.js"></script>
-    <script src="brainCloudClient/brainCloudClient-lobby.js"></script>
-    <script src="brainCloudClient/brainCloudClient-mail.js"></script>
-    <script src="brainCloudClient/brainCloudClient-match-making.js"></script>
-    <script src="brainCloudClient/brainCloudClient-messaging.js"></script>
-    <script src="brainCloudClient/brainCloudClient-one-way-match.js"></script>
-    <script src="brainCloudClient/brainCloudClient-playback-stream.js"></script>
-    <script src="brainCloudClient/brainCloudClient-player-state.js"></script>
-    <script src="brainCloudClient/brainCloudClient-player-statistics-event.js"></script>
-    <script src="brainCloudClient/brainCloudClient-player-statistics.js"></script>
-    <script src="brainCloudClient/brainCloudClient-presence.js"></script>
-    <script src="brainCloudClient/brainCloudClient-profanity.js"></script>
-    <script src="brainCloudClient/brainCloudClient-push-notifications.js"></script>
-    <script src="brainCloudClient/brainCloudClient-reason-codes.js"></script>
-    <script src="brainCloudClient/brainCloudClient-redemption-code.js"></script>
-    <script src="brainCloudClient/brainCloudClient-rttservice.js"></script>
-    <script src="brainCloudClient/brainCloudClient-s3-handler.js"></script>
-    <script src="brainCloudClient/brainCloudClient-script.js"></script>
-    <script src="brainCloudClient/brainCloudClient-social-leaderboards.js"></script>
-    <script src="brainCloudClient/brainCloudClient-status-codes.js"></script>
-    <script src="brainCloudClient/brainCloudClient-time.js"></script>
-    <script src="brainCloudClient/brainCloudClient-tournament.js"></script>
-    <script src="brainCloudClient/brainCloudClient-virtual-currency.js"></script>
-    <script src="brainCloudClient/brainCloudRttComms.js"></script>
-    <script src="brainCloudClient/brainCloudRelayComms.js"></script>
+    <!-- Self-contained brainCloud client browser bundle (built from the 6.x client
+         via deploy/browser; exposes window.BrainCloudWrapper / window.BrainCloudClient).
+         Replaces the individual raw-source includes, which threw "require is not
+         defined" in the browser. Refresh it with: node bccm syncsdk js_aceydeucey -->
+    <script src="brainCloudClient.browser.js"></script>
 
 
     <script src="cardGame.js"></script>

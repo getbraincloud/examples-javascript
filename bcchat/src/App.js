@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import Theme from './Theme';
 import packageJson from '../package.json';
+import bcPackageJson from 'braincloud/package.json'; // installed brainCloud client version (separate from the app version)
 import BC from 'braincloud';
 
 // Component imports
@@ -1127,7 +1128,7 @@ class App extends Component
                     <div className="App">
                         <LogInScreen onLogin={this.handleLogin.bind(this)} games={Object.keys(GAMES)} />
                         <div style={{color:Theme.DarkTextColor, marginTop:"16px"}}>
-                            {`version: ${packageJson.version}${versionSuffix}`}
+                            {`app: ${packageJson.version} | bcclient: ${bcPackageJson.version}${versionSuffix}`}
                         </div>
                     </div>
                 );

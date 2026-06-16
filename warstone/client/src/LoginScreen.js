@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import './style.css'
 import packageJson from '../package.json'
+import bcPackageJson from 'braincloud/package.json' // installed brainCloud client version (separate from the app version)
 import ids from './ids'
 
 // onLogin(user, pass)
@@ -58,7 +59,7 @@ class LoginScreen extends Component {
 
                     <div className="bottomText">
                         <p>A user will be created if not already registered.</p>
-                        <p className="ver-text">Version: {packageJson.version}{versionSuffix}</p>
+                        <p className="ver-text">app: {packageJson.version} | bcclient: {bcPackageJson.version}{versionSuffix}</p>
                     </div>
                 </form>
             </div>
