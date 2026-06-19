@@ -134,17 +134,28 @@ class GameScreen extends Component {
           if (remaining <= 3) opacity = Math.max(0, remaining / 3.0)
         }
         let color = colors[splotch.colorIndex % numColors]
+        let angle = splotch.angle || 0
+        let splatUrl = `url(${process.env.PUBLIC_URL}/PaintSplatter1.png)`
         return (
           <div
             key={`splotch_${index}_${splotch.startTimeMs}`}
             className='Entity'
             style={{
-              left: `${splotch.x * 800 - 16}px`,
-              top: `${splotch.y * 600 - 16}px`,
+              left: `${splotch.x * 800 - 32}px`,
+              top: `${splotch.y * 600 - 32}px`,
               opacity
             }}
           >
-            <div className='Splotch' style={{ backgroundColor: color }}></div>
+            {/* Opaque player-colour mask + network-synced rotation so every client renders the same */}
+            <div
+              className='Splotch'
+              style={{
+                backgroundColor: color,
+                transform: `rotate(${angle}rad)`,
+                WebkitMaskImage: splatUrl,
+                maskImage: splatUrl
+              }}
+            ></div>
           </div>
         )
       })

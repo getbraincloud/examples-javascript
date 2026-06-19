@@ -575,6 +575,8 @@ class App extends Component {
           x: json.data.x,
           y: json.data.y,
           colorIndex: colorIndex,
+          // Use the sender's synced rotation (default random if an older client omits it)
+          angle: json.data.angle === undefined ? Math.random() * Math.PI * 2 : json.data.angle,
           startTimeMs: Date.now()
         })
 
@@ -595,6 +597,8 @@ class App extends Component {
             x: s.x,
             y: s.y,
             colorIndex: s.c,
+            // "a" = synced rotation (default random if absent); "t" = original timestamp
+            angle: s.a === undefined ? Math.random() * Math.PI * 2 : s.a,
             startTimeMs: s.t
           })
         })
@@ -693,11 +697,14 @@ class App extends Component {
       return playerMask + Math.pow(2, netId)
     }, 0)
 
+    // Pick a rotation once and send it so every client renders this splotch the same.
+    let angle = Math.random() * Math.PI * 2
+
     this.bc.relay.sendToPlayers(
       Buffer.from(
         JSON.stringify({
           op: 'shockwave',
-          data: { x: pos.x, y: pos.y, teamCode: 0 }
+          data: { x: pos.x, y: pos.y, teamCode: 0, angle: angle }
         }),
         'ascii'
       ),
@@ -707,7 +714,7 @@ class App extends Component {
       this.bc.relay.CHANNEL_HIGH_PRIORITY_2
     )
 
-    this.createSplotch(pos, this.state.user.colorIndex)
+    this.createSplotch(pos, this.state.user.colorIndex, angle)
     this.createShockwave(pos, colors[this.state.user.colorIndex])
   }
 
@@ -724,6 +731,8 @@ class App extends Component {
     let reliable = true
     let ordered = false
     let channel = this.bc.relay.CHANNEL_HIGH_PRIORITY_2
+    // Pick a rotation once and send it so every client renders this splotch the same.
+    let angle = Math.random() * Math.PI * 2
     let teamCode = this.state.user.team === 'alpha' ? 1 : 2
     let opponentCode = this.state.user.opposingTeam === 'alpha' ? 1 : 2
 
@@ -733,7 +742,7 @@ class App extends Component {
         Buffer.from(
           JSON.stringify({
             op: 'shockwave',
-            data: { x: pos.x, y: pos.y, teamCode: 0 }
+            data: { x: pos.x, y: pos.y, teamCode: 0, angle: angle }
           }),
           'ascii'
         ),
@@ -742,7 +751,7 @@ class App extends Component {
         ordered,
         channel
       )
-      this.createSplotch(pos, this.state.user.colorIndex)
+      this.createSplotch(pos, this.state.user.colorIndex, angle)
       this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
     // Middle click — splotch to opponents
@@ -757,7 +766,7 @@ class App extends Component {
           Buffer.from(
             JSON.stringify({
               op: 'shockwave',
-              data: { x: pos.x, y: pos.y, teamCode: opponentCode }
+              data: { x: pos.x, y: pos.y, teamCode: opponentCode, angle: angle }
             }),
             'ascii'
           ),
@@ -767,7 +776,7 @@ class App extends Component {
           channel
         )
       })
-      this.createSplotch(pos, this.state.user.colorIndex)
+      this.createSplotch(pos, this.state.user.colorIndex, angle)
       this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
     // Right click — splotch to teammates
@@ -782,7 +791,7 @@ class App extends Component {
           Buffer.from(
             JSON.stringify({
               op: 'shockwave',
-              data: { x: pos.x, y: pos.y, teamCode: teamCode }
+              data: { x: pos.x, y: pos.y, teamCode: teamCode, angle: angle }
             }),
             'ascii'
           ),
@@ -792,7 +801,7 @@ class App extends Component {
           channel
         )
       })
-      this.createSplotch(pos, this.state.user.colorIndex)
+      this.createSplotch(pos, this.state.user.colorIndex, angle)
       this.createShockwave(pos, colors[this.state.user.colorIndex])
     }
   }
@@ -896,7 +905,7 @@ class App extends Component {
 
     for (let i = 0; i < splotches.length; i++) {
       let s = splotches[i]
-      let entry = { x: s.x, y: s.y, c: s.colorIndex, t: s.startTimeMs }
+      let entry = { x: s.x, y: s.y, c: s.colorIndex, a: s.angle, t: s.startTimeMs }
       let entrySize = JSON.stringify(entry).length + 1 // +1 for comma separator
 
       if (currentSize + entrySize > MAX_BYTES && batch.length > 0) {
@@ -924,11 +933,12 @@ class App extends Component {
   }
 
   // Add a persistent colour splotch at pos (normalized 0-1 coords)
-  createSplotch (pos, colorIndex) {
+  createSplotch (pos, colorIndex, angle) {
     let splotch = {
       x: pos.x,
       y: pos.y,
       colorIndex: colorIndex % colors.length,
+      angle: angle === undefined ? Math.random() * Math.PI * 2 : angle,
       startTimeMs: Date.now()
     }
     let state = this.state

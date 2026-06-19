@@ -110,10 +110,19 @@ small {
 }
 
 .Splotch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 64px;
+    height: 64px;
     position: relative;
+    /* Opaque, player-coloured PaintSplatter1.png (shared across all RTA clients).
+       The white PNG is the alpha mask; background-color supplies the player colour.
+       The mask-image URL is set inline in JSX (process.env.PUBLIC_URL) so CRA's
+       css-loader doesn't try to module-resolve a public/ asset from src/. */
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
 
 .Shockwave {
