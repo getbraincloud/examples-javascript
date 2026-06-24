@@ -4,7 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "braincloud": "^5.8.0",
+    "braincloud": "file:../../../js/deploy/node",
     "crypto-js": "^4.2.0",
     "jwt-decode": "^4.0.0",
     "query-string": "^9.3.1",

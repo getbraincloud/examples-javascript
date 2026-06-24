@@ -122,7 +122,12 @@ class GameScreen extends Component {
             this.handleTurnTransition(gameState)
         }
         else {
-            this._state = Constants.GameState.END_DIALOG
+            if (this._dialog) {
+                this._state = Constants.GameState.END_DIALOG
+            } else {
+                // Connection dropped before game initialized — navigate back
+                this.props.onClose()
+            }
         }
     }
 
@@ -607,7 +612,7 @@ class GameScreen extends Component {
     }
 
     queueEndDialog(message) {
-        this._dialog.setMessage(message)
+        if (this._dialog) this._dialog.setMessage(message)
         this._gameEnded = true
     }
 

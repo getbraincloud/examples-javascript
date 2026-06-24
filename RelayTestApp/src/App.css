@@ -21,6 +21,21 @@ small {
   color: #61dafb;
 }
 
+.VersionOverlay {
+    position: fixed;
+    bottom: 8px;
+    left: 8px;
+    background-color: rgba(0, 0, 0, 0.45);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 9pt;
+    text-align: left;
+    line-height: 1.6;
+    pointer-events: none;
+    z-index: 1000;
+    color: rgba(255, 255, 255, 0.75);
+}
+
 .colorBtn {
     -moz-user-select: -moz-none;
     -khtml-user-select: none;
@@ -92,6 +107,22 @@ small {
 
 .Button:active {
     background-color: #789;
+}
+
+.Splotch {
+    width: 64px;
+    height: 64px;
+    position: relative;
+    /* Opaque, player-coloured PaintSplatter1.png (shared across all RTA clients).
+       The white PNG is the alpha mask; background-color supplies the player colour.
+       The mask-image URL is set inline in JSX (process.env.PUBLIC_URL) so CRA's
+       css-loader doesn't try to module-resolve a public/ asset from src/. */
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
 
 .Shockwave {

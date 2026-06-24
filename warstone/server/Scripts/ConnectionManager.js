@@ -1,5 +1,7 @@
 var Connection = require('./Connection.js');
 var WSConnection = require('./WSConnection.js');
+var prl = require('./brainclouds2s-prl');
+var S2S = require('./S2S.js');
 
 const TIMEOUT_TIME = 30 * 1000 // 30sec
 var connections = [];
@@ -7,10 +9,24 @@ var connections = [];
 function death()
 {
     console.log("No connections after 30sec, timeout")
-    process.exit(2)
+    prl.sendSessionEnded(S2S.context, () => process.exit(2));
 }
 
 let deathTimeout = setTimeout(death, TIMEOUT_TIME)
+
+exports.cancelDeathTimer = function()
+{
+    console.log("Death timer cancelled (PRL in progress)");
+    clearTimeout(deathTimeout);
+    deathTimeout = null;
+}
+
+exports.resetDeathTimer = function()
+{
+    clearTimeout(deathTimeout);
+    deathTimeout = setTimeout(death, TIMEOUT_TIME);
+    console.log("Death timer reset (" + (TIMEOUT_TIME / 1000) + "sec)");
+}
 
 exports.getConnection = function(id)
 {

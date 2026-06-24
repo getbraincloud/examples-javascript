@@ -1,0 +1,5 @@
+/sso-auth/oauth2/node_modules
+/sso-auth/saml/node_modules
+/sso-auth/oauth2/build
+/sso-auth/saml/build
+/bcgoogleauth/node_modules
