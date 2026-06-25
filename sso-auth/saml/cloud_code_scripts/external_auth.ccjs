@@ -17,7 +17,7 @@ function findUser(externalId) {
   let lookupResult = friendProxy.getProfileInfoForExternalAuthIdIfExists(externalId, EXTERNAL_AUTH_TYPE);
 
   if (lookupResult.status === 200) {
-    return lookupResult.data?.profileId || null;
+    return (lookupResult.data && lookupResult.data.profileId) ? lookupResult.data.profileId : null;
   }
 
   return null;
@@ -27,7 +27,7 @@ function findPreRegisteredUser(externalId) {
   let lookupResult = friendProxy.getProfileInfoForCredentialIfExists(externalId, PRE_REGISTRATION_AUTH_TYPE);
 
   if (lookupResult.status === 200) {
-    return lookupResult.data?.profileId || null;
+    return (lookupResult.data && lookupResult.data.profileId) ? lookupResult.data.profileId : null;
   }
 
   return null;

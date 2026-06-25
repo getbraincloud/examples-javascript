@@ -4,6 +4,14 @@ import { jwtDecode } from "jwt-decode";
 
 import { generateCodeChallengeFromVerifier, generateCodeVerifier } from "./utils";
 
+// The target brainCloud environment
+const API_SERVER_HOST = process.env.REACT_APP_BC_API_TARGET_HOST || "";
+const API_SERVER_PORT = process.env.REACT_APP_BC_API_TARGET_PORT || "";
+const API_SERVER_URL = `https://${API_SERVER_HOST}:${API_SERVER_PORT}`;
+
+// The target brainCloud app id.
+const APP_ID = process.env.REACT_APP_BC_APP_ID || "";
+
 // The name of the external authentication type as defined in your brainCloud app.
 const EXTERNAL_AUTH_NAME = process.env.REACT_APP_BC_EXTERNAL_AUTH_NAME || "";
 
@@ -15,6 +23,10 @@ const AUTHORIZATION_ENDPOINT = process.env.REACT_APP_SSO_AUTHORIZATION_ENDPOINT 
 const TOKEN_ENDPOINT = process.env.REACT_APP_SSO_TOKEN_ENDPOINT || "";
 // const END_SESSION_ENDPOINT = process.env.REACT_APP_SSO_END_SESSION_ENDPOINT || "";
 
+// The webhook setttings (for testing webhook invocation).
+const WEBHOOK_NAME = process.env.REACT_APP_WEBHOOK_NAME || "";
+const WEBHOOK_SECRET = process.env.REACT_APP_WEBHOOK_SECRET || "";
+
 const App: React.FC = () => {
     // The history and location objects from the global window object.
     const history = window.history;
@@ -22,6 +34,9 @@ const App: React.FC = () => {
 
     // The brainCloud wrapper object from the global window object.
     const bc = window._bc;
+
+    // State to hold the response data of the webhook invocation from brainCloud.
+    const [webhookResponse, setWebhookResponse] = useState<{ status: number; statusText: string | null; responseBody: string | null } | null>(null);
 
     // State to hold the basic profile information of the authenticated user from brainCloud.
     const [profile, setProfile] = useState<any>();
@@ -149,6 +164,28 @@ const App: React.FC = () => {
         });
     }, [bc]);
 
+    // Attempts to invoke the configured webhook.
+    const performWebHookInvocation = useCallback(async () => {
+        setWebhookResponse(null);
+
+        const webHookUrl = `${API_SERVER_URL}/webhook/${APP_ID}/${WEBHOOK_NAME}`;
+        const webHookSecret = WEBHOOK_SECRET;
+        
+        const headers = { "x-bc-secret": webHookSecret };
+
+        try {
+            const response = await fetch(webHookUrl, { method: "POST", headers });
+
+            setWebhookResponse({
+                status: response.status,
+                statusText: response.statusText,
+                responseBody: await response.text(),
+            });
+        } catch (err) {
+            setError(err);
+        }
+    }, []);
+
     // Effect to handle redirects resulting from the authentication flow.
     useEffect(() => {
         if (!isReady) return;
@@ -194,18 +231,25 @@ const App: React.FC = () => {
             {isReady && !isBusy && (
                 <>
                     {!profile && (
-                        <form ref={oauth2Form} method="post" action={AUTHORIZATION_ENDPOINT} className={"openid-form"}>
-                            <input type="hidden" name="client_id" value={CLIENT_ID} />
-                            <input type="hidden" name="redirect_uri" value={location.origin + location.pathname} />
-                            <input type="hidden" name="response_type" value={RESPONSE_TYPE} />
-                            <input type="hidden" name="scope" value={SCOPES} />
-                            <input type="hidden" name="state" value={JSON.stringify({ appId: bc.brainCloudClient.getAppId() })} />
-                            
-                            <input type="hidden" name="code_challenge" value={"" + codeChallenge} />
-                            <input type="hidden" name="code_challenge_method" value={"S256"} />
+                        <>
+                            <form ref={oauth2Form} method="post" action={AUTHORIZATION_ENDPOINT} className={"openid-form"}>
+                                <input type="hidden" name="client_id" value={CLIENT_ID} />
+                                <input type="hidden" name="redirect_uri" value={location.origin + location.pathname} />
+                                <input type="hidden" name="response_type" value={RESPONSE_TYPE} />
+                                <input type="hidden" name="scope" value={SCOPES} />
+                                <input type="hidden" name="state" value={JSON.stringify({ appId: bc.brainCloudClient.getAppId() })} />
+                                
+                                <input type="hidden" name="code_challenge" value={"" + codeChallenge} />
+                                <input type="hidden" name="code_challenge_method" value={"S256"} />
 
-                            <button type="submit" onClick={performLogin}>Sign in (OpenID)</button>
-                        </form>
+                                <button type="submit" onClick={performLogin}>Sign in (OpenID)</button>
+
+                            </form>
+
+                            <label>OR</label>
+
+                            <button onClick={performWebHookInvocation}>Invoke WebHook</button>
+                        </>
                     )}
 
                     {profile && (
@@ -234,6 +278,20 @@ const App: React.FC = () => {
                             </div>
 
                             <button type="submit" onClick={performBrainCloudLogout}>Logout</button>
+                        </>
+                    )}
+
+                    {webhookResponse != null && (
+                        <>
+                            <h2>WebHook Response</h2>
+
+                            <p style={{ alignSelf: "stretch" }}>Status: {webhookResponse.status}</p>
+
+                            {webhookResponse.statusText && webhookResponse.statusText.length > 0 && (
+                                <p style={{ alignSelf: "stretch" }}>Status Text: {webhookResponse.statusText}</p>
+                            )}
+
+                            <p style={{ alignSelf: "stretch" }}>Response Body: {webhookResponse.responseBody || "EMPTY"}</p>
                         </>
                     )}
 

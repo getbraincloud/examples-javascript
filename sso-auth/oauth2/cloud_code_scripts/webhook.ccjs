@@ -1,0 +1,11 @@
+"use strict";
+
+function main() {
+  var response = {
+    stringResponse: "This is a test response"
+  };
+
+  return response;
+}
+
+main();
