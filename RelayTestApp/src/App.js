@@ -44,6 +44,7 @@ class App extends Component {
       lobby: null,
       disbandOnStart: false,
       teams: [],
+      lobbyTeamNames: [],
       server: null,
       splotches: [],
       gameStartTime: null,
@@ -115,6 +116,7 @@ class App extends Component {
       lobby: null,
       disbandOnStart: false,
       teams: [],
+      lobbyTeamNames: [],
       server: null,
       splotches: [],
       gameStartTime: null,
@@ -337,42 +339,59 @@ class App extends Component {
   // Update events from the lobby service
   onLobbyEvent (result) {
     if (result.data.lobby) {
-      this.setState({
-        lobby: { ...result.data.lobby, lobbyId: result.data.lobbyId }
-      })
+      let state = this.state
+      state.lobby = { ...result.data.lobby, lobbyId: result.data.lobbyId }
 
-      this.bc.lobby.getLobbyData(this.state.lobby.lobbyId, response => {
-        var status = response.status
-        if (status === 200) {
-          let state = this.state
-          state.disbandOnStart = response.data.lobbyTypeDef.rules.disbandOnStart
+      // The lobby RTT event already carries the latest member data (incl. each
+      // member's selected colour in extra.colorIndex), so we derive lobby state
+      // directly from it instead of issuing a redundant getLobbyData call on
+      // every event. This matches the C++/Java/Godot RTAs, which never re-fetch.
+      //
+      // lobbyTypeDef (teams + rules) is only present on the fuller events
+      // (e.g. MEMBER_JOIN); the server strips it from MEMBER_UPDATE events
+      // (which fire on every colour/ready change). So cache the team names and
+      // disbandOnStart when they arrive, and always rebuild the team member
+      // grouping from the current members — otherwise team rows would keep
+      // pointing at stale member objects and miss colour changes.
+      let lobbyTypeDef = result.data.lobby.lobbyTypeDef
+      if (lobbyTypeDef) {
+        state.disbandOnStart = lobbyTypeDef.rules.disbandOnStart
+        state.lobbyTeamNames = Object.keys(lobbyTypeDef.teams)
+      }
 
-          var lobbyTeams = Object.keys(response.data.lobbyTypeDef.teams)
-          var teams = []
-          lobbyTeams.forEach(lobbyTeam => {
-            var team = { name: lobbyTeam, members: [] }
-            state.lobby.members.forEach(member => {
-              if (member.team === lobbyTeam) {
-                team.members.push(member)
-                if (member.cxId === this.state.user.cxId) {
-                  if (!state.user.team) {
-                    this.onTeamChanged(member.team)
-                  }
-                }
-              }
-            })
-            teams.push(team)
-          })
-          state.teams = teams
-          this.setState(state)
-        }
+      // Fall back to the team names present on the members if we haven't seen a
+      // lobbyTypeDef yet (e.g. first event is a MEMBER_UPDATE).
+      let teamNames = state.lobbyTeamNames
+      if (teamNames.length === 0) {
+        let seen = new Set()
+        state.lobby.members.forEach(member => {
+          if (member.team && !seen.has(member.team)) seen.add(member.team)
+        })
+        teamNames = Array.from(seen)
+      }
+
+      let teams = []
+      teamNames.forEach(teamName => {
+        let team = { name: teamName, members: [] }
+        state.lobby.members.forEach(member => {
+          if (member.team === teamName) {
+            team.members.push(member)
+            if (member.cxId === this.state.user.cxId && !state.user.team) {
+              this.onTeamChanged(member.team)
+            }
+          }
+        })
+        teams.push(team)
       })
+      state.teams = teams
 
       if (this.state.screen === 'joiningLobby') {
-        this.setState({ screen: 'lobby' })
+        state.screen = 'lobby'
       } else if (this.state.lobbyResetting) {
-        this.setState({ lobbyResetting: false })
+        state.lobbyResetting = false
       }
+
+      this.setState(state)
     }
 
     if (result.operation === 'DISBANDED') {
