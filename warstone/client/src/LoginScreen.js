@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import './style.css'
 import packageJson from '../package.json'
-import bcPackageJson from 'braincloud/package.json' // installed brainCloud client version (separate from the app version)
+import bcPackageJson from '@braincloud/client/package.json' // installed brainCloud client version (separate from the app version)
 import ids from './ids'
 
 // onLogin(user, pass)

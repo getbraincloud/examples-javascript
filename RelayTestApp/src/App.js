@@ -11,7 +11,7 @@ import GameScreen from './GameScreen'
 
 var Buffer = require('buffer/').Buffer // note: the trailing slash is important!
 
-let brainCloud = require('braincloud')
+let brainCloud = require('@braincloud/client')
 let colors = require('./Colors').colors
 
 const MATCH_DURATION_SEC = 90

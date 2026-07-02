@@ -7,7 +7,7 @@ import GameScreen from './GameScreen';
 import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
 import HowToScreen from './HowToScreen';
 
-let brainCloud = require("braincloud")
+let brainCloud = require("@braincloud/client")
 
 let appId = ids.appId
 let appSecret = ids.appSecret
