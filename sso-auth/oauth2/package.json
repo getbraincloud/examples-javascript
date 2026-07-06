@@ -4,7 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@braincloud/client": "file:../../../js/deploy/node",
+    "@braincloud/client": "^6.0.0",
     "crypto-js": "^4.2.0",
     "jwt-decode": "^4.0.0",
     "query-string": "^9.3.1",

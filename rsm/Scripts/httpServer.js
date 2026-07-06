@@ -1,4 +1,4 @@
-let brainclouds2s = require('brainclouds2s')
+let brainclouds2s = require('@braincloud/s2s')
 let express = require('express')
 let globals = require('./globals')
 let ids = require('./ids')
