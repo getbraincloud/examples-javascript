@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import './App.css';
 import Theme from './Theme';
 import packageJson from '../package.json';
-import bcPackageJson from 'braincloud/package.json'; // installed brainCloud client version (separate from the app version)
-import BC from 'braincloud';
+import bcPackageJson from '@braincloud/client/package.json'; // installed brainCloud client version (separate from the app version)
+import BC from '@braincloud/client';
 
 // Component imports
 import AddFriendScreen from './components/screens/AddFriendScreen';

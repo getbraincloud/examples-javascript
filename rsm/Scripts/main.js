@@ -1,5 +1,5 @@
 // Imports
-let brainclouds2s = require('brainclouds2s')
+let brainclouds2s = require('@braincloud/s2s')
 let globals = require('./globals')
 let httpServer = require('./httpServer')
 let ids = require('./ids')

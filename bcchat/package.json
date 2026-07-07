@@ -3,7 +3,7 @@
   "version": "5.9.0",
   "private": true,
   "dependencies": {
-    "braincloud": "^5.8.0",
+    "@braincloud/client": "^6.0.1",
     "isomorphic-ws": "^4.0.1",
     "markdown-react-js": "^1.0.0",
     "react": "^16.3.2",

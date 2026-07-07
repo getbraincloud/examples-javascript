@@ -17736,7 +17736,7 @@ var brainCloud = (() => {
           bcc.brainCloudRttComms.brainCloudClient = bcc;
           bcc.brainCloudRelayComms.brainCloudClient = bcc;
         }
-        bcc.version = "6.0.0";
+        bcc.version = "6.0.1";
         bcc.countryCode;
         bcc.languageCode;
         bcc.enableCompression = function(compressionEnabled) {

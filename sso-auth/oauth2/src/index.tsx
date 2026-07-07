@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-import bc from "braincloud";
+import bc from "@braincloud/client";
 
 // Augment the global Window type with properties for the brainCloud wrapper.
 declare global {

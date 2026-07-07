@@ -56,7 +56,7 @@ LocalStorage = require('node-localstorage').LocalStorage;
 os = require('os');
 var configDir = os.homedir() + "/.bciot";
 localStorage = new LocalStorage(configDir);
-const BC = require('braincloud');
+const BC = require('@braincloud/client');
 
 var _bc = new BC.BrainCloudWrapper("newrapp");
 _bc.initialize(lib.appId, lib.appSecret, "1.0.0");
