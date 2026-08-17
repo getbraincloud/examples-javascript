@@ -1053,7 +1053,7 @@ class App extends Component {
 
   connectRelay () {
     const ports = server.connectData.ports
-    const host = server.connectData.address
+    let host = server.connectData.address
     let port = 0
     let ssl = false
 
@@ -1067,10 +1067,16 @@ class App extends Component {
       port = ports.i3d
       ssl = false
       console.log('[DEBUG] relay connect: i3d port=' + port)
+    } else if (this.state.relayProtocol === 'wss' && ports.wss) {
+      // Use the secure hostname and WSS port when the server advertises them.
+      ssl = true
+      port = ports.wss
+      host = server.connectData.secureAddress || server.connectData.address
+      console.log('[DEBUG] relay connect: wss host=' + host + ' port=' + port)
     } else {
-      ssl = this.state.relayProtocol === 'wss'
+      ssl = false
       port = ports.ws
-      console.log('[DEBUG] relay connect: protocol=' + this.state.relayProtocol + ' ws=' + ports.ws + ' tcp=' + (ports.tcp || -1) + ' udp=' + (ports.udp || -1))
+      console.log('[DEBUG] relay connect: ws port=' + port)
     }
 
     presentWhileStarted = false
