@@ -660,6 +660,22 @@ class App extends Component {
     )
   }
 
+  // Non-host lobby members have no "Start" button (only the host can start the round),
+  // but they still need a way to signal they're ready before the host starts — this is
+  // that toggle, reused for both the initial pre-match lobby and un-readying if a guest
+  // changes their mind. (Rematch queuing uses the separate onSetRematchReady below.)
+  onToggleReady () {
+    let state = this.state
+    state.user.isReady = !state.user.isReady
+    let extraJson = this.makeExtraJson(state.user.colorIndex, state.user.presentSinceStart)
+    this.setState(state)
+    this.bc.lobby.updateReady(
+      this.state.lobby.lobbyId,
+      this.state.user.isReady,
+      extraJson
+    )
+  }
+
   // Marks this player queued for a rematch and takes them back to the Lobby screen —
   // used both by the Match Summary screen's "Queue for Rematch" button and by its own
   // per-player MATCH_SUMMARY_REMATCH_MS auto-timeout. Either path looks identical from
@@ -1577,6 +1593,7 @@ class App extends Component {
               onColorChanged={this.onColorChanged.bind(this)}
               onTeamChanged={this.onTeamChanged.bind(this)}
               onStart={this.onStart.bind(this)}
+              onToggleReady={this.onToggleReady.bind(this)}
               onJoin={this.onJoin.bind(this)}
               onSendLobbySignal={this.onSendLobbySignal.bind(this)}
             />

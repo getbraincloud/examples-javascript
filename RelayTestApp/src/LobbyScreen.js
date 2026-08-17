@@ -28,17 +28,36 @@ function regionFromLobbyId (lobbyId) {
 // isProvisioning / provisioningStatus — non-blocking "starting the next round" banner
 // awaitingRematch — true between END_MATCH and the next round actually starting
 // matchResult — last finished round's standings (valid/round/entries), for the INFO tab
-// onBack / onColorChanged / onTeamChanged / onStart / onJoin / onSendLobbySignal
+// onBack / onColorChanged / onTeamChanged / onStart / onToggleReady / onJoin / onSendLobbySignal
 class LobbyScreen extends Component {
   constructor (props) {
     super(props)
     this.state = { rightTab: 'chat', chatSubTab: 'lobby', signalInput: '', colorPickerOpen: false }
     this.arrivalTime = Date.now()
+    this.lobbyChatScrollRef = React.createRef()
   }
 
   componentDidMount () {
     // Live-updates the INFO tab's "time in lobby" clock.
     this.tickInterval = setInterval(() => this.forceUpdate(), 1000)
+
+    // Start scrolled to the newest message if there's already history (e.g. returning
+    // to the lobby with chat carried over from before the match) — componentDidUpdate
+    // only catches messages arriving after mount, not what's already there.
+    const el = this.lobbyChatScrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }
+
+  componentDidUpdate (prevProps) {
+    // Keep the This-Lobby chat scrolled to the newest message (mirrors GlobalChatPanel's
+    // own auto-scroll) — chatMessages only grows via App.onSendLobbySignal/the SIGNAL
+    // case in onLobbyEvent, so a length change always means new messages arrived.
+    const prevCount = (prevProps.lobby && prevProps.lobby.chatMessages && prevProps.lobby.chatMessages.length) || 0
+    const count = (this.props.lobby && this.props.lobby.chatMessages && this.props.lobby.chatMessages.length) || 0
+    if (count !== prevCount) {
+      const el = this.lobbyChatScrollRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }
   }
 
   componentWillUnmount () {
@@ -51,6 +70,10 @@ class LobbyScreen extends Component {
 
   onStart () {
     this.props.onStart()
+  }
+
+  onToggleReady () {
+    this.props.onToggleReady()
   }
 
   onJoin () {
@@ -108,7 +131,7 @@ class LobbyScreen extends Component {
     const messages = this.props.lobby.chatMessages || []
     return (
       <div className='GlobalChatPanel'>
-        <div className='chatScroll'>
+        <div className='chatScroll' ref={this.lobbyChatScrollRef}>
           {messages.map((m, i) => (
             <p key={i} className='chatLine'>
               <span className='chatFrom'>{m.fromName}:</span> {m.text}
@@ -385,6 +408,17 @@ class LobbyScreen extends Component {
                   disabled={this.props.lobbyResetting}
                 >
                   Start
+                </button>
+              ) : this.props.lobby.ownerCxId !== this.props.user.cxId && !this.props.awaitingRematch ? (
+                // Only the host has a "Start" button (starting the round is host-only),
+                // but every other member still needs a way to signal they're ready —
+                // this is that toggle. Once awaiting a rematch, MatchSummaryScreen's
+                // "Queue for Rematch" button already handles readying up instead.
+                <button
+                  className='Button ButtonPrimary'
+                  onClick={this.onToggleReady.bind(this)}
+                >
+                  {this.props.user.isReady ? 'Not Ready' : 'Ready Up'}
                 </button>
               ) : (
                 ''
