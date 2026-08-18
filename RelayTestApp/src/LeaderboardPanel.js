@@ -25,10 +25,7 @@ function formatScore (score, boardType) {
 
 // Shared leaderboard viewer — top 5 + "you" row, toggleable between the two boards this
 // app posts to (points / coverage) and Lifetime vs Quarterly. Mirrors leaderboardPanel.cpp.
-//
-// NOTE: scores are only posted once a match's coverage/win-ranking is computed and
-// submitted (BCLOUD-14472/14490, still landing on cpp) — until some client posts to
-// these boards, they'll show "No scores yet."
+// Scores only appear once a match's coverage/win-ranking has been posted (BCLOUD-14472/14490).
 //
 // Props:
 //   bcWrapper

@@ -8,6 +8,11 @@ const TIMER_WARN_SEC = 30
 const TIMER_URGENT_SEC = 10
 const SIDEBAR_WIDTH = 220
 
+// Hold-to-paint: holding the left mouse button down auto-repeats a splotch at this fixed
+// interval (the initial click still paints immediately) — same value across cpp/js/both
+// Godot ports so holding paints at the same rate for everyone in a shared match.
+const AUTO_PAINT_INTERVAL_MS = 150
+
 // Props:
 // user
 // lobby
@@ -35,6 +40,7 @@ class GameScreen extends Component {
 
   componentWillUnmount () {
     clearInterval(this.timerInterval)
+    this.stopAutoPaint()
   }
 
   // "Exit Match" — leaves the match for yourself only. There's no manual host "End
@@ -56,6 +62,33 @@ class GameScreen extends Component {
 
   onMouseClick (e) {
     this.props.onPlayerClicked(this.mousePos, e.button)
+  }
+
+  // Left-button hold starts auto-paint (in addition to the immediate click above); any
+  // other button is just a single click, same as before.
+  onMouseDown (e) {
+    this.onMouseClick(e)
+    if (e.button === 0) this.startAutoPaint()
+  }
+
+  onMouseUp () {
+    this.stopAutoPaint()
+  }
+
+  startAutoPaint () {
+    this.stopAutoPaint()
+    this.autoPaintInterval = setInterval(() => {
+      this.props.onPlayerClicked(this.mousePos, 0)
+    }, AUTO_PAINT_INTERVAL_MS)
+  }
+
+  // Also called when the cursor leaves the play area — the DOM only reports mouse position
+  // while inside it, so once outside there's no live position to keep painting at.
+  stopAutoPaint () {
+    if (this.autoPaintInterval) {
+      clearInterval(this.autoPaintInterval)
+      this.autoPaintInterval = null
+    }
   }
   onToggleReliable () {
     this.props.onToggleReliable()
@@ -90,13 +123,15 @@ class GameScreen extends Component {
     let elapsedMs = Date.now() - this.props.gameStartTime
     let elapsedSec = Math.max(0, Math.floor(elapsedMs / 1000))
     let remaining = Math.max(0, MATCH_DURATION_SEC - elapsedSec)
-    let minutes = Math.floor(elapsedSec / 60)
-    let seconds = elapsedSec % 60
+    let minutes = Math.floor(remaining / 60)
+    let seconds = remaining % 60
     let timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`
 
+    // Counts DOWN the whole match (matches cpp/Godot) — only the colour escalates as it
+    // gets low, the format never swaps to a different "Ending in..." string.
     if (remaining <= TIMER_WARN_SEC) {
       let color = remaining <= TIMER_URGENT_SEC ? '#ff4d4d' : '#ffbf33'
-      return <span style={{ color, fontWeight: 'bold' }}>Ending in {remaining}...</span>
+      return <span style={{ color, fontWeight: 'bold' }}>Game Time: {timeStr}</span>
     }
 
     return <span>Game Time: {timeStr}</span>
@@ -232,7 +267,9 @@ class GameScreen extends Component {
               float: 'left'
             }}
             onMouseMove={this.onMouseMove.bind(this)}
-            onMouseDown={this.onMouseClick.bind(this)}
+            onMouseDown={this.onMouseDown.bind(this)}
+            onMouseUp={this.onMouseUp.bind(this)}
+            onMouseLeave={this.onMouseUp.bind(this)}
             onContextMenu={e => e.preventDefault()}
           >
             {/** Transient shockwave rings */}

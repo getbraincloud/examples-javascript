@@ -1,26 +1,14 @@
-// Canvas coverage % + win-ranking (BCLOUD-14472/14490) — pure port of cpp's coverage.cpp,
-// which the cpp source itself flags as the exact artifact every RelayTestApp port should
-// copy (no ImGui/brainCloud/globals dependency there either).
+// Canvas coverage % + win-ranking (BCLOUD-14472/14490) — port of cpp's coverage.cpp.
 //
-// Algorithm: rasterize a COVERAGE_GRID_CELL_SIZE-resolution ownership grid over the canvas
-// by stamping every splotch, in paint order, as a filled circle of radius SPLOTCH_RADIUS
-// centered on it — so a later splotch always overwrites an earlier one wherever they
-// overlap. This is exactly what ends up rendered on screen (paint order = draw order =
-// "last one wins"), not an approximation of it.
+// Rasterizes a COVERAGE_GRID_CELL_SIZE grid, stamping each splotch as a filled circle
+// in paint order so later splotches overwrite earlier ones (matches what's on screen).
+// coveragePct = owned cells * cell-area / canvas-area — absolute coverage, not a share
+// of painted area.
 //
-// coveragePct is each player's owned-cell-count * cell-area / canvas-area (clamped to 100)
-// — ABSOLUTE canvas-area coverage, NOT a share of painted area, so a solo match doesn't
-// trivially score 100%.
+// Attribution: by sender cxId first, falling back to a colorIndex match only when
+// unattributed. Unmatched splotches still overwrite the grid but credit no one.
 //
-// Attribution: cpp attributes a splotch by ownerCxId first, falling back to a colorIndex
-// match against a live member. This app's splotches don't carry an owner cxId (see
-// App.js's createSplotch/onRelayMessage — the wire format was never extended with one),
-// so this always uses the colorIndex fallback; a splotch whose colour matches no current
-// member still overwrites the grid (correctly obscuring whatever was under it) but credits
-// no one, matching cpp's designed fallback path.
-//
-// All clients must use the same constants (CANVAS_W/H, SPLOTCH_RADIUS,
-// COVERAGE_GRID_CELL_SIZE) so scores match across ports.
+// Constants (CANVAS_W/H, SPLOTCH_RADIUS, COVERAGE_GRID_CELL_SIZE) must match other ports.
 const CANVAS_W = 800
 const CANVAS_H = 600
 const SPLOTCH_RADIUS = 32 // SPLOTCH_DISPLAY_SIZE (64) * 0.5
@@ -47,6 +35,9 @@ export function computeCoverage (splotches, members) {
     beaten: 0
   }))
 
+  const indexByCxId = {}
+  result.forEach((e, k) => { indexByCxId[e.cxId] = k })
+
   const N = splotches.length
   if (N > 0) {
     ownerGrid.fill(-1)
@@ -56,9 +47,17 @@ export function computeCoverage (splotches, members) {
       const px = s.x * CANVAS_W
       const py = s.y * CANVAS_H
 
+      // Attribute by the sender's actual cxId first — required so two players who picked
+      // the same colour don't get merged into a single coverage total. Falls back to a
+      // colorIndex match only for unattributed splotches (a JIP sync entry whose owning
+      // netId couldn't be resolved, or a legacy sender).
       let idx = -1
-      for (let k = 0; k < result.length; k++) {
-        if (result[k].colorIndex === s.colorIndex) { idx = k; break }
+      if (s.cxId !== undefined && s.cxId !== '' && Object.prototype.hasOwnProperty.call(indexByCxId, s.cxId)) {
+        idx = indexByCxId[s.cxId]
+      } else {
+        for (let k = 0; k < result.length; k++) {
+          if (result[k].colorIndex === s.colorIndex) { idx = k; break }
+        }
       }
 
       const cx = Math.floor(px / COVERAGE_GRID_CELL_SIZE)

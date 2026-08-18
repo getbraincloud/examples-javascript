@@ -16,13 +16,11 @@ function parseWireMessage (m) {
   }
 }
 
-// Shared app-wide "Global" chat channel — used from both the main menu and the lobby,
-// so channel resolution / history / send all live here. brainCloud's chat calls all
-// require RTT to be enabled (RTT_NOT_ENABLED otherwise); App.js enables RTT as soon as
-// login succeeds, which covers both mount points. Live RTT push: channelConnect both
-// registers the listener AND returns initial history in one call; every message after
-// that (including our own sends, edits, and deletes) arrives via registerRTTChatCallback
-// — see knowledge-articles/01-chat.md. No re-fetch after posting.
+// Shared app-wide "Global" chat channel, used from both the main menu and the lobby.
+// Needs RTT enabled (App.js does this right after login). channelConnect registers the
+// listener and returns initial history in one call; everything after that (including our
+// own sends/edits/deletes) arrives via registerRTTChatCallback — see
+// knowledge-articles/04-chat.md.
 //
 // Props:
 //   bcWrapper — the app's BrainCloudWrapper instance

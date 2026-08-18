@@ -5,10 +5,13 @@ let colors = require('./Colors').colors
 
 const MATCH_SUMMARY_REMATCH_MS = 45000
 
-// Builds the "Lifetime #before->#after  |  Quarterly #before->#after" tail for whichever
-// periods actually improved on one board — periods that didn't improve are simply
-// omitted, matching the reference mockup (a badge might only mention Quarterly because
-// the player's Lifetime rank didn't move this round).
+// How long a player card waits for its "lb_result" leaderboard delta before giving up and
+// showing "Leaderboard unavailable" instead of spinning forever (the cloud script
+// call/broadcast is best-effort).
+const LEADERBOARD_RESULT_TIMEOUT_MS = 8000
+
+// Builds the "Lifetime #before->#after | Quarterly #before->#after" tail, omitting any
+// period that didn't improve.
 function periodsText (lifetime, quarterly) {
   const parts = []
   if (lifetime.improved) parts.push(`Lifetime #${lifetime.rankBefore < 0 ? '-' : lifetime.rankBefore} -> #${lifetime.rankAfter}`)
@@ -18,9 +21,9 @@ function periodsText (lifetime, quarterly) {
 
 const EMPTY_DELTA = { ready: false, pointsLifetime: {}, pointsQuarterly: {}, coverageLifetime: {}, coverageQuarterly: {} }
 
-// Post-match results + rematch-queue screen (BCLOUD-14489). Shows how everyone placed
-// this round and what it did to their leaderboard ranks, then either auto-rematches after
-// MATCH_SUMMARY_REMATCH_MS or as soon as everyone queues up (see App.tickRematchGate).
+// Post-match results + rematch-queue screen (BCLOUD-14489). Shows placements and rank
+// deltas, then auto-rematches after MATCH_SUMMARY_REMATCH_MS or once everyone queues up
+// (see App.tickRematchGate).
 //
 // Props:
 //   user, lobby, matchResult ({valid, round, entries}), matchSummaryArrivalTime
@@ -78,7 +81,11 @@ class MatchSummaryScreen extends Component {
         </div>
 
         {!delta.ready ? (
-          <p className='text-small' style={{ opacity: 0.6 }}>Updating leaderboards...</p>
+          <p className='text-small' style={{ opacity: 0.6 }}>
+            {Date.now() - (this.props.matchSummaryArrivalTime || Date.now()) >= LEADERBOARD_RESULT_TIMEOUT_MS
+              ? 'Leaderboard unavailable'
+              : 'Updating leaderboards...'}
+          </p>
         ) : (
           <>
             {anyPointsUp ? (
@@ -106,7 +113,14 @@ class MatchSummaryScreen extends Component {
     const mm = Math.floor(remainingSec / 60)
     const ss = String(remainingSec % 60).padStart(2, '0')
 
-    const readyCount = this.props.lobby.members.filter(m => m.isReady).length
+    // Your own row uses the immediate local isReady, not the lobby snapshot — the snapshot
+    // for your own entry is briefly stale right after arriving here (App.js clears it
+    // optimistically the moment END_MATCH lands, but the server echo confirming that on
+    // lobby.members can take a few seconds), which used to show e.g. "1/1" for a few
+    // seconds before dropping to the correct "0/1".
+    const readyCount = this.props.lobby.members.filter(m =>
+      m.cxId === this.props.user.cxId ? this.props.user.isReady : m.isReady
+    ).length
     const iAmReady = this.props.user.isReady
 
     return (

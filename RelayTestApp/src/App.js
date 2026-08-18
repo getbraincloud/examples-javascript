@@ -19,9 +19,16 @@ let colors = require('./Colors').colors
 
 const MATCH_DURATION_SEC = 90
 const NUM_ARROW_IMAGES = 8
-const RESULT_GRACE_MS = 1000 // delay between match_result broadcast and onEndMatch()
+const RESULT_GRACE_MS = 3000 // delay between match_result broadcast and onEndMatch()
 const COVERAGE_RECOMPUTE_MS = 250 // live-scoreboard recompute throttle
 const MATCH_SUMMARY_REMATCH_MS = 45000 // how long the Match Summary screen waits before the host auto-starts the next round
+
+// Test-time overrides read from the URL query string, e.g. ?lobbyType=CursorPartyGameLift
+// or ?protocol=wss. Both take priority over their localStorage'd/hardcoded defaults so a
+// link can be shared that pre-selects a specific lobby type or relay protocol.
+function getUrlParam (name) {
+  return new URLSearchParams(window.location.search).get(name)
+}
 
 let presentWhileStarted = false
 let server = null
@@ -248,6 +255,18 @@ class App extends Component {
             } catch (e) {}
           }
 
+          // Leaderboard ids — optional global properties so boards can be renamed in the
+          // portal with no client rebuild (matches cpp's readLeaderboardId); falls back to
+          // LEADERBOARD_IDS' compiled-in defaults when absent.
+          const readLeaderboardId = (propName, fallback) => {
+            const prop = readPropertiesResponse.data[propName]
+            return (prop && prop.value) ? prop.value : fallback
+          }
+          LEADERBOARD_IDS.points.lifetime = readLeaderboardId('PointsLeaderboardId', LEADERBOARD_IDS.points.lifetime)
+          LEADERBOARD_IDS.points.quarterly = readLeaderboardId('PointsLeaderboardIdQuarterly', LEADERBOARD_IDS.points.quarterly)
+          LEADERBOARD_IDS.coverage.lifetime = readLeaderboardId('CoverageLeaderboardId', LEADERBOARD_IDS.coverage.lifetime)
+          LEADERBOARD_IDS.coverage.quarterly = readLeaderboardId('CoverageLeaderboardIdQuarterly', LEADERBOARD_IDS.coverage.quarterly)
+
           this.setState({
             screen: 'mainMenu',
             user: {
@@ -262,9 +281,7 @@ class App extends Component {
             splotchDurationSec: splotchDurationSec
           })
 
-          // Keep RTT connected from the main menu onward so Global Chat works there
-          // (brainCloud's chat calls require RTT). onPlayClicked's ensureRTTEnabled
-          // call resolves immediately once this has already succeeded.
+          // Keep RTT connected from the main menu onward so Global Chat works there.
           this.ensureRTTEnabled(() => {
             let state = this.state
             if (state.user) state.user.cxId = this.bc.rttService.getRTTConnectionId()
@@ -279,28 +296,14 @@ class App extends Component {
     }
   }
 
-  // Enables RTT if not already enabled, then invokes onReady. RTT's own enableRTT()
-  // silently no-ops (without invoking either callback) when already enabled OR still
-  // connecting, so callers must go through this rather than calling enableRTT
-  // directly. Also queues concurrent callers instead of re-calling enableRTT while a
-  // connection is already in flight — e.g. the main menu enables RTT for chat right
-  // after login, and if Play is clicked before that resolves, a second raw enableRTT
-  // call would no-op and silently drop onPlayClicked's callback (which registers the
-  // lobby callback and starts matchmaking), leaving the screen stuck on
-  // "joiningLobby" forever.
+  // Wraps RTT's enableRTT(), which silently no-ops with no callback when RTT is already
+  // enabled or connecting. Also queues concurrent callers instead of firing a second
+  // enableRTT while one's in flight, so a Play click racing the main menu's chat-enable
+  // call doesn't get its callback silently dropped.
   ensureRTTEnabled (onReady, onFail) {
     if (this.bc.rttService.isRTTEnabled()) {
-      // Defer to the next tick rather than calling onReady() inline. enableRTT's own
-      // success callback is always async in the "not yet enabled" branch below (a real
-      // network round trip) — callers rely on that: e.g. onPlayClicked calls this
-      // synchronously right after setState({screen: 'joiningLobby', ...}), and onReady's
-      // body does this file's usual `let state = this.state; state.x = y;
-      // this.setState(state)` pattern. React batches setState calls made within one
-      // event handler, so a SYNCHRONOUS onReady here would read the pre-flush
-      // this.state (still screen: 'mainMenu'), and passing that stale snapshot back to
-      // setState — merged AFTER the pending 'joiningLobby' update — would silently
-      // revert screen back to 'mainMenu'. Deferring keeps the "already enabled" fast
-      // path's timing consistent with the always-async slow path below.
+      // Deferred so this fast path is async like the "not yet enabled" path below —
+      // callers (e.g. onPlayClicked) rely on onReady seeing a flushed this.state.
       setTimeout(onReady, 0)
       return
     }
@@ -368,38 +371,49 @@ class App extends Component {
             this.state.user.colorIndex,
             this.state.user.presentSinceStart
           )
+          const onFindResult = result => {
+            if (result.status !== 200) {
+              console.error('[DEBUG] findOrCreateLobby failed', result)
+              this.dieWithMessage('Failed to find lobby: ' + (result.status_message || result.reason_code || JSON.stringify(result)))
+            }
+          }
           if (withPingData) {
             this.bc.lobby.findOrCreateLobbyWithPingData(
               lobbyType, 0, 1, algo, {}, null, {}, false, extraJson, '',
-              result => {
-                if (result.status !== 200) this.dieWithMessage('Failed to find lobby')
-              }
+              onFindResult
             )
           } else {
             this.bc.lobby.findOrCreateLobby(
               lobbyType, 0, 1, algo, {}, null, {}, false, extraJson, '',
-              result => {
-                if (result.status !== 200) this.dieWithMessage('Failed to find lobby')
-              }
+              onFindResult
             )
           }
         }
 
-        // Ping regions when explicitly requested or for GameLift lobbies
-        const needsPing = usePingData || lobbyType.toLowerCase().includes('gamelift')
-        if (needsPing) {
+        // Ping regions only when the user explicitly checked "Use Ping Data" — matches
+        // cpp/GDScript, which never infer this from the lobby-type name either.
+        if (usePingData) {
           this.setState({ loadingStatus: 'Getting regions...' })
           this.bc.lobby.getRegionsForLobbies([lobbyType], result => {
             if (result.status !== 200) {
+              console.error('[DEBUG] getRegionsForLobbies failed, falling back to no ping data', result)
               doFindLobby(false)
               return
             }
             this.bc.lobby.pingRegions(result => {
               if (result.status !== 200) {
+                console.error('[DEBUG] pingRegions failed, falling back to no ping data', result)
                 doFindLobby(false)
                 return
               }
               let pingData = result.data || {}
+              // Some lobby types have no discrete regions to ping, so pingRegions succeeds
+              // with an empty result — fall back to the plain find/create in that case, since
+              // *WithPingData rejects locally on an empty ping cache.
+              if (Object.keys(pingData).length === 0) {
+                doFindLobby(false)
+                return
+              }
               this.setState({ pingData, loadingStatus: 'Searching...' }, () => {
                 doFindLobby(true)
               })
@@ -423,31 +437,21 @@ class App extends Component {
   onLobbyEvent (result) {
     if (result.data.lobby) {
       let state = this.state
-      // This-lobby chat (SIGNAL below) lives on state.lobby.chatMessages, but every
-      // lobby event here rebuilds state.lobby fresh from server data — carry the
-      // existing history forward instead of losing it on the next MEMBER_JOIN/UPDATE.
+      // This-lobby chat lives on state.lobby.chatMessages; every lobby event here rebuilds
+      // state.lobby fresh from server data, so carry the existing history forward.
       let prevChatMessages = (state.lobby && state.lobby.chatMessages) || []
       state.lobby = { ...result.data.lobby, lobbyId: result.data.lobbyId, chatMessages: prevChatMessages }
 
-      // The lobby RTT event already carries the latest member data (incl. each
-      // member's selected colour in extra.colorIndex), so we derive lobby state
-      // directly from it instead of issuing a redundant getLobbyData call on
-      // every event. This matches the C++/Java/Godot RTAs, which never re-fetch.
-      //
-      // lobbyTypeDef (teams + rules) is only present on the fuller events
-      // (e.g. MEMBER_JOIN); the server strips it from MEMBER_UPDATE events
-      // (which fire on every colour/ready change). So cache the team names and
-      // disbandOnStart when they arrive, and always rebuild the team member
-      // grouping from the current members — otherwise team rows would keep
-      // pointing at stale member objects and miss colour changes.
+      // lobbyTypeDef (teams + rules) only shows up on fuller events like MEMBER_JOIN — the
+      // server strips it from MEMBER_UPDATE — so cache it when seen, but always rebuild the
+      // team groupings from current members so colour changes aren't missed.
       let lobbyTypeDef = result.data.lobby.lobbyTypeDef
       if (lobbyTypeDef) {
         state.disbandOnStart = lobbyTypeDef.rules.disbandOnStart
         state.lobbyTeamNames = Object.keys(lobbyTypeDef.teams)
       }
 
-      // Fall back to the team names present on the members if we haven't seen a
-      // lobbyTypeDef yet (e.g. first event is a MEMBER_UPDATE).
+      // Fall back to the team names present on the members if we haven't seen a lobbyTypeDef yet.
       let teamNames = state.lobbyTeamNames
       if (teamNames.length === 0) {
         let seen = new Set()
@@ -523,11 +527,8 @@ class App extends Component {
         showJoinButton = true
       }
     } else if (result.operation === 'SIGNAL') {
-      // This-lobby chat, via the Lobby service's SendSignal (not the Chat service —
-      // rides the RTT connection the lobby already has, no separate channel needed).
-      // "from" is the server's authoritative sender info. Skip echoes of our own
-      // signal — onSendLobbySignal already appended it locally on send (compared by
-      // cxId, not name, since two players could share a display name).
+      // This-lobby chat via the Lobby service's SendSignal. Skip echoes of our own
+      // signal (compared by cxId, not name) since onSendLobbySignal already appended it.
       let fromCxId = result.data.from && result.data.from.cxId
       let text = result.data.signalData && result.data.signalData.text
       if (text && this.state.lobby && fromCxId !== this.state.user.cxId) {
@@ -572,6 +573,12 @@ class App extends Component {
 
   // Called to terminate the current session and go back to the main menu
   onGameScreenClose () {
+    // Otherwise this player stays a ghost lobby member, blocking the all-ready rematch
+    // fast path for everyone else until the server times them out.
+    if (this.state.lobby && this.state.lobby.lobbyId) {
+      this.bc.lobby.leaveLobby(this.state.lobby.lobbyId, () => {})
+    }
+
     if (pingInterval) {
       clearInterval(pingInterval)
       pingInterval = null
@@ -676,11 +683,8 @@ class App extends Component {
     )
   }
 
-  // Marks this player queued for a rematch and takes them back to the Lobby screen —
-  // used both by the Match Summary screen's "Queue for Rematch" button and by its own
-  // per-player MATCH_SUMMARY_REMATCH_MS auto-timeout. Either path looks identical from
-  // here on: the player sits in the Lobby waiting for tickRematchGate() to actually start
-  // the next round.
+  // Marks this player queued for a rematch and takes them back to the Lobby screen, where
+  // they wait for tickRematchGate() to start the next round.
   onSetRematchReady (ready) {
     let state = this.state
     state.user.isReady = ready
@@ -692,14 +696,8 @@ class App extends Component {
     )
   }
 
-  // Host-only gate on starting the next round: waits until every current lobby member has
-  // queued for a rematch (each auto-queues within MATCH_SUMMARY_REMATCH_MS at the latest —
-  // see MatchSummaryScreen — so this is mostly a safety net against clock skew) OR that
-  // same deadline elapses regardless. Once satisfied, calls the same onStart() that starts
-  // every round — no separate "begin round 2" mechanism needed. isHost is re-evaluated
-  // every call, so a host migration while some players are still on Match Summary is
-  // picked up for free. Ticked on an interval from the END_MATCH handler while
-  // awaitingRematch, regardless of whether the host itself is on Lobby or MatchSummary.
+  // Host-only gate on starting the next round: fires onStart() once every member has
+  // queued for a rematch, or once MATCH_SUMMARY_REMATCH_MS elapses regardless.
   tickRematchGate () {
     if (!this.state.awaitingRematch || !this.state.lobby) return
     const isHost = this.state.lobby.ownerCxId === this.state.user.cxId
@@ -728,9 +726,7 @@ class App extends Component {
     this.connectRelay()
   }
 
-  // Ends the current match (host-only) — there's no manual UI trigger anymore (matches
-  // the cpp reference: no more "End Match" button), only tickMatch()'s auto-end
-  // sequence RESULT_GRACE_MS after it broadcasts match_result.
+  // Ends the current match (host-only, called by tickMatch()'s auto-end sequence).
   onEndMatch () {
     let extraJson = {
       cxId: this.bc.brainCloudClient.getRTTConnectionId(),
@@ -762,6 +758,8 @@ class App extends Component {
           x: json.data.x,
           y: json.data.y,
           colorIndex: colorIndex,
+          // For per-player coverage attribution so two players sharing a colour don't merge.
+          cxId: memberCxId,
           // Use the sender's synced rotation (default random if an older client omits it)
           angle: json.data.angle === undefined ? Math.random() * Math.PI * 2 : json.data.angle,
           startTimeMs: Date.now()
@@ -780,10 +778,19 @@ class App extends Component {
       case 'splotch_sync':
         if (json.data.first) state.splotches = []
         json.data.splotches.forEach(s => {
+          // "o" is a compact netId, resolved to a cxId now — the map that resolves it is
+          // torn down at END_MATCH, so this must happen at receive time, never deferred.
+          // Missing/unresolvable -> unattributed (coverage falls back to a colorIndex match).
+          let ownerCxId
+          if (s.o !== undefined) {
+            let resolved = this.bc.relay.getCxIdForNetId(s.o)
+            if (resolved) ownerCxId = resolved
+          }
           state.splotches.push({
             x: s.x,
             y: s.y,
             colorIndex: s.c,
+            cxId: ownerCxId,
             // "a" = synced rotation (default random if absent); "t" = original timestamp
             angle: s.a === undefined ? Math.random() * Math.PI * 2 : s.a,
             startTimeMs: s.t
@@ -818,39 +825,35 @@ class App extends Component {
         break
       }
 
-      // Host-computed leaderboard results for the whole round (see
-      // hostPostMatchResultsToCloud/PostMatchResults), chunked like match_result. Can
-      // arrive before this round's match_result has populated state.matchResult.entries
-      // — buffer by cxId in that case (drained in applyMatchResult).
+      // Host-computed leaderboard results for the round (see hostPostMatchResultsToCloud),
+      // chunked like match_result. Can arrive before match_result has populated
+      // state.matchResult.entries — buffer by cxId in that case (drained in applyMatchResult).
       case 'lb_result': {
-        const round = json.data.round
-        if (!(state.matchResult.valid && state.matchResult.round === round)) {
-          if (json.data.first) pendingLbChunk = []
-          json.data.e.forEach(entry => {
-            const delta = {
-              ready: true,
-              pointsLifetime: { improved: false },
-              pointsQuarterly: { improved: false },
-              coverageLifetime: { improved: false },
-              coverageQuarterly: { improved: false }
-            }
-            const readPeriod = (key, target) => {
-              if (entry[key]) { target.improved = true; target.rankBefore = entry[key].b; target.rankAfter = entry[key].a }
-            }
-            readPeriod('pl', delta.pointsLifetime)
-            readPeriod('pq', delta.pointsQuarterly)
-            readPeriod('cl', delta.coverageLifetime)
-            readPeriod('cq', delta.coverageQuarterly)
-            pendingLbChunk.push({ cxId: entry.cx, delta })
-          })
-          if (json.data.last) {
-            pendingLbChunk.forEach(({ cxId, delta }) => {
-              const entry = state.matchResult.entries.find(e => e.cxId === cxId)
-              if (entry) entry.lbDelta = delta
-              else pendingLbResults[cxId] = delta
-            })
-            pendingLbChunk = []
+        if (json.data.first) pendingLbChunk = []
+        json.data.e.forEach(entry => {
+          const delta = {
+            ready: true,
+            pointsLifetime: { improved: false },
+            pointsQuarterly: { improved: false },
+            coverageLifetime: { improved: false },
+            coverageQuarterly: { improved: false }
           }
+          const readPeriod = (key, target) => {
+            if (entry[key]) { target.improved = true; target.rankBefore = entry[key].b; target.rankAfter = entry[key].a }
+          }
+          readPeriod('pl', delta.pointsLifetime)
+          readPeriod('pq', delta.pointsQuarterly)
+          readPeriod('cl', delta.coverageLifetime)
+          readPeriod('cq', delta.coverageQuarterly)
+          pendingLbChunk.push({ cxId: entry.cx, delta })
+        })
+        if (json.data.last) {
+          pendingLbChunk.forEach(({ cxId, delta }) => {
+            const entry = state.matchResult.entries.find(e => e.cxId === cxId)
+            if (entry) entry.lbDelta = delta
+            else pendingLbResults[cxId] = delta
+          })
+          pendingLbChunk = []
         }
         break
       }
@@ -874,6 +877,17 @@ class App extends Component {
       state.lobby.members.forEach(
         member => (member.allowSendTo = member.cxId !== state.user.cxId)
       )
+
+      // The relay's CONNECT can beat the Lobby service's own MEMBER_JOIN/UPDATE event to
+      // us, so state.lobby.members may not have this peer yet. Seed a placeholder so the
+      // coverage board doesn't just omit them — the next lobby event's rebuild overwrites
+      // it with real data. Without this, a JIP joiner's own coverage board can render empty
+      // for the whole match, and a player who disconnects right after connecting can be
+      // dropped from the round's leaderboard entries entirely.
+      if (json.cxId && !state.lobby.members.find(m => m.cxId === json.cxId)) {
+        state.lobby.members.push({ cxId: json.cxId, allowSendTo: true, extra: {} })
+      }
+
       this.setState(state)
 
       // If we are the host and in-game, send current state to the newly joined player
@@ -886,7 +900,21 @@ class App extends Component {
         this.sendGameStartToMask(mask)
         this.sendSplotchSyncToMask(mask)
       }
+    } else if (json.op === 'MIGRATE_OWNER') {
+      // Relay reassigned the host role — reconcile into state.lobby.ownerCxId (the field
+      // every isHost check reads) faster than waiting for the next lobby-update event.
+      if (json.cxId) {
+        let state = this.state
+        state.lobby.ownerCxId = json.cxId
+        this.setState(state)
+      }
     } else if (json.op === 'END_MATCH') {
+      // Fallback if match_result never arrived (dropped/incomplete chunk) — recompute
+      // locally so the summary screen isn't stuck on "Waiting for results...".
+      if (!(this.state.matchResult.valid && this.state.matchResult.round === this.state.round)) {
+        const finalCoverage = computeCoverage(this.state.splotches, this.state.lobby.members)
+        this.applyMatchResult(this.state.round, this.toMatchResultEntries(finalCoverage))
+      }
       if (pingInterval) {
         clearInterval(pingInterval)
         pingInterval = null
@@ -900,10 +928,6 @@ class App extends Component {
       this.bc.relay.disconnect()
       loadingTimerStart = null
       let state = this.state
-      // The Match Summary + rematch-queue screen (BCLOUD-14489) — state.matchResult is
-      // always populated by the time END_MATCH arrives (tickMatch's auto-end sequence
-      // broadcasts it RESULT_GRACE_MS before calling onEndMatch; a manual early end skips
-      // that, so the screen just shows "Waiting for results..." in that case).
       state.screen = 'matchSummary'
       state.matchSummaryArrivalTime = Date.now()
       state.awaitingRematch = true
@@ -917,16 +941,13 @@ class App extends Component {
       showJoinButton = false
       this.setState(state)
 
-      // Actually clear readiness server-side too, not just the local mirror above —
-      // otherwise the "Queue for Rematch N/M" count starts from whatever everyone's
-      // pre-match ready state still was.
+      // Clear readiness server-side too, or "Queue for Rematch N/M" starts from stale state.
       this.bc.lobby.updateReady(
         state.lobby.lobbyId, false,
         this.makeExtraJson(state.user.colorIndex, false)
       )
 
-      // Host-only: keeps evaluating whether to auto-start the next round even while
-      // sitting on Lobby/MatchSummary, whichever screen the host itself is on.
+      // Host-only: keeps evaluating whether to auto-start the next round.
       if (rematchGateInterval) clearInterval(rematchGateInterval)
       rematchGateInterval = setInterval(() => this.tickRematchGate(), 500)
     }
@@ -954,7 +975,7 @@ class App extends Component {
     let playerMask = this.state.lobby.members.reduce((playerMask, member) => {
       if (!member.allowSendTo) return playerMask
       let netId = this.bc.relay.getNetIdForCxId(member.cxId)
-      // Note: we avoid bitwise ops here to support up to 40 players (JS bitwise is 32-bit)
+      // Avoiding bitwise ops here — need up to 40 players and JS bitwise ops are 32-bit only
       return playerMask + Math.pow(2, netId)
     }, 0)
 
@@ -1194,6 +1215,12 @@ class App extends Component {
     for (let i = 0; i < splotches.length; i++) {
       let s = splotches[i]
       let entry = { x: s.x, y: s.y, c: s.colorIndex, a: s.angle, t: s.startTimeMs }
+      if (s.cxId) {
+        // Compact netId, not the ~80-char cxId, to stay inside the chunk byte budget —
+        // resolved back to a cxId at receive time (onRelayMessage's splotch_sync case).
+        let ownerNetId = this.bc.relay.getNetIdForCxId(s.cxId)
+        if (ownerNetId >= 0 && ownerNetId < this.bc.relay.MAX_PLAYERS) entry.o = ownerNetId
+      }
       let entrySize = JSON.stringify(entry).length + 1 // +1 for comma separator
 
       if (currentSize + entrySize > MAX_BYTES && batch.length > 0) {
@@ -1266,11 +1293,9 @@ class App extends Component {
     })
   }
 
-  // Applies an authoritative coverage snapshot for a round — either a locally-computed one
-  // (host, or the watchdog fallback) or one just reassembled from a "match_result"
-  // broadcast. Idempotent per round. Only the host posts to the cloud (see
-  // hostPostMatchResultsToCloud) — everyone else just waits for the "lb_result" broadcast
-  // that call produces.
+  // Applies an authoritative coverage snapshot for a round (idempotent per round). Only
+  // the host posts to the cloud (hostPostMatchResultsToCloud) — everyone else waits for
+  // the "lb_result" broadcast that call produces.
   applyMatchResult (round, entries) {
     if (this.state.matchResult.valid && this.state.matchResult.round === round) return
     let state = this.state
@@ -1293,11 +1318,8 @@ class App extends Component {
     if (isHost) this.hostPostMatchResultsToCloud(round, entries)
   }
 
-  // Host-only: posts the WHOLE round's results to the four leaderboards in one trusted
-  // server-side call (PostMatchResults cloud script — see brainCloud Design > Cloud Code).
-  // Replaces per-client direct-leaderboard-API posting entirely; postScoreToLeaderboard-
-  // OnBehalfOf (which the script uses) is Cloud-Code-only, so individual clients can't
-  // post to these boards at all anymore.
+  // Host-only: posts the whole round's results to the four leaderboards in one trusted
+  // server-side call (PostMatchResults cloud script).
   hostPostMatchResultsToCloud (round, entries) {
     const scriptData = {
       round,
@@ -1328,9 +1350,8 @@ class App extends Component {
     })
   }
 
-  // Applies the PostMatchResults response (keyed by profileId) onto state.matchResult.
-  // entries (keyed by cxId — resolved via state.lobby.members, the only place both ids
-  // are known together) and broadcasts the result to the rest of the match. Host-only.
+  // Applies the PostMatchResults response (keyed by profileId) onto state.matchResult.entries
+  // (keyed by cxId) and broadcasts the result to the rest of the match. Host-only.
   applyLeaderboardResultsFromCloud (round, resultsArr) {
     if (!(this.state.matchResult.valid && this.state.matchResult.round === round)) return // a newer round has already started
 
@@ -1358,10 +1379,8 @@ class App extends Component {
     this.sendLeaderboardResultsToMask(this.buildAllOthersMask(), round, state.matchResult.entries)
   }
 
-  // Broadcasts the host's cloud-computed leaderboard results for the whole round to the
-  // rest of the match — chunked exactly like match_result. Only entries with
-  // lbDelta.ready are included; a period sub-object is present only when it actually
-  // improved (absent == "no change" on receipt).
+  // Broadcasts the host's cloud-computed leaderboard results, chunked like match_result.
+  // A period sub-object is present only when it actually improved.
   sendLeaderboardResultsToMask (mask, round, entries) {
     if (mask === 0) return
     const MAX_BYTES = 900
@@ -1401,11 +1420,8 @@ class App extends Component {
     })
   }
 
-  // Live coverage recompute (drives the in-game scoreboard sidebar) + the host's
-  // auto-end-at-MATCH_DURATION_SEC sequence: compute+broadcast match_result, wait
-  // RESULT_GRACE_MS, then call the same onEndMatch() the manual "End Match" button uses.
-  // Ticked every COVERAGE_RECOMPUTE_MS while in the 'game' screen (started/cleared
-  // alongside pingInterval).
+  // Live coverage recompute (scoreboard sidebar) + the host's auto-end sequence: at
+  // MATCH_DURATION_SEC, broadcast match_result, wait RESULT_GRACE_MS, then onEndMatch().
   tickMatch () {
     if (!this.state.gameStartTime) return
     const nowMs = Date.now()
@@ -1440,9 +1456,8 @@ class App extends Component {
       matchPhase = 'ended'
     }
 
-    // Watchdog: well past the deadline with no authoritative result at all (a dropped
-    // broadcast, or a gap during host migration) — compute and apply locally so the round
-    // can't hang forever. Cheap and idempotent.
+    // Watchdog: no authoritative result well past the deadline — compute locally so the
+    // round can't hang forever.
     if (!this.state.matchResult.valid && elapsedMs >= MATCH_DURATION_SEC * 1000 + RESULT_GRACE_MS + 3000) {
       const finalCoverage = computeCoverage(this.state.splotches, this.state.lobby.members)
       this.applyMatchResult(this.state.round, this.toMatchResultEntries(finalCoverage))
@@ -1454,12 +1469,15 @@ class App extends Component {
     }
   }
 
-  // Add a persistent colour splotch at pos (normalized 0-1 coords)
+  // Add a persistent colour splotch at pos (normalized 0-1 coords) — always a self-paint,
+  // so cxId is always our own (coverage attribution needs the real player, not just colour —
+  // two players can share a colourIndex).
   createSplotch (pos, colorIndex, angle) {
     let splotch = {
       x: pos.x,
       y: pos.y,
       colorIndex: colorIndex % colors.length,
+      cxId: this.state.user.cxId,
       angle: angle === undefined ? Math.random() * Math.PI * 2 : angle,
       startTimeMs: Date.now()
     }
@@ -1554,7 +1572,8 @@ class App extends Component {
               user={this.state.user}
               appLobbies={this.state.appLobbies}
               usePingData={this.state.usePingData}
-              lastLobbyType={localStorage.getItem('lobbyType')}
+              lastLobbyType={getUrlParam('lobbyType') || localStorage.getItem('lobbyType')}
+              defaultProtocol={getUrlParam('protocol')}
               bcWrapper={this.bc}
               onLogout={this.onLogout.bind(this)}
               onPlay={this.onPlayClicked.bind(this)}

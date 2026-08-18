@@ -9,6 +9,7 @@ import LeaderboardPanel from './LeaderboardPanel'
 //  appLobbies
 //  usePingData
 //  lastLobbyType  — previously selected lobby type, used to default the dropdown
+//  defaultProtocol — ?protocol= URL override for the relay protocol dropdown (e.g. "wss")
 //  bcWrapper
 //  onPlay
 //  onLogout
@@ -56,12 +57,21 @@ class MainMenuScreen extends Component
                 break
         }
 
-        // Default the dropdown to the last selected lobby type, but only if it is
-        // still a valid option; otherwise fall back to the first available lobby.
+        // Default the dropdown to the last selected lobby type (or a ?lobbyType= URL
+        // override, matched case-insensitively so links don't need exact casing), but
+        // only if it is still a valid option; otherwise fall back to the first lobby.
         let defaultLobbyType = this.props.lastLobbyType
-        if (!this.props.appLobbies.some(lobby => lobby.lobby === defaultLobbyType)) {
-            defaultLobbyType = this.props.appLobbies.length > 0 ? this.props.appLobbies[0].lobby : ''
-        }
+        const matchedLobby = this.props.appLobbies.find(lobby =>
+            lobby.lobby.toLowerCase() === (defaultLobbyType || '').toLowerCase())
+        defaultLobbyType = matchedLobby
+            ? matchedLobby.lobby
+            : (this.props.appLobbies.length > 0 ? this.props.appLobbies[0].lobby : '')
+
+        // Default the protocol dropdown to a ?protocol= URL override (e.g. "wss" for
+        // testing), matched case-insensitively; falls back to "ws" if absent/invalid.
+        const validProtocols = ['ws', 'wss']
+        const urlProtocol = (this.props.defaultProtocol || '').toLowerCase()
+        const defaultProtocol = validProtocols.includes(urlProtocol) ? urlProtocol : 'ws'
 
         return (
             <div id="main-wrapper">
@@ -79,7 +89,7 @@ class MainMenuScreen extends Component
                             </select>
                             <div style={{ margin: '8px 0' }}>
                                 <label>Protocol:</label>
-                                <select name="relayProtocol" style={{ marginLeft: '6px' }}>
+                                <select name="relayProtocol" style={{ marginLeft: '6px' }} defaultValue={defaultProtocol}>
                                     <option value="ws">WS (WebSocket)</option>
                                     <option value="wss">WSS (WebSocket Secure)</option>
                                 </select>

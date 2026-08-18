@@ -26,7 +26,6 @@ function regionFromLobbyId (lobbyId) {
 // pingData
 // bcWrapper
 // isProvisioning / provisioningStatus — non-blocking "starting the next round" banner
-// awaitingRematch — true between END_MATCH and the next round actually starting
 // matchResult — last finished round's standings (valid/round/entries), for the INFO tab
 // onBack / onColorChanged / onTeamChanged / onStart / onToggleReady / onJoin / onSendLobbySignal
 class LobbyScreen extends Component {
@@ -393,15 +392,11 @@ class LobbyScreen extends Component {
               <button className='Button' onClick={this.onBack.bind(this)}>
                 Leave
               </button>
-              {this.props.lobby.ownerCxId === this.props.user.cxId && this.props.awaitingRematch ? (
-                // Rematch flow is fully automatic (App.tickRematchGate) — no manual
-                // override here, so a host who returns early can't skip the "wait for
-                // stragglers or 45s" window.
-                <p className='text-small' style={{ opacity: 0.6, margin: '8px 0' }}>
-                  Waiting for other players to return...
-                </p>
-              ) : this.props.lobby.ownerCxId === this.props.user.cxId &&
+              {this.props.lobby.ownerCxId === this.props.user.cxId &&
               !this.props.user.isReady ? (
+                // Host can always start manually, round 2+ included — App.tickRematchGate()
+                // still auto-starts in the background once everyone's queued up or the wait
+                // times out, so this button is just an early-start option, not the only way in.
                 <button
                   className='Button ButtonPrimary'
                   onClick={this.onStart.bind(this)}
@@ -409,11 +404,10 @@ class LobbyScreen extends Component {
                 >
                   Start
                 </button>
-              ) : this.props.lobby.ownerCxId !== this.props.user.cxId && !this.props.awaitingRematch ? (
+              ) : this.props.lobby.ownerCxId !== this.props.user.cxId ? (
                 // Only the host has a "Start" button (starting the round is host-only),
                 // but every other member still needs a way to signal they're ready —
-                // this is that toggle. Once awaiting a rematch, MatchSummaryScreen's
-                // "Queue for Rematch" button already handles readying up instead.
+                // this toggle stays available in every round, not just the first.
                 <button
                   className='Button ButtonPrimary'
                   onClick={this.onToggleReady.bind(this)}
