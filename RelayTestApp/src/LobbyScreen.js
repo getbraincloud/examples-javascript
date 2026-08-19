@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 
 import { getShowJoinButton } from './App'
+import GlobalChatPanel from './GlobalChatPanel'
+import LeaderboardPanel, { rankColor } from './LeaderboardPanel'
 
 let colors = require('./Colors').colors
 
@@ -18,15 +20,59 @@ function regionFromLobbyId (lobbyId) {
 // Props:
 // user
 // lobby
+// teams
+// lobbyResetting
 // usePingData
 // pingData
+// bcWrapper
+// isProvisioning / provisioningStatus — non-blocking "starting the next round" banner
+// matchResult — last finished round's standings (valid/round/entries), for the INFO tab
+// onBack / onColorChanged / onTeamChanged / onStart / onToggleReady / onJoin / onSendLobbySignal
 class LobbyScreen extends Component {
+  constructor (props) {
+    super(props)
+    this.state = { rightTab: 'chat', chatSubTab: 'lobby', signalInput: '', colorPickerOpen: false }
+    this.arrivalTime = Date.now()
+    this.lobbyChatScrollRef = React.createRef()
+  }
+
+  componentDidMount () {
+    // Live-updates the INFO tab's "time in lobby" clock.
+    this.tickInterval = setInterval(() => this.forceUpdate(), 1000)
+
+    // Start scrolled to the newest message if there's already history (e.g. returning
+    // to the lobby with chat carried over from before the match) — componentDidUpdate
+    // only catches messages arriving after mount, not what's already there.
+    const el = this.lobbyChatScrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }
+
+  componentDidUpdate (prevProps) {
+    // Keep the This-Lobby chat scrolled to the newest message (mirrors GlobalChatPanel's
+    // own auto-scroll) — chatMessages only grows via App.onSendLobbySignal/the SIGNAL
+    // case in onLobbyEvent, so a length change always means new messages arrived.
+    const prevCount = (prevProps.lobby && prevProps.lobby.chatMessages && prevProps.lobby.chatMessages.length) || 0
+    const count = (this.props.lobby && this.props.lobby.chatMessages && this.props.lobby.chatMessages.length) || 0
+    if (count !== prevCount) {
+      const el = this.lobbyChatScrollRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }
+  }
+
+  componentWillUnmount () {
+    clearInterval(this.tickInterval)
+  }
+
   onBack () {
     this.props.onBack()
   }
 
   onStart () {
     this.props.onStart()
+  }
+
+  onToggleReady () {
+    this.props.onToggleReady()
   }
 
   onJoin () {
@@ -43,11 +89,135 @@ class LobbyScreen extends Component {
     }
     localStorage.setItem('color', '' + index)
     this.props.onColorChanged(index)
+    this.setState({ colorPickerOpen: false })
+  }
+
+  toggleColorPicker () {
+    this.setState(s => ({ colorPickerOpen: !s.colorPickerOpen }))
   }
 
   onTeamSelected (teamName) {
     console.log('User trying to join team ' + teamName)
     this.props.onTeamChanged(teamName)
+  }
+
+  setRightTab (tab) {
+    this.setState({ rightTab: tab })
+  }
+
+  setChatSubTab (tab) {
+    this.setState({ chatSubTab: tab })
+  }
+
+  onSignalInputChange (e) {
+    this.setState({ signalInput: e.target.value })
+  }
+
+  onSignalKeyDown (e) {
+    if (e.key === 'Enter') this.sendSignal()
+  }
+
+  sendSignal () {
+    const text = this.state.signalInput
+    if (!text.trim()) return
+    this.props.onSendLobbySignal(text)
+    this.setState({ signalInput: '' })
+  }
+
+  // This-lobby chat (Lobby service SendSignal — state.lobby.chatMessages, appended to
+  // by App.onSendLobbySignal on send and the SIGNAL case in onLobbyEvent on receive).
+  renderLobbySignalChat () {
+    const messages = this.props.lobby.chatMessages || []
+    return (
+      <div className='GlobalChatPanel'>
+        <div className='chatScroll' ref={this.lobbyChatScrollRef}>
+          {messages.map((m, i) => (
+            <p key={i} className='chatLine'>
+              <span className='chatFrom'>{m.fromName}:</span> {m.text}
+            </p>
+          ))}
+        </div>
+        <div className='chatInputRow'>
+          <input
+            type='text'
+            value={this.state.signalInput}
+            onChange={this.onSignalInputChange.bind(this)}
+            onKeyDown={this.onSignalKeyDown.bind(this)}
+            placeholder='Say something...'
+          />
+          <button className='Button chatSendBtn' onClick={this.sendSignal.bind(this)}>Send</button>
+        </div>
+      </div>
+    )
+  }
+
+  renderChatTab () {
+    return (
+      <>
+        <div className='lbToggleRow'>
+          <button
+            className={`lbToggleBtn${this.state.chatSubTab === 'lobby' ? ' active' : ''}`}
+            onClick={this.setChatSubTab.bind(this, 'lobby')}
+          >THIS LOBBY</button>
+          <button
+            className={`lbToggleBtn${this.state.chatSubTab === 'global' ? ' active' : ''}`}
+            onClick={this.setChatSubTab.bind(this, 'global')}
+          >GLOBAL</button>
+        </div>
+        <hr className='lbDivider' />
+        {this.state.chatSubTab === 'lobby' ? (
+          this.renderLobbySignalChat()
+        ) : (
+          <GlobalChatPanel bcWrapper={this.props.bcWrapper} />
+        )}
+      </>
+    )
+  }
+
+  // INFO tab — lobby id/region/player count/time-in-lobby + ping data (when enabled).
+  renderInfoTab () {
+    const lobbyRegionId = regionFromLobbyId(this.props.lobby.lobbyId)
+    const secondsInLobby = Math.floor((Date.now() - this.arrivalTime) / 1000)
+    const mm = Math.floor(secondsInLobby / 60)
+    const ss = String(secondsInLobby % 60).padStart(2, '0')
+
+    return (
+      <div className='text-small' style={{ textAlign: 'left' }}>
+        <p>Lobby: {this.props.lobby.lobbyId}</p>
+        {lobbyRegionId ? <p>Region: {lobbyRegionId}</p> : null}
+        <p>Players: {this.props.lobby.members.length}</p>
+        <p>Time in lobby: {mm}:{ss}</p>
+        {this.renderLastMatchResults()}
+        {this.renderPingTable()}
+      </div>
+    )
+  }
+
+  // Last match results — shown once a round finishes (App.state.matchResult) until the
+  // next round starts. Entries are already in rank order (see coverage.js).
+  renderLastMatchResults () {
+    const matchResult = this.props.matchResult
+    if (!matchResult || !matchResult.valid) return null
+
+    return (
+      <div style={{ marginTop: '12px' }}>
+        <hr className='lbDivider' />
+        <p style={{ margin: '4px 0', fontWeight: 'bold', opacity: 0.6 }}>Last Match Results</p>
+        {matchResult.entries.map(entry => {
+          const member = this.props.lobby.members.find(m => m.cxId === entry.cxId)
+          const name = member ? member.name : '?'
+          const isMe = entry.cxId === this.props.user.cxId
+          return (
+            <p key={entry.cxId} style={{ margin: '2px 0' }}>
+              <span style={{ color: rankColor(entry.rank), fontWeight: 'bold' }}>#{entry.rank}</span>{' '}
+              <span style={isMe ? { color: '#59ff73' } : {}}>
+                {name}  {entry.coveragePct.toFixed(1)}%  (+{entry.beaten + 1} pts)
+              </span>
+            </p>
+          )
+        })}
+      </div>
+    )
   }
 
   // Render the ping data table — only shown when usePingData is true and there is data
@@ -131,103 +301,152 @@ class LobbyScreen extends Component {
     )
   }
 
+  // Colour picker — a small popup under your own swatch, not an always-visible 40-swatch
+  // grid (only shown in FFA; team colour is auto-assigned by team).
+  renderColorPicker () {
+    if (!this.state.colorPickerOpen) return null
+    return (
+      <div className='ColorPickerPopup'>
+        {colors.map((color, i) => (
+          <div
+            key={color + i}
+            className='colorBtn'
+            style={{ backgroundColor: color }}
+            onClick={this.onColorSelected.bind(this, i)}
+            title={i}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // A member's row — colour swatch (clickable, opens the picker, on your own row in FFA
+  // lobbies), name, YOU/HOST badges, ready-state line. Used by both FFA and team member
+  // lists.
+  renderMemberRow (member) {
+    const isMe = member.cxId === this.props.user.cxId
+    const isHost = member.cxId === this.props.lobby.ownerCxId
+    const color = colors[member.extra.colorIndex % colors.length]
+    const canPickColor = isMe && this.props.teams.length === 1
+
+    return (
+      <li key={member.cxId} className='memberRow'>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            className='memberSwatch'
+            style={{ backgroundColor: color, cursor: canPickColor ? 'pointer' : 'default' }}
+            onClick={canPickColor ? this.toggleColorPicker.bind(this) : undefined}
+          />
+          <span style={{ color: isMe ? '#59ff73' : 'white' }}>{member.name}</span>
+          {isMe ? <span className='memberBadge'>YOU</span> : null}
+          {isHost ? <span className='memberBadge memberBadgeHost'>HOST</span> : null}
+        </div>
+        {canPickColor ? this.renderColorPicker() : null}
+        <p className='memberStatus'>{member.isReady ? 'Ready' : 'Not ready'}</p>
+      </li>
+    )
+  }
+
+  // Small non-blocking status line shown while a round is being provisioned (STARTING ->
+  // ROOM_READY) — the rest of the Lobby screen (chat, member list, etc.) stays fully
+  // usable underneath it instead of being replaced by a blocking loading screen.
+  renderProvisioningBanner () {
+    if (!this.props.isProvisioning) return null
+    return (
+      <div className='ProvisioningBanner'>
+        Starting round... {this.props.provisioningStatus}
+      </div>
+    )
+  }
+
   render () {
     return (
       <div className='LobbyScreen'>
-        <div>
-          {
-            /** If there are no teams, users can select their own colour. Otherwise, colour will initially be assigned automatically by team. */
-            this.props.teams.length === 1 ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  maxWidth: '320px',
-                  justifyContent: 'flex-start'
-                }}
-              >
-                {colors.map((color, i) => (
-                  <div
-                    key={color + i}
-                    className='colorBtn'
-                    style={{
-                      backgroundColor: color,
-                      display: 'inline-block',
-                      width: '28px',
-                      height: '24px'
-                    }}
-                    onClick={this.onColorSelected.bind(this, i)}
-                    title={i}
-                  />
-                ))}
-              </div>
-            ) : (
-              ''
-            )
-          }
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          {this.props.teams.map((team, index) => (
-            <div key={team.name}>
-              {this.props.teams.length > 1 ? (
+        {this.renderProvisioningBanner()}
+        <div className='CardsRow'>
+          <div className='Card'>
+            <p style={{ margin: '0 0 4px', fontWeight: 'bold' }}>Lobby</p>
+            <hr className='lbDivider' />
+            <p className='text-small' style={{ opacity: 0.6, margin: '0 0 6px' }}>Members</p>
+            <div className='memberListScroll'>
+              {this.props.teams.map((team, index) => (
+                <div key={team.name}>
+                  {this.props.teams.length > 1 ? (
+                    <button
+                      key={index}
+                      className='teamBtn'
+                      onClick={this.onTeamSelected.bind(this, team.name)}
+                    >
+                      Join Team {team.name}
+                    </button>
+                  ) : (
+                    ''
+                  )}
+                  <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
+                    {team.members.map(member => this.renderMemberRow(member))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'auto' }}>
+              <button className='Button' onClick={this.onBack.bind(this)}>
+                Leave
+              </button>
+              {this.props.lobby.ownerCxId === this.props.user.cxId &&
+              !this.props.user.isReady ? (
+                // Host can always start manually, round 2+ included — App.tickRematchGate()
+                // still auto-starts in the background once everyone's queued up or the wait
+                // times out, so this button is just an early-start option, not the only way in.
                 <button
-                  key={index}
-                  className='teamBtn'
-                  onClick={this.onTeamSelected.bind(this, team.name)}
+                  className='Button ButtonPrimary'
+                  onClick={this.onStart.bind(this)}
+                  disabled={this.props.lobbyResetting}
                 >
-                  Join Team {team.name}
+                  Start
+                </button>
+              ) : this.props.lobby.ownerCxId !== this.props.user.cxId ? (
+                // Only the host has a "Start" button (starting the round is host-only),
+                // but every other member still needs a way to signal they're ready —
+                // this toggle stays available in every round, not just the first.
+                <button
+                  className='Button ButtonPrimary'
+                  onClick={this.onToggleReady.bind(this)}
+                >
+                  {this.props.user.isReady ? 'Not Ready' : 'Ready Up'}
                 </button>
               ) : (
                 ''
               )}
-              <ul>
-                {team.members.map(member =>
-                  member.cxId === this.props.lobby.ownerCxId ? (
-                    <li
-                      key={member.cxId}
-                      style={{ color: colors[member.extra.colorIndex] }}
-                    >
-                      {member.name + ' (host)'}
-                    </li>
-                  ) : (
-                    <li
-                      key={member.cxId}
-                      style={{ color: colors[member.extra.colorIndex] }}
-                    >
-                      {member.name}
-                    </li>
-                  )
-                )}
-              </ul>
+              {getShowJoinButton() ? (
+                <button className='Button ButtonPrimary' onClick={this.onJoin.bind(this)}>
+                  Join Match
+                </button>
+              ) : (
+                ''
+              )}
             </div>
-          ))}
+          </div>
+
+          <div className='Card CardRight'>
+            <div className='CardTabRow'>
+              <button
+                className={`CardTabBtn${this.state.rightTab === 'chat' ? ' active' : ''}`}
+                onClick={this.setRightTab.bind(this, 'chat')}
+              >CHAT</button>
+              <button
+                className={`CardTabBtn${this.state.rightTab === 'leaderboards' ? ' active' : ''}`}
+                onClick={this.setRightTab.bind(this, 'leaderboards')}
+              >LEADERBOARDS</button>
+              <button
+                className={`CardTabBtn${this.state.rightTab === 'info' ? ' active' : ''}`}
+                onClick={this.setRightTab.bind(this, 'info')}
+              >INFO</button>
+            </div>
+            {this.state.rightTab === 'chat' ? this.renderChatTab() : null}
+            {this.state.rightTab === 'leaderboards' ? <LeaderboardPanel bcWrapper={this.props.bcWrapper} /> : null}
+            {this.state.rightTab === 'info' ? this.renderInfoTab() : null}
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button className='Button' onClick={this.onBack.bind(this)}>
-            Leave
-          </button>
-          {this.props.lobby.ownerCxId === this.props.user.cxId &&
-          !this.props.user.isReady ? (
-            <button
-              className='Button'
-              onClick={this.onStart.bind(this)}
-              disabled={this.props.lobbyResetting}
-            >
-              Start
-            </button>
-          ) : (
-            ''
-          )}
-          {getShowJoinButton() ? (
-            <button className='Button' onClick={this.onJoin.bind(this)}>
-              Join Match
-            </button>
-          ) : (
-            ''
-          )}
-        </div>
-        <p>Lobby ID: {this.props.lobby.lobbyId}</p>
-        {this.renderPingTable()}
       </div>
     )
   }
