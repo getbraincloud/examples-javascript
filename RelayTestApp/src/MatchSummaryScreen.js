@@ -5,9 +5,10 @@ let colors = require('./Colors').colors
 
 const MATCH_SUMMARY_REMATCH_MS = 45000
 
-// How long a player card waits for its "lb_result" leaderboard delta before giving up and
-// showing "Leaderboard unavailable" instead of spinning forever (the cloud script
-// call/broadcast is best-effort).
+// How long a player card waits for its leaderboard delta (polled from the GlobalEntity
+// PostMatchResults writes — see App.js's pollMatchResults) before giving up and showing
+// "Leaderboard unavailable" instead of spinning forever — the cloud script call is
+// best-effort, so this is the backstop for when it never shows up.
 const LEADERBOARD_RESULT_TIMEOUT_MS = 8000
 
 // Builds the "Lifetime #before->#after | Quarterly #before->#after" tail, omitting any

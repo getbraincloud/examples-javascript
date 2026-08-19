@@ -22,6 +22,7 @@ const NUM_ARROW_IMAGES = 8
 const RESULT_GRACE_MS = 3000 // delay between match_result broadcast and onEndMatch()
 const COVERAGE_RECOMPUTE_MS = 250 // live-scoreboard recompute throttle
 const MATCH_SUMMARY_REMATCH_MS = 45000 // how long the Match Summary screen waits before the host auto-starts the next round
+const LEADERBOARD_RESULT_TIMEOUT_MS = 8000 // how long a non-host client polls for leaderboard results before giving up (mirrors MatchSummaryScreen.js)
 
 // Test-time overrides read from the URL query string, e.g. ?lobbyType=CursorPartyGameLift
 // or ?protocol=wss. Both take priority over their localStorage'd/hardcoded defaults so a
@@ -36,6 +37,7 @@ let showJoinButton = false
 let pingInterval = null
 let matchTickInterval = null // live coverage recompute + host auto-end sequence (see tickMatch)
 let rematchGateInterval = null // host-only: ticks tickRematchGate while awaitingRematch
+let resultsPollInterval = null // non-host: polls for leaderboard results — see pollMatchResults
 let loadingTimerStart = null // When the user first clicked Play (drives the elapsed timer)
 
 // Match-end bookkeeping — internal, doesn't drive rendering (mirrors cpp's app.cpp file-
@@ -44,8 +46,6 @@ let matchPhase = 'running' // 'running' | 'resultsBroadcast' | 'ended'
 let resultsSentAtMs = 0
 let coverageComputedAtMs = 0
 let pendingMatchResult = [] // match_result chunk-reassembly buffer
-let pendingLbChunk = [] // lb_result chunk-reassembly buffer: [{cxId, delta}]
-let pendingLbResults = {} // cxId -> LeaderboardDelta, for lb_result arriving before match_result
 let leaderboardPostedRound = -1 // guards against double-posting the cumulative points board
 
 export function getShowJoinButton () {
@@ -194,6 +194,7 @@ class App extends Component {
     if (pingInterval) { clearInterval(pingInterval); pingInterval = null }
     if (matchTickInterval) { clearInterval(matchTickInterval); matchTickInterval = null }
     if (rematchGateInterval) { clearInterval(rematchGateInterval); rematchGateInterval = null }
+    if (resultsPollInterval) { clearInterval(resultsPollInterval); resultsPollInterval = null }
     this.bc.logoutOnApplicationClose(false)
     this.bc.relay.disconnect()
     this.bc.relay.deregisterSystemCallback()
@@ -591,6 +592,10 @@ class App extends Component {
       clearInterval(rematchGateInterval)
       rematchGateInterval = null
     }
+    if (resultsPollInterval) {
+      clearInterval(resultsPollInterval)
+      resultsPollInterval = null
+    }
     this.bc.relay.deregisterRelayCallback()
     this.bc.relay.deregisterSystemCallback()
     this.bc.relay.disconnect()
@@ -825,39 +830,6 @@ class App extends Component {
         break
       }
 
-      // Host-computed leaderboard results for the round (see hostPostMatchResultsToCloud),
-      // chunked like match_result. Can arrive before match_result has populated
-      // state.matchResult.entries — buffer by cxId in that case (drained in applyMatchResult).
-      case 'lb_result': {
-        if (json.data.first) pendingLbChunk = []
-        json.data.e.forEach(entry => {
-          const delta = {
-            ready: true,
-            pointsLifetime: { improved: false },
-            pointsQuarterly: { improved: false },
-            coverageLifetime: { improved: false },
-            coverageQuarterly: { improved: false }
-          }
-          const readPeriod = (key, target) => {
-            if (entry[key]) { target.improved = true; target.rankBefore = entry[key].b; target.rankAfter = entry[key].a }
-          }
-          readPeriod('pl', delta.pointsLifetime)
-          readPeriod('pq', delta.pointsQuarterly)
-          readPeriod('cl', delta.coverageLifetime)
-          readPeriod('cq', delta.coverageQuarterly)
-          pendingLbChunk.push({ cxId: entry.cx, delta })
-        })
-        if (json.data.last) {
-          pendingLbChunk.forEach(({ cxId, delta }) => {
-            const entry = state.matchResult.entries.find(e => e.cxId === cxId)
-            if (entry) entry.lbDelta = delta
-            else pendingLbResults[cxId] = delta
-          })
-          pendingLbChunk = []
-        }
-        break
-      }
-
       default:
         break
     }
@@ -950,6 +922,10 @@ class App extends Component {
       // Host-only: keeps evaluating whether to auto-start the next round.
       if (rematchGateInterval) clearInterval(rematchGateInterval)
       rematchGateInterval = setInterval(() => this.tickRematchGate(), 500)
+
+      // Non-host: keeps polling for the host's leaderboard results (see pollMatchResults).
+      if (resultsPollInterval) clearInterval(resultsPollInterval)
+      resultsPollInterval = setInterval(() => this.pollMatchResults(), 1000)
     }
   }
 
@@ -1142,12 +1118,14 @@ class App extends Component {
         resultsSentAtMs = 0
         coverageComputedAtMs = 0
         pendingMatchResult = []
-        pendingLbChunk = []
-        pendingLbResults = {}
         leaderboardPostedRound = -1
         if (rematchGateInterval) {
           clearInterval(rematchGateInterval)
           rematchGateInterval = null
+        }
+        if (resultsPollInterval) {
+          clearInterval(resultsPollInterval)
+          resultsPollInterval = null
         }
 
         // Host sets the authoritative game start time and broadcasts it to all players
@@ -1238,8 +1216,8 @@ class App extends Component {
     sendBatch(isFirst, batch)
   }
 
-  // Mask of every OTHER lobby member (excludes self) — used to broadcast match_result/
-  // lb_result to the rest of the match.
+  // Mask of every OTHER lobby member (excludes self) — used to broadcast match_result to
+  // the rest of the match.
   buildAllOthersMask () {
     let mask = 0
     this.state.lobby.members.forEach(member => {
@@ -1294,21 +1272,12 @@ class App extends Component {
   }
 
   // Applies an authoritative coverage snapshot for a round (idempotent per round). Only
-  // the host posts to the cloud (hostPostMatchResultsToCloud) — everyone else waits for
-  // the "lb_result" broadcast that call produces.
+  // the host posts to the cloud (hostPostMatchResultsToCloud) — everyone else picks the
+  // result up on their own via pollMatchResults instead of waiting on the host to relay it.
   applyMatchResult (round, entries) {
     if (this.state.matchResult.valid && this.state.matchResult.round === round) return
     let state = this.state
     state.matchResult = { valid: true, round, entries }
-
-    // Drain any "lb_result" broadcasts that arrived before this round's match_result did.
-    entries.forEach(e => {
-      let pending = pendingLbResults[e.cxId]
-      if (pending) {
-        e.lbDelta = pending
-        delete pendingLbResults[e.cxId]
-      }
-    })
     this.setState(state)
 
     if (leaderboardPostedRound === round) return
@@ -1323,6 +1292,7 @@ class App extends Component {
   hostPostMatchResultsToCloud (round, entries) {
     const scriptData = {
       round,
+      lobbyId: this.state.lobby.lobbyId, // so the script can persist a "<lobbyId>:<round>"-indexed GlobalEntity for non-host clients to poll (see pollMatchResults)
       pointsLeaderboardId: LEADERBOARD_IDS.points.lifetime,
       pointsLeaderboardIdQuarterly: LEADERBOARD_IDS.points.quarterly,
       coverageLeaderboardId: LEADERBOARD_IDS.coverage.lifetime,
@@ -1343,15 +1313,20 @@ class App extends Component {
 
     this.bc.script.runScript('PostMatchResults', scriptData, result => {
       if (result.status === 200) {
-        this.applyLeaderboardResultsFromCloud(round, result.data.results)
+        // The script's own return value is nested under data.response (a sibling of
+        // runTimeData/success), not data itself — data.results is always empty/missing.
+        this.applyLeaderboardResultsFromCloud(round, result.data.response.results)
       } else {
         console.log('[DEBUG] PostMatchResults script call failed for round ' + round, result)
       }
     })
   }
 
-  // Applies the PostMatchResults response (keyed by profileId) onto state.matchResult.entries
-  // (keyed by cxId) and broadcasts the result to the rest of the match. Host-only.
+  // Applies a PostMatchResults response (keyed by profileId) onto state.matchResult.entries
+  // (keyed by cxId). Called on the host directly from hostPostMatchResultsToCloud's own
+  // script response, and on every other client from pollMatchResults once the GlobalEntity
+  // that call writes shows up — both feed it the exact same "results" array shape, so
+  // there's only one place that parses it.
   applyLeaderboardResultsFromCloud (round, resultsArr) {
     if (!(this.state.matchResult.valid && this.state.matchResult.round === round)) return // a newer round has already started
 
@@ -1375,48 +1350,34 @@ class App extends Component {
       if (entry) entry.lbDelta = delta
     })
     this.setState(state)
-
-    this.sendLeaderboardResultsToMask(this.buildAllOthersMask(), round, state.matchResult.entries)
   }
 
-  // Broadcasts the host's cloud-computed leaderboard results, chunked like match_result.
-  // A period sub-object is present only when it actually improved.
-  sendLeaderboardResultsToMask (mask, round, entries) {
-    if (mask === 0) return
-    const MAX_BYTES = 900
-    const ENVELOPE = 80
-    let batches = []
-    let batch = []
-    let currentSize = ENVELOPE
-
-    const putPeriod = (je, key, pd) => {
-      if (!pd.improved) return
-      je[key] = { b: pd.rankBefore, a: pd.rankAfter }
+  // Non-host: polls the GlobalEntity PostMatchResults.js writes (indexed by
+  // "<lobbyId>:<round>") until it shows up, instead of waiting on the host to relay its own
+  // script response over the relay connection — which is usually already disconnected by
+  // the time this screen shows (END_MATCH tears the relay down before showing Match
+  // Summary), so the old "lb_result" broadcast could only ever land in a narrow window.
+  pollMatchResults () {
+    const state = this.state
+    const isHost = state.lobby.ownerCxId === state.user.cxId
+    if (isHost || !state.matchResult.valid || state.matchResult.entries.some(e => e.lbDelta && e.lbDelta.ready)) {
+      clearInterval(resultsPollInterval)
+      resultsPollInterval = null
+      return
+    }
+    if (Date.now() - (state.matchSummaryArrivalTime || Date.now()) >= LEADERBOARD_RESULT_TIMEOUT_MS) {
+      clearInterval(resultsPollInterval)
+      resultsPollInterval = null
+      return // give up — the UI already falls back to "Leaderboard unavailable" past this point
     }
 
-    entries.filter(e => e.lbDelta && e.lbDelta.ready).forEach(e => {
-      let je = { cx: e.cxId }
-      putPeriod(je, 'pl', e.lbDelta.pointsLifetime)
-      putPeriod(je, 'pq', e.lbDelta.pointsQuarterly)
-      putPeriod(je, 'cl', e.lbDelta.coverageLifetime)
-      putPeriod(je, 'cq', e.lbDelta.coverageQuarterly)
-      let entrySize = JSON.stringify(je).length + 1
-      if (currentSize + entrySize > MAX_BYTES && batch.length > 0) {
-        batches.push(batch)
-        batch = []
-        currentSize = ENVELOPE
-      }
-      batch.push(je)
-      currentSize += entrySize
-    })
-    batches.push(batch) // always at least one (possibly empty) so "last" still fires
-
-    batches.forEach((entriesBatch, i) => {
-      let msg = { op: 'lb_result', data: { round, first: i === 0, last: i === batches.length - 1, e: entriesBatch } }
-      this.bc.relay.sendToPlayers(
-        Buffer.from(JSON.stringify(msg), 'ascii'),
-        mask, true, true, this.bc.relay.CHANNEL_HIGH_PRIORITY_1
-      )
+    const round = state.matchResult.round
+    const indexedId = state.lobby.lobbyId + ':' + round
+    this.bc.globalEntity.getListByIndexedId(indexedId, 1, result => {
+      if (result.status !== 200) return // next tick retries
+      const list = result.data.entityList
+      if (!list || !list.length) return // not written yet — next tick retries
+      this.applyLeaderboardResultsFromCloud(round, list[0].data.results)
     })
   }
 
