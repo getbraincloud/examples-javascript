@@ -8882,7 +8882,10 @@ var brainCloud = (() => {
           for (var c = 0; c < bcm._inProgressQueue.length && c < messages.length; ++c) {
             var callback = bcm._inProgressQueue[c].callback;
             if (bcm._inProgressQueue[c] != null && bcm._errorCallback && messages[c].status != 200) {
-              bcm._errorCallback(messages[c]);
+              bcm._errorCallback(Object.assign({}, messages[c], {
+                service: bcm._inProgressQueue[c].service,
+                operation: bcm._inProgressQueue[c].operation
+              }));
             }
             if (bcm._inProgressQueue[c] == null) return;
             if (messages[c].status == 200) {
@@ -9024,9 +9027,6 @@ var brainCloud = (() => {
             }
           } else {
             bcm.debugLog("Failed after " + bcm._retry + " retries.", true);
-            if (bcm._errorCallback != void 0 && typeof bcm._errorCallback == "function") {
-              bcm._errorCallback(errorThrown);
-            }
             bcm.fakeErrorResponse(bcm.statusCodes.CLIENT_NETWORK_ERROR, bcm.reasonCodes.CLIENT_NETWORK_ERROR_TIMEOUT, "Request timed out");
             bcm._requestInProgress = false;
             bcm.processQueue();
@@ -9062,9 +9062,6 @@ var brainCloud = (() => {
             }
             var errorMessage = response;
             bcm.debugLog("Failed", true);
-            if (bcm._errorCallback != void 0 && typeof bcm._errorCallback == "function") {
-              bcm._errorCallback(errorMessage);
-            }
             if (!errorMessage || errorMessage == "") errorMessage = "Unknown error. Did you lose internet connection?";
             bcm.fakeErrorResponse(
               bcm.statusCodes.CLIENT_NETWORK_ERROR,
@@ -9084,63 +9081,74 @@ var brainCloud = (() => {
             xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
           }
           xmlhttp.requestId = ++bcm._requestId;
-          xmlhttp.ontimeout_bc = function() {
-            if (xmlhttp.readyState < 4) {
-              xmlhttp.hasTimedOut = true;
-              xmlhttp.abort();
-              xmlhttp.hasTimedOut = null;
-              bcm.xml_timeoutId = null;
-              bcm.debugLog("timeout", false);
-              bcm.retry();
-            }
-          };
-          xmlhttp.onreadystatechange = function() {
-            if (xmlhttp.hasTimedOut || xmlhttp.requestId != bcm._requestId) {
-              return;
-            }
-            if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-              bcm.handleResponse(xmlhttp.status, JSON.parse(xmlhttp.responseText));
-            }
-          };
-          bcm.xml_timeoutId = setTimeout(xmlhttp.ontimeout_bc, bcm._packetTimeouts[0] * 1e3);
-          xmlhttp.open("POST", bcm._dispatcherUrl, true);
-          xmlhttp.setRequestHeader("Content-type", "application/json");
+          var requestId = bcm._requestId;
+          var controller = new AbortController();
+          var hasTimedOut = false;
+          bcm.xml_timeoutId = setTimeout(function() {
+            hasTimedOut = true;
+            controller.abort();
+            bcm.xml_timeoutId = null;
+            bcm.debugLog("timeout", false);
+            bcm.retry();
+          }, bcm._packetTimeouts[0] * 1e3);
           var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
-          xmlhttp.setRequestHeader("X-SIG", sig);
-          xmlhttp.setRequestHeader("X-APPID", bcm._appId);
+          var baseHeaders = {
+            "Content-Type": "application/json",
+            "X-SIG": sig,
+            "X-APPID": bcm._appId
+          };
+          function dispatch(body, extraHeaders) {
+            var headers = extraHeaders ? Object.assign({}, baseHeaders, extraHeaders) : baseHeaders;
+            fetch(bcm._dispatcherUrl, {
+              method: "POST",
+              headers,
+              body,
+              signal: controller.signal
+            }).then(function(response) {
+              var status = response.status;
+              return response.arrayBuffer().then(function(buffer) {
+                return { status, buffer };
+              });
+            }).then(function(result2) {
+              if (requestId != bcm._requestId) return;
+              var jsonString = new TextDecoder().decode(result2.buffer);
+              var responseJSON;
+              try {
+                responseJSON = JSON.parse(jsonString);
+              } catch (e) {
+                bcm.debugLog("Failed to parse response: " + jsonString, true);
+                clearTimeout(bcm.xml_timeoutId);
+                bcm.xml_timeoutId = null;
+                bcm._requestInProgress = false;
+                bcm.fakeErrorResponse(
+                  bcm.statusCodes.CLIENT_NETWORK_ERROR,
+                  0,
+                  "Invalid (non-JSON) response from server"
+                );
+                return;
+              }
+              bcm.handleResponse(result2.status, responseJSON);
+            }).catch(function(error) {
+              if (requestId != bcm._requestId) return;
+              if (hasTimedOut) return;
+              clearTimeout(bcm.xml_timeoutId);
+              bcm.xml_timeoutId = null;
+              bcm.debugLog("Network error: " + error, true);
+              bcm.retry();
+            });
+          }
           var encodedRequest = new TextEncoder().encode(bcm._jsonedQueue);
           var requestSize = encodedRequest.length;
           if (bcm._compressionEnabled && bcm._compressionThreshold >= 0 && requestSize >= bcm._compressionThreshold) {
             bcm.compressRequest(encodedRequest).then(function(compressedData) {
-              fetch(bcm._dispatcherUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-SIG": sig,
-                  "X-APPID": bcm._appId,
-                  "Content-Encoding": "gzip"
-                },
-                body: compressedData
-              }).then(function(response) {
-                var status = response.status;
-                return response.arrayBuffer().then(function(buffer) {
-                  return { status, buffer };
-                });
-              }).then(function(result2) {
-                var responseStatus = result2.status;
-                var jsonString = new TextDecoder().decode(result2.buffer);
-                var responseJSON = JSON.parse(jsonString);
-                bcm.handleResponse(responseStatus, responseJSON);
-              }).catch(function(error) {
-                console.error(error);
-              });
+              dispatch(compressedData, { "Content-Encoding": "gzip" });
             }).catch(function(err) {
               console.error("Compression failed:", err);
               console.log("Sending request without compression...");
-              xmlhttp.send(bcm._jsonedQueue);
+              dispatch(bcm._jsonedQueue);
             });
           } else {
-            xmlhttp.send(bcm._jsonedQueue);
+            dispatch(bcm._jsonedQueue);
           }
         };
         bcm.processQueue = function() {
@@ -9219,9 +9227,9 @@ var brainCloud = (() => {
             if (callback) {
               callback();
             }
-          }).fail(function(jqXhr, textStatus, errorThrown2) {
+          }).fail(function(jqXhr, textStatus, errorThrown) {
             console.log(
-              "loadABTestData() - FAILED: " + jqXhr + " " + textStatus + " " + errorThrown2
+              "loadABTestData() - FAILED: " + jqXhr + " " + textStatus + " " + errorThrown
             );
           });
         };
@@ -10024,9 +10032,9 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.authentication.authenticate = function(externalId, authenticationToken2, authenticationType, externalAuthName, forceCreate, extraJson, responseHandler) {
+        bc2.authentication.authenticate = function(externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, extraJson, responseHandler) {
           bc2.authentication.previousAuthParams.externalId = externalId;
-          bc2.authentication.previousAuthParams.authenticationToken = authenticationToken2;
+          bc2.authentication.previousAuthParams.authenticationToken = authenticationToken;
           bc2.authentication.previousAuthParams.authenticationType = authenticationType;
           bc2.authentication.previousAuthParams.externalAuthName = externalAuthName;
           bc2.authentication.previousAuthParams.forceCreate = forceCreate;
@@ -10053,7 +10061,7 @@ var brainCloud = (() => {
             releasePlatform: "WEB",
             gameVersion: appVersion,
             clientLibVersion: bc2.version || bc2.brainCloudClient.version,
-            authenticationToken: authenticationToken2,
+            authenticationToken,
             authenticationType,
             forceCreate,
             compressResponses: bc2.authentication.compressResponses,
@@ -10520,6 +10528,9 @@ var brainCloud = (() => {
             acl,
             timeToLive
           };
+          if (acl) {
+            message["acl"] = acl;
+          }
           bc2.brainCloudManager.sendRequest({
             service: bc2.SERVICE_CUSTOM_ENTITY,
             operation: bc2.customEntity.OPERATION_UPDATE_SINGLETON,
@@ -12817,18 +12828,18 @@ var brainCloud = (() => {
           external: "External",
           unknown: "UNKNOWN"
         });
-        bc2.identity.attachFacebookIdentity = function(facebookId, authenticationToken2, callback) {
+        bc2.identity.attachFacebookIdentity = function(facebookId, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             facebookId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK,
             callback
           );
         };
-        bc2.identity.mergeFacebookIdentity = function(facebookId, authenticationToken2, callback) {
+        bc2.identity.mergeFacebookIdentity = function(facebookId, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             facebookId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK,
             callback
           );
@@ -12919,18 +12930,18 @@ var brainCloud = (() => {
             callback
           });
         };
-        bc2.identity.attachFacebookLimitedIdentity = function(facebookLimitedId2, authenticationToken2, callback) {
+        bc2.identity.attachFacebookLimitedIdentity = function(facebookLimitedId2, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             facebookLimitedId2,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK_LIMITED,
             callback
           );
         };
-        bc2.identity.mergeFacebookLimitedIdentity = function(facebookLimitedId2, authenticationToken2, callback) {
+        bc2.identity.mergeFacebookLimitedIdentity = function(facebookLimitedId2, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             facebookLimitedId2,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK_LIMITED,
             callback
           );
@@ -12944,19 +12955,17 @@ var brainCloud = (() => {
           );
         };
         bc2.identity.attachGameCenterIdentity = function(gameCenterId, callback) {
-          bc2.identity.detachIdentity(
+          bc2.identity.attachIdentity(
             gameCenterId,
-            "",
-            authenticationToken,
+            null,
             bc2.authentication.AUTHENTICATION_TYPE_GAME_CENTER,
             callback
           );
         };
         bc2.identity.mergeGameCenterIdentity = function(gameCenterId, callback) {
-          bc2.identity.detachIdentity(
+          bc2.identity.mergeIdentity(
             gameCenterId,
-            "",
-            authenticationToken,
+            null,
             bc2.authentication.AUTHENTICATION_TYPE_GAME_CENTER,
             callback
           );
@@ -13041,18 +13050,18 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.identity.attachGoogleIdentity = function(googleId, authenticationToken2, callback) {
+        bc2.identity.attachGoogleIdentity = function(googleId, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             googleId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_GOOGLE,
             callback
           );
         };
-        bc2.identity.mergeGoogleIdentity = function(googleId, authenticationToken2, callback) {
+        bc2.identity.mergeGoogleIdentity = function(googleId, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             googleId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_GOOGLE,
             callback
           );
@@ -13065,18 +13074,18 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.identity.attachGoogleOpenIdIdentity = function(googleOpenId, authenticationToken2, callback) {
+        bc2.identity.attachGoogleOpenIdIdentity = function(googleOpenId, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             googleOpenId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
             callback
           );
         };
-        bc2.identity.mergeGoogleOpenIdIdentity = function(googleOpenId, authenticationToken2, callback) {
+        bc2.identity.mergeGoogleOpenIdIdentity = function(googleOpenId, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             googleOpenId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID,
             callback
           );
@@ -13089,18 +13098,18 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.identity.attachAppleIdentity = function(appleId, authenticationToken2, callback) {
+        bc2.identity.attachAppleIdentity = function(appleId, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             appleId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_APPLE,
             callback
           );
         };
-        bc2.identity.mergeAppleIdentity = function(appleId, authenticationToken2, callback) {
+        bc2.identity.mergeAppleIdentity = function(appleId, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             appleId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_APPLE,
             callback
           );
@@ -13113,18 +13122,18 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.identity.attachTwitterIdentity = function(twitterId, authenticationToken2, secret, callback) {
+        bc2.identity.attachTwitterIdentity = function(twitterId, authenticationToken, secret, callback) {
           bc2.identity.attachIdentity(
             twitterId,
-            authenticationToken2 + ":" + secret,
+            authenticationToken + ":" + secret,
             bc2.authentication.AUTHENTICATION_TYPE_TWITTER,
             callback
           );
         };
-        bc2.identity.mergeTwitterIdentity = function(twitterId, authenticationToken2, secret, callback) {
+        bc2.identity.mergeTwitterIdentity = function(twitterId, authenticationToken, secret, callback) {
           bc2.identity.mergeIdentity(
             twitterId,
-            authenticationToken2 + ":" + secret,
+            authenticationToken + ":" + secret,
             bc2.authentication.AUTHENTICATION_TYPE_TWITTER,
             callback
           );
@@ -13137,18 +13146,18 @@ var brainCloud = (() => {
             callback
           );
         };
-        bc2.identity.attachParseIdentity = function(parseId, authenticationToken2, callback) {
+        bc2.identity.attachParseIdentity = function(parseId, authenticationToken, callback) {
           bc2.identity.attachIdentity(
             parseId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_PARSE,
             callback
           );
         };
-        bc2.identity.mergeParseIdentity = function(parseId, authenticationToken2, callback) {
+        bc2.identity.mergeParseIdentity = function(parseId, authenticationToken, callback) {
           bc2.identity.mergeIdentity(
             parseId,
-            authenticationToken2,
+            authenticationToken,
             bc2.authentication.AUTHENTICATION_TYPE_PARSE,
             callback
           );
@@ -13267,14 +13276,14 @@ var brainCloud = (() => {
             callback
           });
         };
-        bc2.identity.refreshIdentity = function(externalId, authenticationToken2, authenticationType, callback) {
+        bc2.identity.refreshIdentity = function(externalId, authenticationToken, authenticationType, callback) {
           bc2.brainCloudManager.sendRequest({
             service: bc2.SERVICE_IDENTITY,
             operation: bc2.identity.OPERATION_REFRESH_IDENTITY,
             data: {
               externalId,
               authenticationType,
-              authenticationToken: authenticationToken2
+              authenticationToken
             },
             callback
           });
@@ -13292,10 +13301,10 @@ var brainCloud = (() => {
             callback
           });
         };
-        bc2.identity.attachParentWithIdentity = function(externalId, authenticationToken2, authenticationType, externalAuthName, forceCreate, callback) {
+        bc2.identity.attachParentWithIdentity = function(externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, callback) {
           var data = {
             externalId,
-            authenticationToken: authenticationToken2,
+            authenticationToken,
             authenticationType,
             forceCreate
           };
@@ -13315,11 +13324,11 @@ var brainCloud = (() => {
             callback
           });
         };
-        bc2.identity.attachPeerProfile = function(peer, externalId, authenticationToken2, authenticationType, externalAuthName, forceCreate, callback) {
+        bc2.identity.attachPeerProfile = function(peer, externalId, authenticationToken, authenticationType, externalAuthName, forceCreate, callback) {
           var data = {
             peer,
             externalId,
-            authenticationToken: authenticationToken2,
+            authenticationToken,
             authenticationType,
             forceCreate
           };
@@ -13350,26 +13359,26 @@ var brainCloud = (() => {
             callback
           });
         };
-        bc2.identity.attachIdentity = function(externalId, authenticationToken2, authenticationType, callback) {
+        bc2.identity.attachIdentity = function(externalId, authenticationToken, authenticationType, callback) {
           bc2.brainCloudManager.sendRequest({
             service: bc2.SERVICE_IDENTITY,
             operation: bc2.identity.OPERATION_ATTACH,
             data: {
               externalId,
               authenticationType,
-              authenticationToken: authenticationToken2
+              authenticationToken
             },
             callback
           });
         };
-        bc2.identity.mergeIdentity = function(externalId, authenticationToken2, authenticationType, callback) {
+        bc2.identity.mergeIdentity = function(externalId, authenticationToken, authenticationType, callback) {
           bc2.brainCloudManager.sendRequest({
             service: bc2.SERVICE_IDENTITY,
             operation: bc2.identity.OPERATION_MERGE,
             data: {
               externalId,
               authenticationType,
-              authenticationToken: authenticationToken2
+              authenticationToken
             },
             callback
           });

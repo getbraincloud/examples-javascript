@@ -365,13 +365,13 @@
 		xhr.addEventListener("abort", uploadCanceled, false);
 
 
-		brainCloud.file.prepareFileUpload(
+		brainCloud.file.prepareUserUpload(
 			document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value, document.getElementById("isShareable").checked, document.getElementById("replaceIfExists").checked, fileSize,
 			function(result) {
 				if (result.status == 200) {
 					var uploadId = result.data.fileDetails.uploadId;
 
-					document.getElementById("incomingResponse").innerHTML = "prepareFileUpload: " + JSON.stringify(result, null, 2);
+					document.getElementById("incomingResponse").innerHTML = "prepareUserUpload: " + JSON.stringify(result, null, 2);
 
 
 
