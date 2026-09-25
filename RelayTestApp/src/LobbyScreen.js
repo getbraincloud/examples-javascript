@@ -392,11 +392,9 @@ class LobbyScreen extends Component {
               <button className='Button' onClick={this.onBack.bind(this)}>
                 Leave
               </button>
-              {this.props.lobby.ownerCxId === this.props.user.cxId &&
-              !this.props.user.isReady ? (
-                // Host can always start manually, round 2+ included — App.tickRematchGate()
-                // still auto-starts in the background once everyone's queued up or the wait
-                // times out, so this button is just an early-start option, not the only way in.
+              {this.props.lobby.ownerCxId === this.props.user.cxId ? (
+                // Not gated on isReady — round 2 needs this back even after onStart() already
+                // set it true, or the host has no control left to re-trigger.
                 <button
                   className='Button ButtonPrimary'
                   onClick={this.onStart.bind(this)}

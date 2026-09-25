@@ -130,6 +130,7 @@ class App extends Component {
   // Initialize brainCloud library
   initBC () {
     this.rttEnableWaiters = null // drop any pending ensureRTTEnabled callers from the old bc instance
+    this.currentLobbyId = null // tracked independent of state.lobby, which only populates once the first RTT lobby event arrives
     this.bc = new brainCloud.BrainCloudWrapper('relayservertest')
     this.bc.initialize(ids.appId, ids.appSecret, '6.0.0')
     if (ids.url) this.bc.brainCloudClient.setServerUrl(ids.url)
@@ -200,6 +201,7 @@ class App extends Component {
     this.bc.relay.deregisterSystemCallback()
     this.bc.relay.deregisterRelayCallback()
     this.bc.rttService.deregisterAllRTTCallbacks()
+    this.bc.rttService.disableRTT()
     this.bc.brainCloudClient.resetCommunication()
     alert(message)
     this.initBC()
@@ -282,12 +284,17 @@ class App extends Component {
             splotchDurationSec: splotchDurationSec
           })
 
-          // Keep RTT connected from the main menu onward so Global Chat works there.
+          // RTT stays up for the whole session now, leave/rejoin included — only logout/
+          // dieWithMessage disable it.
           this.ensureRTTEnabled(() => {
             let state = this.state
             if (state.user) state.user.cxId = this.bc.rttService.getRTTConnectionId()
             this.setState(state)
-          }, () => {})
+            // Registered once here — leave no longer deregisters, so don't re-register on Play.
+            this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
+          }, () => {
+            this.dieWithMessage('Failed to enable RTT')
+          })
         } else {
           console.log('globalApp.readProperties failed')
         }
@@ -329,11 +336,12 @@ class App extends Component {
 
   onLogout () {
     this.bc.logout(true, () => {
-      // Close Relay/RTT/BC connections
+      // Close Relay/RTT/BC connections — RTT only goes down here now, not on lobby leave.
       this.bc.relay.disconnect()
       this.bc.relay.deregisterSystemCallback()
       this.bc.relay.deregisterRelayCallback()
       this.bc.rttService.deregisterAllRTTCallbacks()
+      this.bc.rttService.disableRTT()
       this.bc.brainCloudClient.resetCommunication()
       // Initialize BC libs and start over
       this.initBC()
@@ -358,14 +366,12 @@ class App extends Component {
 
     const algo = { strategy: 'ranged-absolute', alignment: 'center', ranges: [1000] }
 
-    // Enable RTT service (no-op if the main menu already enabled it for chat)
+    // Already enabled from login — this just covers the race if Play beats it.
     this.ensureRTTEnabled(
       () => {
         let state = this.state
         state.user.cxId = this.bc.rttService.getRTTConnectionId()
         this.setState(state)
-
-        this.bc.rttService.registerRTTLobbyCallback(this.onLobbyEvent.bind(this))
 
         const doFindLobby = (withPingData) => {
           let extraJson = this.makeExtraJson(
@@ -436,6 +442,12 @@ class App extends Component {
 
   // Update events from the lobby service
   onLobbyEvent (result) {
+    // Grabbed on every event, not just once "lobby" shows up, so a cancel before the first
+    // full event still has a lobbyId to leave.
+    if (result.data.lobbyId) {
+      this.currentLobbyId = result.data.lobbyId
+    }
+
     if (result.data.lobby) {
       let state = this.state
       // This-lobby chat lives on state.lobby.chatMessages; every lobby event here rebuilds
@@ -488,6 +500,8 @@ class App extends Component {
 
     if (result.operation === 'DISBANDED') {
       if (result.data.reason.code !== this.bc.reasonCodes.RTT_ROOM_READY) {
+        // The lobby is already gone server-side — skip the redundant LEAVE_LOBBY call.
+        this.currentLobbyId = null
         this.onGameScreenClose()
       }
     } else if (result.operation === 'MATCHMAKING_IN_PROGRESS') {
@@ -572,12 +586,12 @@ class App extends Component {
     this.setState(state)
   }
 
-  // Called to terminate the current session and go back to the main menu
+  // Called when leaving a lobby/match to go back to the main menu. Just leaves the lobby
+  // and tears down relay/RS — RTT stays up.
   onGameScreenClose () {
-    // Otherwise this player stays a ghost lobby member, blocking the all-ready rematch
-    // fast path for everyone else until the server times them out.
-    if (this.state.lobby && this.state.lobby.lobbyId) {
-      this.bc.lobby.leaveLobby(this.state.lobby.lobbyId, () => {})
+    if (this.currentLobbyId) {
+      this.bc.lobby.leaveLobby(this.currentLobbyId, () => {})
+      this.currentLobbyId = null
     }
 
     if (pingInterval) {
@@ -599,8 +613,6 @@ class App extends Component {
     this.bc.relay.deregisterRelayCallback()
     this.bc.relay.deregisterSystemCallback()
     this.bc.relay.disconnect()
-    this.bc.rttService.deregisterAllRTTCallbacks()
-    this.bc.rttService.disableRTT()
 
     let state = this.state
     state.screen = 'mainMenu'
@@ -663,6 +675,9 @@ class App extends Component {
     let state = this.state
     state.user.isReady = true
     state.awaitingRematch = false // in case this was triggered by the rematch gate
+    // tickRematchGate() can fire while the host is still on Match Summary — put them
+    // back on the Lobby screen either way.
+    state.screen = 'lobby'
     let extraJson = this.makeExtraJson(state.user.colorIndex, state.user.presentSinceStart)
     this.setState(state)
     this.bc.lobby.updateReady(
