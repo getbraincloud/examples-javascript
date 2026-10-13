@@ -27,14 +27,6 @@ const getErrorMessage = (err: any): string => {
     try { return JSON.stringify(err, undefined, 2); } catch { return String(err); }
 };
 
-// The target brainCloud environment
-const API_SERVER_HOST = process.env.REACT_APP_BC_API_TARGET_HOST || "";
-const API_SERVER_PORT = process.env.REACT_APP_BC_API_TARGET_PORT || "";
-const API_SERVER_URL = `https://${API_SERVER_HOST}:${API_SERVER_PORT}`;
-
-// The target brainCloud app id.
-const APP_ID = process.env.REACT_APP_BC_APP_ID || "";
-
 // The name of the external authentication type as defined in your brainCloud app.
 const EXTERNAL_AUTH_NAME = process.env.REACT_APP_BC_EXTERNAL_AUTH_NAME || "";
 
@@ -148,7 +140,9 @@ const App: React.FC = () => {
     const performWebHookInvocation = useCallback(async () => {
         setWebhookResponse(null);
         
-        const webHookUrl = `${API_SERVER_URL}/webhook/${APP_ID}/${WEBHOOK_NAME}`;
+        const client = window._bc.brainCloudClient;
+        const serverUrl = client.brainCloudManager.getDispatcherUrl().replace(/\/dispatcherv2$/, "");
+        const webHookUrl = `${serverUrl}/webhook/${client.getAppId()}/${WEBHOOK_NAME}`;
         const webHookSecret = WEBHOOK_SECRET;
         
         const headers = { "x-bc-secret": webHookSecret };

@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import './style.css'
 import packageJson from '../package.json'
 import bcPackageJson from '@braincloud/client/package.json' // installed brainCloud client version (separate from the app version)
-import ids from './ids'
 
 // Props:
 //  user
@@ -22,7 +21,7 @@ class MainMenuScreen extends Component {
     }
 
     render() {
-        let versionSuffix = (ids.url) ? " - dev" : " - prod"
+        let versionSuffix = this.props.dev ? " - dev" : " - prod"
         return (
             <div id="main-wrapper">
                 <p className="text-small">Logged in as {this.props.user.name}</p>
@@ -39,7 +38,7 @@ class MainMenuScreen extends Component {
                 </div>
 
                 <div className="bottomText">
-                    <p className="ver-text">app: {packageJson.version} | bcclient: {bcPackageJson.version}{versionSuffix}</p>
+                    <p className="ver-text">app: {packageJson.version} | bcclient: {bcPackageJson.version.replace(/-develop\.\d+$/, '')}{versionSuffix}</p>
                 </div>
             </div>
         )

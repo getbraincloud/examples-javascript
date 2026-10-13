@@ -43,12 +43,11 @@ app.filter('card', function () {
 	}
 });
 
-// Application IDs defined in PortalX: App > Design > Core App Info
-var appId = "YourAppId"
-var appSecret = "YourAppSecret"
-var url = "https://api.braincloudservers.com"
 
 var _bc = new BrainCloudWrapper("_mainWrapper");
+_bc.init(); // braincloud.config.js, written by the brainCloud Setup script
+var appId = _bc.brainCloudClient.getAppId();
+var bcReady = false;
 
 app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scope, $mdDialog, $mdSidenav) {
 
@@ -358,9 +357,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		var maxReturn = 0
 
 		_bc.chat.channelConnect($scope.channelId, maxReturn, channelConnectResponse => {
-			var status = channelConnectResponse.status
-
-			if (status === 200) {
+			if (_bc.isSuccess(channelConnectResponse)) {
 				console.log("Connected to Jackpot Updates channel")
 			}
 			else {
@@ -398,7 +395,7 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 		console.log("authenticationCallback");
 		console.log(JSON.stringify(result));
 
-		if (result.status === 200) {
+		if (_bc.isSuccess(result)) {
 
 			// Sync the user's balance
 			try {
@@ -601,16 +598,11 @@ app.controller('GameCtrl', ['$scope', '$mdDialog', '$mdSidenav', function ($scop
 	 * Resets game (cards, stats, etc.).
 	 */
 	$scope.initializeGame = function () {
-		if (!_bc.brainCloudClient.isInitialized()) {
-
-			// change this url if you want to point to another brainCloud server
-			_bc.brainCloudClient.setServerUrl(url);
-
-			// we initialize the brainCloud client library here with our game id, secret, and game version
-			_bc.initialize(appId, appSecret, "1.0.0");
+		if (_bc.brainCloudClient.isInitialized() && !bcReady) {
+			bcReady = true
 			console.log("Initialized brainCloud Client: " + _bc.brainCloudClient.version)
 			$scope.brainCloudClientVersion = _bc.brainCloudClient.version
-			if (url.includes("internal")) {
+			if (_bc.brainCloudClient.brainCloudManager.getDispatcherUrl().includes(".internal.")) {
 				$scope.brainCloudClientVersion += " - dev"
 			}
 			else {

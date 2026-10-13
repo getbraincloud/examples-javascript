@@ -2,6 +2,16 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Setup
+```
+npm install
+npx @braincloud/client setup
+npm start
+```
+Setup logs you in to brainCloud, lets you pick your team and app, and writes `src/braincloud.config.js` (gitignored). The app loads it and calls `init()`. Rerun setup to switch apps or servers.
+In VS Code, open this folder and run Terminal → Run Task… → **brainCloud: Setup** instead (**brainCloud: Refresh config** re-fetches the config from your saved login without the browser).
+The SSO provider settings stay in `.env`.
+
 ## Available Scripts
 
 In the project directory, you can run:

@@ -29,39 +29,39 @@ var brainCloud = (() => {
         }
       })(exports, function() {
         var CryptoJS = CryptoJS || function(Math2, undefined2) {
-          var crypto;
+          var crypto2;
           if (typeof window !== "undefined" && window.crypto) {
-            crypto = window.crypto;
+            crypto2 = window.crypto;
           }
           if (typeof self !== "undefined" && self.crypto) {
-            crypto = self.crypto;
+            crypto2 = self.crypto;
           }
           if (typeof globalThis !== "undefined" && globalThis.crypto) {
-            crypto = globalThis.crypto;
+            crypto2 = globalThis.crypto;
           }
-          if (!crypto && typeof window !== "undefined" && window.msCrypto) {
-            crypto = window.msCrypto;
+          if (!crypto2 && typeof window !== "undefined" && window.msCrypto) {
+            crypto2 = window.msCrypto;
           }
-          if (!crypto && typeof global !== "undefined" && global.crypto) {
-            crypto = global.crypto;
+          if (!crypto2 && typeof global !== "undefined" && global.crypto) {
+            crypto2 = global.crypto;
           }
-          if (!crypto && typeof __require === "function") {
+          if (!crypto2 && typeof __require === "function") {
             try {
-              crypto = require_crypto();
+              crypto2 = require_crypto();
             } catch (err) {
             }
           }
           var cryptoSecureRandomInt = function() {
-            if (crypto) {
-              if (typeof crypto.getRandomValues === "function") {
+            if (crypto2) {
+              if (typeof crypto2.getRandomValues === "function") {
                 try {
-                  return crypto.getRandomValues(new Uint32Array(1))[0];
+                  return crypto2.getRandomValues(new Uint32Array(1))[0];
                 } catch (err) {
                 }
               }
-              if (typeof crypto.randomBytes === "function") {
+              if (typeof crypto2.randomBytes === "function") {
                 try {
-                  return crypto.randomBytes(4).readInt32LE();
+                  return crypto2.randomBytes(4).readInt32LE();
                 } catch (err) {
                 }
               }
@@ -8637,6 +8637,55 @@ var brainCloud = (() => {
   // build/brainCloudClient.concat.js
   var require_brainCloudClient_concat = __commonJS({
     "build/brainCloudClient.concat.js"(exports) {
+      function brainCloudAppProfile(value) {
+        if (typeof value === "function") {
+          return value;
+        }
+        var bytes = brainCloudUtf8(value == null ? "" : String(value));
+        var a = [];
+        var b = [];
+        var c = typeof crypto !== "undefined" && crypto && typeof crypto.getRandomValues === "function";
+        var r0 = c ? crypto.getRandomValues(new Uint8Array(bytes.length)) : null;
+        for (var i2 = 0; i2 < bytes.length; i2++) {
+          var r = r0 ? r0[i2] : Math.floor(Math.random() * 256);
+          a.push(r);
+          b.push(bytes[i2] ^ r);
+          bytes[i2] = 0;
+        }
+        return function(payload) {
+          var n = a.length;
+          var words = [];
+          for (var j = 0; j < n; j++) {
+            words[j >>> 2] |= (a[j] ^ b[j]) << 24 - j % 4 * 8;
+          }
+          var hasher = CryptoJS.algo.MD5.create();
+          hasher.update(payload);
+          hasher.update(CryptoJS.lib.WordArray.create(words, n));
+          var signature = hasher.finalize().toString();
+          for (j = 0; j < words.length; j++) {
+            words[j] = 0;
+          }
+          return signature;
+        };
+      }
+      function brainCloudUtf8(str) {
+        var out = [];
+        for (var i2 = 0; i2 < str.length; i2++) {
+          var c = str.charCodeAt(i2);
+          if (c >= 55296 && c < 56320 && i2 + 1 < str.length) {
+            var n = str.charCodeAt(i2 + 1);
+            if (n >= 56320 && n < 57344) {
+              c = 65536 + (c - 55296 << 10) + (n - 56320);
+              i2++;
+            }
+          }
+          if (c < 128) out.push(c);
+          else if (c < 2048) out.push(192 | c >> 6, 128 | c & 63);
+          else if (c < 65536) out.push(224 | c >> 12, 128 | c >> 6 & 63, 128 | c & 63);
+          else out.push(240 | c >> 18, 128 | c >> 12 & 63, 128 | c >> 6 & 63, 128 | c & 63);
+        }
+        return out;
+      }
       if (typeof CryptoJS === "undefined" || CryptoJS === null) {
         CryptoJS = require_crypto_js();
       }
@@ -8663,8 +8712,7 @@ var brainCloud = (() => {
         bcm._retry = 0;
         bcm._requestId = 0;
         bcm._appId = "";
-        bcm._secret = "";
-        bcm._secretMap = {};
+        bcm._appProfiles = {};
         bcm._serverUrl = "https://api.braincloudservers.com";
         bcm._dispatcherUrl = bcm._serverUrl + "/dispatcherv2";
         bcm._fileUploadUrl = bcm._serverUrl + "/uploader";
@@ -8696,18 +8744,33 @@ var brainCloud = (() => {
         };
         bcm.initialize = function(appId, secret, appVersion) {
           bcm._appId = appId;
-          bcm._secret = secret;
-          bcm._secretMap = {};
-          bcm._secretMap[appId] = secret;
+          bcm._appProfiles = {};
+          bcm._appProfiles[appId] = brainCloudAppProfile(secret);
           bcm._appVersion = appVersion;
           bcm._isInitialized = true;
         };
         bcm.initializeWithApps = function(defaultAppId, secretMap, appVersion) {
           bcm._appId = defaultAppId;
-          bcm._secret = secretMap[defaultAppId];
-          bcm._secretMap = secretMap;
+          bcm._appProfiles = {};
+          for (var id in secretMap) {
+            if (Object.prototype.hasOwnProperty.call(secretMap, id)) {
+              bcm._appProfiles[id] = brainCloudAppProfile(secretMap[id]);
+            }
+          }
           bcm._appVersion = appVersion;
           bcm._isInitialized = true;
+        };
+        bcm.reinitialize = function(appId) {
+          var ids = Object.keys(bcm._appProfiles);
+          if (!bcm._appProfiles[appId] && ids.length === 1) {
+            bcm._appProfiles[appId] = bcm._appProfiles[ids[0]];
+          }
+          bcm._appId = appId;
+          bcm._isInitialized = true;
+        };
+        bcm._signRequest = function(body) {
+          var profile = bcm._appProfiles[bcm._appId] || brainCloudAppProfile("MISSING");
+          return profile(body);
         };
         bcm.setServerUrl = function(serverUrl) {
           bcm._serverUrl = serverUrl;
@@ -8744,10 +8807,11 @@ var brainCloud = (() => {
           bcm._sessionId = sessionId;
         };
         bcm.getSecret = function() {
-          return bcm._secret;
+          console.warn("brainCloud: getSecret() is no longer supported and returns an empty string.");
+          return "";
         };
         bcm.setSecret = function(secret) {
-          bcm._secret = secret;
+          bcm._appProfiles[bcm._appId] = brainCloudAppProfile(secret);
         };
         bcm.getAppVersion = function() {
           return bcm._appVersion;
@@ -8900,7 +8964,6 @@ var brainCloud = (() => {
                 }
                 if (data.switchToAppId) {
                   bcm._appId = data.switchToAppId;
-                  bcm._secret = bcm._secretMap[data.switchToAppId];
                 }
               }
               if (bcm._inProgressQueue[c].service == "playerState" && (bcm._inProgressQueue[c].operation == "LOGOUT" || bcm._inProgressQueue[c].operation == "FULL_RESET")) {
@@ -9010,7 +9073,7 @@ var brainCloud = (() => {
           );
         };
         bcm.setHeader = function(xhr) {
-          var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
+          var sig = bcm._signRequest(bcm._jsonedQueue);
           xhr.setRequestHeader("X-SIG", sig);
           xhr.setRequestHeader("X-APPID", bcm._appId);
         };
@@ -9091,7 +9154,7 @@ var brainCloud = (() => {
             bcm.debugLog("timeout", false);
             bcm.retry();
           }, bcm._packetTimeouts[0] * 1e3);
-          var sig = CryptoJS.MD5(bcm._jsonedQueue + bcm._secret);
+          var sig = bcm._signRequest(bcm._jsonedQueue);
           var baseHeaders = {
             "Content-Type": "application/json",
             "X-SIG": sig,
@@ -9611,9 +9674,9 @@ var brainCloud = (() => {
         bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK = "Facebook";
         bc2.authentication.AUTHENTICATION_TYPE_FACEBOOK_LIMITED = "FacebookLimited";
         bc2.authentication.AUTHENTICATION_TYPE_APPLE = "Apple";
+        bc2.authentication.AUTHENTICATION_TYPE_EPIC_GAMES = "EpicGames";
         bc2.authentication.AUTHENTICATION_TYPE_GOOGLE = "Google";
         bc2.authentication.AUTHENTICATION_TYPE_GOOGLE_OPEN_ID = "GoogleOpenId";
-        bc2.authentication.AUTHENTICATION_TYPE_APPLE = "Apple";
         bc2.authentication.AUTHENTICATION_TYPE_ULTRA = "Ultra";
         bc2.authentication.AUTHENTICATION_TYPE_UNIVERSAL = "Universal";
         bc2.authentication.AUTHENTICATION_TYPE_GAME_CENTER = "GameCenter";
@@ -9711,17 +9774,6 @@ var brainCloud = (() => {
             responseHandler
           );
         };
-        bc2.authentication.authenticateApple = function(appleId, appleToken, forceCreate, responseHandler) {
-          bc2.authentication.authenticate(
-            appleId,
-            appleToken,
-            bc2.authentication.AUTHENTICATION_TYPE_APPLE,
-            null,
-            forceCreate,
-            null,
-            responseHandler
-          );
-        };
         bc2.authentication.authenticateGameCenter = function(gameCenterId, forceCreate, responseHandler) {
           bc2.authentication.authenticate(
             gameCenterId,
@@ -9738,6 +9790,17 @@ var brainCloud = (() => {
             appleUserId,
             identityToken,
             bc2.authentication.AUTHENTICATION_TYPE_APPLE,
+            null,
+            forceCreate,
+            null,
+            responseHandler
+          );
+        };
+        bc2.authentication.authenticateEpicGames = function(epicAccountId, authIdToken, forceCreate, responseHandler) {
+          bc2.authentication.authenticate(
+            epicAccountId,
+            authIdToken,
+            bc2.authentication.AUTHENTICATION_TYPE_EPIC_GAMES,
             null,
             forceCreate,
             null,
@@ -13118,6 +13181,30 @@ var brainCloud = (() => {
           bc2.identity.detachIdentity(
             appleId,
             bc2.authentication.AUTHENTICATION_TYPE_APPLE,
+            continueAnon,
+            callback
+          );
+        };
+        bc2.identity.attachEpicGamesIdentity = function(epicAccountId, authIdToken, callback) {
+          bc2.identity.attachIdentity(
+            epicAccountId,
+            authIdToken,
+            bc2.authentication.AUTHENTICATION_TYPE_EPIC_GAMES,
+            callback
+          );
+        };
+        bc2.identity.mergeEpicGamesIdentity = function(epicAccountId, authIdToken, callback) {
+          bc2.identity.mergeIdentity(
+            epicAccountId,
+            authIdToken,
+            bc2.authentication.AUTHENTICATION_TYPE_EPIC_GAMES,
+            callback
+          );
+        };
+        bc2.identity.detachEpicGamesIdentity = function(epicAccountId, continueAnon, callback) {
+          bc2.identity.detachIdentity(
+            epicAccountId,
+            bc2.authentication.AUTHENTICATION_TYPE_EPIC_GAMES,
             continueAnon,
             callback
           );
@@ -17745,7 +17832,7 @@ var brainCloud = (() => {
           bcc.brainCloudRttComms.brainCloudClient = bcc;
           bcc.brainCloudRelayComms.brainCloudClient = bcc;
         }
-        bcc.version = "6.0.1";
+        bcc.version = "6.1.0";
         bcc.countryCode;
         bcc.languageCode;
         bcc.enableCompression = function(compressionEnabled) {
@@ -17764,7 +17851,7 @@ var brainCloud = (() => {
             return !str || /^\s*$/.test(str);
           }
           var error = null;
-          if (isBlank(secret)) error = "secret was null or empty";
+          if (typeof secret !== "function" && isBlank(secret)) error = "secret was null or empty";
           else if (isBlank(appId)) error = "appId was null or empty";
           else if (isBlank(appVersion)) error = "appVersion was null or empty";
           if (error != null) {
@@ -17785,7 +17872,7 @@ var brainCloud = (() => {
           var appId = defaultAppId;
           var secret = secretMap[appId];
           var error = null;
-          if (isBlank(secret)) error = "secret was null or empty";
+          if (typeof secret !== "function" && isBlank(secret)) error = "secret was null or empty";
           else if (isBlank(appId)) error = "appId was null or empty";
           else if (isBlank(appVersion)) error = "appVersion was null or empty";
           if (error != null) {
@@ -17810,6 +17897,9 @@ var brainCloud = (() => {
         };
         bcc.getAppId = function() {
           return bcc.brainCloudManager.getAppId();
+        };
+        bcc.isSuccess = function(result2) {
+          return result2 != null && result2.status === bcc.statusCodes.OK;
         };
         bcc.getAppVersion = function() {
           return bcc.appVersion;
@@ -18003,15 +18093,13 @@ var brainCloud = (() => {
         };
         bcr.disconnect = function() {
           bcr.stopPing();
-          if (!bcr.endMatchRequested) {
-            if (bcr.socket) {
-              bcr.socket.removeEventListener("error", bcr.onSocketError);
-              bcr.socket.removeEventListener("close", bcr.onSocketClose);
-              bcr.socket.removeEventListener("open", bcr.onSocketOpen);
-              bcr.socket.removeEventListener("message", bcr.onSocketMessage);
-              bcr.socket.close();
-              bcr.socket = null;
-            }
+          if (bcr.socket) {
+            bcr.socket.removeEventListener("error", bcr.onSocketError);
+            bcr.socket.removeEventListener("close", bcr.onSocketClose);
+            bcr.socket.removeEventListener("open", bcr.onSocketOpen);
+            bcr.socket.removeEventListener("message", bcr.onSocketMessage);
+            bcr.socket.close();
+            bcr.socket = null;
           }
           bcr.isConnected = false;
           bcr._sendPacketId = {};
@@ -18622,15 +18710,32 @@ var brainCloud = (() => {
           bcw.brainCloudManager = window.brainCloudManager = window.brainCloudManager || {};
           bcw.brainCloudClient = window.brainCloudClient = window.brainCloudClient || {};
         }
+        bcw.isSuccess = function(result2) {
+          return bcw.brainCloudClient.isSuccess(result2);
+        };
         bcw.wrapperName = wrapperName === void 0 ? "" : wrapperName;
         bcw._alwaysAllowProfileSwitch = true;
         bcw.initializeParams = {
           appId: "",
-          secretKey: "",
           appVersion: "",
           serverUrl: "",
-          secretMap: null
+          appMap: false
         };
+        var configHintShown = false;
+        var SETUP_DOCS = "https://github.com/getbraincloud/braincloud-js#getting-started";
+        function isDevelopment() {
+          if (typeof location !== "undefined" && location.hostname !== void 0) {
+            return /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname);
+          }
+          return typeof process === "undefined" || !process.env || true;
+        }
+        function showConfigHint() {
+          if (configHintShown || !isDevelopment()) return;
+          configHintShown = true;
+          var msg = "brainCloud: keep the app secret out of your code. Run `npx @braincloud/client setup`, import braincloud.config.js and call init(). " + SETUP_DOCS;
+          if (typeof document !== "undefined") console.warn("%c" + msg, "color:#29a8e0;font-weight:bold");
+          else console.warn(msg);
+        }
         bcw._initializeIdentity = function(isAnonymousAuth) {
           var profileId = bcw.getStoredProfileId();
           var anonymousId = bcw.getStoredAnonymousId();
@@ -18659,21 +18764,11 @@ var brainCloud = (() => {
           if (result2.status == 202 && result2.reason_code == bcw.reasonCodes.MANUAL_REDIRECT) {
             bcw.initializeParams.serverUrl = result2.redirect_url ? result2.redirect_url : bcw.initializeParams.serverUrl;
             var newAppId = result2.redirect_appid ? result2.redirect_appid : null;
-            if (bcw.initializeParams.secretMap == null) {
-              if (newAppId != null) bcw.initializeParams.appId = newAppId;
-              bcw.brainCloudClient.initialize(
-                bcw.initializeParams.appId,
-                bcw.initializeParams.secretKey,
-                bcw.initializeParams.appVersion,
-                bcw.initializeParams.serverUrl
-              );
-            } else {
-              bcw.brainCloudClient.initializeWithApps(
-                bcw.initializeParams.appId,
-                bcw.initializeParams.secretMap,
-                bcw.initializeParams.appVersion,
-                bcw.initializeParams.serverUrl
-              );
+            if (!bcw.initializeParams.appMap && newAppId != null) bcw.initializeParams.appId = newAppId;
+            bcw.brainCloudClient.resetCommunication();
+            bcw.brainCloudClient.brainCloudManager.reinitialize(bcw.initializeParams.appId);
+            if (bcw.initializeParams.serverUrl) {
+              bcw.brainCloudClient.setServerUrl(bcw.initializeParams.serverUrl);
             }
             bcw._initializeIdentity(true);
             bcw.brainCloudClient.authentication.retryPreviousAuthenticate(
@@ -18695,22 +18790,45 @@ var brainCloud = (() => {
         bcw.initialize = function(appId, secret, appVersion, serverUrl) {
           bcw.initializeParams = {
             appId,
-            secretKey: secret,
             appVersion,
             serverUrl: serverUrl || "",
-            secretMap: null
+            appMap: false
           };
+          if (typeof secret !== "function") showConfigHint();
           bcw.brainCloudClient.initialize(appId, secret, appVersion, serverUrl);
+          childAppIds = [];
+        };
+        bcw.init = function() {
+          var root = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {};
+          var tag = typeof Symbol === "function" && Symbol["for"] ? Symbol["for"]("braincloud.config") : "__braincloudConfig";
+          var cfg = root[tag];
+          if (!cfg || typeof cfg.appProfile !== "function") {
+            console.log("ERROR | brainCloud init(): no braincloud.config.js loaded. Run `npx @braincloud/client setup` and import it. " + SETUP_DOCS);
+            return false;
+          }
+          if (cfg.appProfiles && Object.keys(cfg.appProfiles).length > 1) {
+            bcw.initializeWithApps(cfg.appId, cfg.appProfiles, cfg.appVersion, cfg.serverUrl);
+            if (cfg.childAppIds) childAppIds = cfg.childAppIds.slice();
+          } else {
+            bcw.initialize(cfg.appId, cfg.appProfile, cfg.appVersion, cfg.serverUrl);
+          }
+          return true;
         };
         bcw.initializeWithApps = function(defaultAppId, secretMap, appVersion, serverUrl) {
           bcw.initializeParams = {
             appId: defaultAppId,
-            secretKey: "",
             appVersion,
             serverUrl: serverUrl || "",
-            secretMap
+            appMap: true
           };
           bcw.brainCloudClient.initializeWithApps(defaultAppId, secretMap, appVersion, serverUrl);
+          childAppIds = Object.keys(secretMap || {}).filter(function(id) {
+            return id !== defaultAppId;
+          });
+        };
+        var childAppIds = [];
+        bcw.getChildAppIdList = function() {
+          return childAppIds.slice();
         };
         bcw.getStoredAnonymousId = function() {
           var prefix = wrapperName === "" ? "" : wrapperName + ".";
@@ -18820,6 +18938,17 @@ var brainCloud = (() => {
           bcw.brainCloudClient.authentication.authenticateApple(
             appleUserId,
             identityToken,
+            forceCreate,
+            function(result2) {
+              bcw._authResponseHandler(responseHandler, result2);
+            }
+          );
+        };
+        bcw.authenticateEpicGames = function(epicAccountId, authIdToken, forceCreate, responseHandler) {
+          bcw._initializeIdentity(false);
+          bcw.brainCloudClient.authentication.authenticateEpicGames(
+            epicAccountId,
+            authIdToken,
             forceCreate,
             function(result2) {
               bcw._authResponseHandler(responseHandler, result2);
@@ -18987,6 +19116,38 @@ var brainCloud = (() => {
           authenticationCallback = function() {
             bcw.brainCloudClient.authentication.authenticateGameCenter(
               gameCenterId,
+              forceCreate,
+              function(result2) {
+                bcw._authResponseHandler(responseHandler, result2);
+              }
+            );
+          };
+          bcw.brainCloudClient.identity.getIdentities(
+            getIdentitiesCallback(authenticationCallback)
+          );
+        };
+        bcw.smartSwitchAuthenticateApple = function(appleUserId, identityToken, forceCreate, responseHandler) {
+          bcw._initializeIdentity(false);
+          authenticationCallback = function() {
+            bcw.brainCloudClient.authentication.authenticateApple(
+              appleUserId,
+              identityToken,
+              forceCreate,
+              function(result2) {
+                bcw._authResponseHandler(responseHandler, result2);
+              }
+            );
+          };
+          bcw.brainCloudClient.identity.getIdentities(
+            getIdentitiesCallback(authenticationCallback)
+          );
+        };
+        bcw.smartSwitchAuthenticateEpicGames = function(epicAccountId, authIdToken, forceCreate, responseHandler) {
+          bcw._initializeIdentity(false);
+          authenticationCallback = function() {
+            bcw.brainCloudClient.authentication.authenticateEpicGames(
+              epicAccountId,
+              authIdToken,
               forceCreate,
               function(result2) {
                 bcw._authResponseHandler(responseHandler, result2);
@@ -19226,9 +19387,7 @@ var brainCloud = (() => {
             sessionId: bcw.brainCloudClient.brainCloudManager._sessionId,
             packetId: bcw.brainCloudClient.brainCloudManager._packetId++
           });
-          var sig = CryptoJS.MD5(
-            messages + bcw.brainCloudClient.brainCloudManager._secret
-          );
+          var sig = bcw.brainCloudClient.brainCloudManager._signRequest(messages);
           bcw.brainCloudClient.brainCloudManager._packetId++;
           fetch(bcw.brainCloudClient.brainCloudManager._dispatcherUrl, {
             method: "POST",
@@ -19264,9 +19423,7 @@ var brainCloud = (() => {
             sessionId: bcw.brainCloudClient.brainCloudManager._sessionId,
             packetId: bcw.brainCloudClient.brainCloudManager._packetId++
           });
-          var sig = CryptoJS.MD5(
-            messages + bcw.brainCloudClient.brainCloudManager._secret
-          );
+          var sig = bcw.brainCloudClient.brainCloudManager._signRequest(messages);
           bcw.brainCloudClient.brainCloudManager._packetId++;
           fetch(bcw.brainCloudClient.brainCloudManager._dispatcherUrl, {
             method: "POST",

@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import packageJson from '../package.json'
-import ids from './ids'
 import GlobalChatPanel from './GlobalChatPanel'
 import LeaderboardPanel from './LeaderboardPanel'
 
@@ -42,7 +41,7 @@ class MainMenuScreen extends Component
     render()
     {
         let versionSuffix = ""
-        switch(ids.url){
+        switch(this.props.serverUrl){
             case "https://api.internal.braincloudservers.com":
                 versionSuffix = " - internal"
                 break

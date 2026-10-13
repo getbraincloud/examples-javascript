@@ -321,13 +321,16 @@ class LobbyScreen extends Component {
   }
 
   // A member's row — colour swatch (clickable, opens the picker, on your own row in FFA
-  // lobbies), name, YOU/HOST badges, ready-state line. Used by both FFA and team member
+  // lobbies), name, YOU/HOST badges, worldwide rank, ready-state line. Used by both FFA and team member
   // lists.
   renderMemberRow (member) {
     const isMe = member.cxId === this.props.user.cxId
     const isHost = member.cxId === this.props.lobby.ownerCxId
     const color = colors[member.extra.colorIndex % colors.length]
     const canPickColor = isMe && this.props.teams.length === 1
+    // Own row uses the local value so a fresh fetch shows before the server echo.
+    const extraRank = member.extra && typeof member.extra.rank === 'number' ? member.extra.rank : -1
+    const rank = isMe && this.props.user.worldwideRank !== undefined ? this.props.user.worldwideRank : extraRank
 
     return (
       <li key={member.cxId} className='memberRow'>
@@ -340,6 +343,9 @@ class LobbyScreen extends Component {
           <span style={{ color: isMe ? '#59ff73' : 'white' }}>{member.name}</span>
           {isMe ? <span className='memberBadge'>YOU</span> : null}
           {isHost ? <span className='memberBadge memberBadgeHost'>HOST</span> : null}
+          {rank >= 0
+            ? <span className='memberRank' style={{ color: rankColor(rank) }}>#{rank}</span>
+            : <span className='memberRank' style={{ color: '#999999' }}>Unranked</span>}
         </div>
         {canPickColor ? this.renderColorPicker() : null}
         <p className='memberStatus'>{member.isReady ? 'Ready' : 'Not ready'}</p>

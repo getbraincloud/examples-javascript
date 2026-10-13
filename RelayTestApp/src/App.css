@@ -532,6 +532,11 @@ small {
     flex-shrink: 0;
 }
 
+.memberRank {
+    margin-left: auto;
+    font-size: 9pt;
+}
+
 .memberStatus {
     margin: 2px 0 0 26px;
     font-size: 9pt;

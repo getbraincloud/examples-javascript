@@ -3,3 +3,19 @@
 /sso-auth/oauth2/build
 /sso-auth/saml/build
 /bcgoogleauth/node_modules
+# brainCloud app config (generated)
+/FileUploader/client/braincloud.config.js
+# brainCloud app config (generated)
+/AceyDeucey/braincloud.config.js
+# brainCloud app config (generated)
+/bcchat/src/braincloud.config.js
+# brainCloud app config (generated)
+/RelayTestApp/src/braincloud.config.js
+# brainCloud app config (generated)
+/bcgoogleauth/braincloud.config.js
+# brainCloud app config (generated)
+/warstone/client/src/braincloud.config.js
+# brainCloud app config (generated)
+/sso-auth/oauth2/src/braincloud.config.js
+# brainCloud app config (generated)
+/sso-auth/saml/src/braincloud.config.js

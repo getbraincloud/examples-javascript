@@ -22,9 +22,8 @@ app.post('/', (req, res)=>{
 
     _bc.authenticateGoogleOpenId(user_id, id_token, true, result =>
     {
-        var status = result.status;
-        console.log(status + " : " + JSON.stringify(result, null, 2));
-        if (status == 200){
+        console.log(result.status + " : " + JSON.stringify(result, null, 2));
+        if (_bc.isSuccess(result)){
             _bc.playerState.readUserState(result =>
             {
                 var status = result.status;
@@ -37,7 +36,7 @@ app.listen(port, ()=>{
     console.log(`Server is running on http://localhost:${port}`)
 })
 
-const lib = require('./ids.js');
+require('./braincloud.config.js'); // npx @braincloud/client setup
 
 // Set up XMLHttpRequest.
 XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
@@ -59,6 +58,5 @@ localStorage = new LocalStorage(configDir);
 const BC = require('@braincloud/client');
 
 var _bc = new BC.BrainCloudWrapper("newrapp");
-_bc.initialize(lib.appId, lib.appSecret, "1.0.0");
-if (lib.url) _bc.brainCloudClient.setServerUrl(lib.url);
+_bc.init();
 _bc.brainCloudClient.enableLogging(true);

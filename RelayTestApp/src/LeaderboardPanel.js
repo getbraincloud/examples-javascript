@@ -79,12 +79,12 @@ class LeaderboardPanel extends Component {
     }
 
     bcWrapper.socialLeaderboard.getGlobalLeaderboardPage(leaderboardId, HIGH_TO_LOW, 0, 4, result => {
-      mergeResult({ top: result.status === 200 ? (result.data.leaderboard || []).map(this.parseEntry) : [] })
+      mergeResult({ top: bcWrapper.isSuccess(result) ? (result.data.leaderboard || []).map(this.parseEntry) : [] })
     })
 
     // beforeCount=0/afterCount=0 returns just the current player's own entry.
     bcWrapper.socialLeaderboard.getGlobalLeaderboardView(leaderboardId, HIGH_TO_LOW, 0, 0, result => {
-      const entries = result.status === 200 ? result.data.leaderboard : []
+      const entries = bcWrapper.isSuccess(result) ? result.data.leaderboard : []
       mergeResult({ self: entries && entries.length > 0 ? this.parseEntry(entries[0]) : null })
     })
   }

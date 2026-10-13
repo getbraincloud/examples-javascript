@@ -71,7 +71,7 @@ class GlobalChatPanel extends Component {
 
     this.setState({ resolving: true })
     bcWrapper.chat.getChannelId(CHAT_CHANNEL_TYPE, CHAT_CHANNEL_SUB_ID, result => {
-      if (result.status === 200 && result.data.channelId) {
+      if (this.props.bcWrapper.isSuccess(result) && result.data.channelId) {
         this.connectChannel(result.data.channelId)
       } else {
         this.retryAtMs = Date.now() + RETRY_BACKOFF_MS
@@ -82,7 +82,7 @@ class GlobalChatPanel extends Component {
 
   connectChannel (channelId) {
     this.props.bcWrapper.chat.channelConnect(channelId, MAX_HISTORY, result => {
-      if (result.status !== 200) {
+      if (!this.props.bcWrapper.isSuccess(result)) {
         this.retryAtMs = Date.now() + RETRY_BACKOFF_MS
         this.setState({ resolving: false })
         return

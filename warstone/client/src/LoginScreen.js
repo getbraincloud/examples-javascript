@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import './style.css'
 import packageJson from '../package.json'
 import bcPackageJson from '@braincloud/client/package.json' // installed brainCloud client version (separate from the app version)
-import ids from './ids'
 
 // onLogin(user, pass)
 class LoginScreen extends Component {
@@ -38,7 +37,7 @@ class LoginScreen extends Component {
     }
 
     render() {
-        let versionSuffix = (ids.url) ? " - dev" : " - prod"
+        let versionSuffix = this.props.dev ? " - dev" : " - prod"
         return (
             <div className="LoginScreen">
                 <form onSubmit={this.onLogin.bind(this)}>
@@ -59,7 +58,7 @@ class LoginScreen extends Component {
 
                     <div className="bottomText">
                         <p>A user will be created if not already registered.</p>
-                        <p className="ver-text">app: {packageJson.version} | bcclient: {bcPackageJson.version}{versionSuffix}</p>
+                        <p className="ver-text">app: {packageJson.version} | bcclient: {bcPackageJson.version.replace(/-develop\.\d+$/, '')}{versionSuffix}</p>
                     </div>
                 </form>
             </div>

@@ -15,6 +15,16 @@ The RS approach is the simpler of the two scenarios while the RSM version is sli
 The following sections describe the protocols and requirements for the RS approach. The RSM approach will be described in a separate article.
 
 
+## Client setup
+From `warstone/client`:
+```
+npm install
+npx @braincloud/client setup
+npm start
+```
+Setup logs you in to brainCloud, lets you pick your team and app, and writes `src/braincloud.config.js` (gitignored). The app loads it and calls `init()`. Rerun setup to switch apps or servers.
+In VS Code, open `warstone/client` and run Terminal → Run Task… → **brainCloud: Setup** instead (**brainCloud: Refresh config** re-fetches the config from your saved login without the browser).
+
 ## How matchmaking works
 Room Server instances in brainCloud are launched when the matchmaking requirements are satified for a particular lobby instance. Lobby matchmaking details are outside the scope of this article however you can find them [here](https://getbraincloud.com/apidocs/api-modules/multiplayer/lobbies/) if you haven't been exposed to it before.
 

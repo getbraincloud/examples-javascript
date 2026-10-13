@@ -39,7 +39,7 @@ class AddFriendScreen extends Component
         {
             console.log(JSON.stringify(result));
 
-            if (result.status === 200)
+            if (this.props.bcWrapper.isSuccess(result))
             {
                 this.setState({searchResults: result.data.matches.map(friend =>
                 {

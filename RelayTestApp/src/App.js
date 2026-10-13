@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
+import packageJson from '../package.json'
 import './App.css'
-import ids from './ids' // CREATE ids.js AND EXPORT appId, appSecret (and optionally url)
+import './braincloud.config.js' // npx @braincloud/client setup
 
 // Screens
 import LoginScreen from './LoginScreen'
@@ -97,7 +98,7 @@ class App extends Component {
     if (this.bc.canReconnect()) {
       console.log('Attempting reconnect . . .')
       this.bc.reconnect(reconnectResponse => {
-        if (reconnectResponse.status === 200) {
+        if (this.bc.isSuccess(reconnectResponse)) {
           console.log('Reconnect success')
           if (reconnectResponse.data.playerName) {
             this.username = reconnectResponse.data.playerName
@@ -130,10 +131,10 @@ class App extends Component {
   // Initialize brainCloud library
   initBC () {
     this.rttEnableWaiters = null // drop any pending ensureRTTEnabled callers from the old bc instance
+    this.rankFetchInFlight = false
     this.currentLobbyId = null // tracked independent of state.lobby, which only populates once the first RTT lobby event arrives
     this.bc = new brainCloud.BrainCloudWrapper('relayservertest')
-    this.bc.initialize(ids.appId, ids.appSecret, '6.0.0')
-    if (ids.url) this.bc.brainCloudClient.setServerUrl(ids.url)
+    this.bc.init()
     this.bc.brainCloudClient.enableLogging(true)
   }
 
@@ -171,23 +172,29 @@ class App extends Component {
   }
 
   // Build the extra JSON for lobby join/updateReady calls.
-  // Always includes colorIndex and presentSinceStart; includes per-region pings when available.
+  // Always includes colorIndex, presentSinceStart and rank; includes per-region pings when available.
   makeExtraJson (colorIndex, presentSinceStart) {
     let extra = {
       colorIndex: colorIndex !== undefined ? colorIndex : this.state.user.colorIndex,
-      presentSinceStart: !!presentSinceStart
+      presentSinceStart: !!presentSinceStart,
+      rank: this.state.user.worldwideRank !== undefined ? this.state.user.worldwideRank : -1
     }
     let pingData = this.state.pingData || {}
     if (Object.keys(pingData).length > 0) extra.pings = pingData
     return extra
   }
 
+  getServerUrl () {
+    return this.bc.brainCloudClient.brainCloudManager.getDispatcherUrl().replace(/\/dispatcherv2$/, '')
+  }
+
   // Derive a display label for the brainCloud server environment
   getServerLabel () {
-    if (!ids.url) return 'prod'
-    if (ids.url.includes('internalgb')) return 'internal-gb'
-    if (ids.url.includes('internal')) return 'internal'
-    return ids.url
+    const url = this.bc.brainCloudClient.brainCloudManager.getDispatcherUrl()
+    if (url.includes('internalgb')) return 'internal-gb'
+    if (url.includes('internal')) return 'internal'
+    if (url.startsWith('https://api.braincloudservers.com')) return 'prod'
+    return url
   }
 
   // Reset the app to the login page with an error popup
@@ -217,7 +224,7 @@ class App extends Component {
 
   // brainCloud authentication response
   onLoggedIn (result) {
-    if (result.status === 200) {
+    if (this.bc.isSuccess(result)) {
       // Update username stored in brainCloud if first time loging in with that user.
       if (this.username !== '' && this.username !== undefined) {
         this.bc.playerState.updateUserName(this.username)
@@ -231,7 +238,7 @@ class App extends Component {
 
       // Get app's lobby types and global settings
       this.bc.globalApp.readProperties(readPropertiesResponse => {
-        if (readPropertiesResponse.status === 200) {
+        if (this.bc.isSuccess(readPropertiesResponse)) {
           var parsedValue = JSON.parse(
             readPropertiesResponse.data.AllLobbyTypes.value
           )
@@ -278,11 +285,12 @@ class App extends Component {
               name: this.username,
               colorIndex: parseInt(localStorageColor) % colors.length,
               isReady: false,
-              presentSinceStart: false
+              presentSinceStart: false,
+              worldwideRank: -1 // coverage leaderboard rank, shared via extra.rank; -1 = unranked
             },
             appLobbies: allLobbyTypes,
             splotchDurationSec: splotchDurationSec
-          })
+          }, () => this.fetchWorldwideRank())
 
           // RTT stays up for the whole session now, leave/rejoin included — only logout/
           // dieWithMessage disable it.
@@ -302,6 +310,34 @@ class App extends Component {
     } else {
       this.dieWithMessage('Failed to login')
     }
+  }
+
+  // Own rank on the coverage leaderboard, shared with lobby-mates via extra.rank (like cpp).
+  fetchWorldwideRank () {
+    if (this.rankFetchInFlight || !LEADERBOARD_IDS.coverage.lifetime) return
+    this.rankFetchInFlight = true
+    const bc = this.bc
+    bc.socialLeaderboard.getGlobalLeaderboardView(
+      LEADERBOARD_IDS.coverage.lifetime, bc.socialLeaderboard.sortOrder.HIGH_TO_LOW, 0, 0,
+      result => {
+        if (bc !== this.bc) return // re-initialized meanwhile; initBC already reset the flag
+        this.rankFetchInFlight = false
+        if (!this.state.user) return
+        const rows = bc.isSuccess(result) && result.data ? result.data.leaderboard : null
+        const rank = rows && rows.length > 0 ? rows[0].rank : -1
+        if (rank === this.state.user.worldwideRank) return
+        let state = this.state
+        state.user.worldwideRank = rank
+        this.setState(state)
+        // Re-send extra so lobby-mates see the new rank right away.
+        if (state.lobby) {
+          bc.lobby.updateReady(
+            state.lobby.lobbyId, state.user.isReady,
+            this.makeExtraJson(state.user.colorIndex, state.user.presentSinceStart)
+          )
+        }
+      }
+    )
   }
 
   // Wraps RTT's enableRTT(), which silently no-ops with no callback when RTT is already
@@ -379,7 +415,7 @@ class App extends Component {
             this.state.user.presentSinceStart
           )
           const onFindResult = result => {
-            if (result.status !== 200) {
+            if (!this.bc.isSuccess(result)) {
               console.error('[DEBUG] findOrCreateLobby failed', result)
               this.dieWithMessage('Failed to find lobby: ' + (result.status_message || result.reason_code || JSON.stringify(result)))
             }
@@ -402,13 +438,13 @@ class App extends Component {
         if (usePingData) {
           this.setState({ loadingStatus: 'Getting regions...' })
           this.bc.lobby.getRegionsForLobbies([lobbyType], result => {
-            if (result.status !== 200) {
+            if (!this.bc.isSuccess(result)) {
               console.error('[DEBUG] getRegionsForLobbies failed, falling back to no ping data', result)
               doFindLobby(false)
               return
             }
             this.bc.lobby.pingRegions(result => {
-              if (result.status !== 200) {
+              if (!this.bc.isSuccess(result)) {
                 console.error('[DEBUG] pingRegions failed, falling back to no ping data', result)
                 doFindLobby(false)
                 return
@@ -633,6 +669,7 @@ class App extends Component {
     showJoinButton = false
     loadingTimerStart = null
     this.setState(state)
+    this.fetchWorldwideRank()
   }
 
   // The player has picked a different color in the Lobby menu
@@ -663,7 +700,7 @@ class App extends Component {
     this.setState(state)
 
     this.bc.lobby.switchTeam(state.lobby.lobbyId, team, result => {
-      if (result.status === 200) {
+      if (this.bc.isSuccess(result)) {
         this.onColorChanged(state.user.colorIndex)
       }
     })
@@ -1327,7 +1364,7 @@ class App extends Component {
     }
 
     this.bc.script.runScript('PostMatchResults', scriptData, result => {
-      if (result.status === 200) {
+      if (this.bc.isSuccess(result)) {
         // The script's own return value is nested under data.response (a sibling of
         // runTimeData/success), not data itself — data.results is always empty/missing.
         this.applyLeaderboardResultsFromCloud(round, result.data.response.results)
@@ -1389,7 +1426,7 @@ class App extends Component {
     const round = state.matchResult.round
     const indexedId = state.lobby.lobbyId + ':' + round
     this.bc.globalEntity.getListByIndexedId(indexedId, 1, result => {
-      if (result.status !== 200) return // next tick retries
+      if (!this.bc.isSuccess(result)) return // next tick retries
       const list = result.data.entityList
       if (!list || !list.length) return // not written yet — next tick retries
       this.applyLeaderboardResultsFromCloud(round, list[0].data.results)
@@ -1516,8 +1553,9 @@ class App extends Component {
   renderVersionOverlay () {
     return (
       <div className='VersionOverlay'>
-        <div>App: {ids.version}</div>
-        <div>App ID: {ids.appId}</div>
+        <div>App: {packageJson.version}</div>
+        <div>brainCloud: {this.bc.brainCloudClient.version}</div>
+        <div>App ID: {this.bc.brainCloudClient.getAppId()}</div>
         <div>Server: {this.getServerLabel()}</div>
       </div>
     )
@@ -1533,7 +1571,7 @@ class App extends Component {
         return (
           <>
             <h1>Cursor Party</h1>
-            <LoginScreen onLogin={this.onLoginClicked.bind(this)} />
+            <LoginScreen serverUrl={this.getServerUrl()} onLogin={this.onLoginClicked.bind(this)} />
           </>
         )
 
@@ -1545,6 +1583,7 @@ class App extends Component {
           <>
             <h1>Cursor Party</h1>
             <MainMenuScreen
+              serverUrl={this.getServerUrl()}
               user={this.state.user}
               appLobbies={this.state.appLobbies}
               usePingData={this.state.usePingData}

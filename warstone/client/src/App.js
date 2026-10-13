@@ -4,14 +4,10 @@ import LoginScreen from './LoginScreen';
 import LoadingScreen from './LoadingScreen';
 import MainMenuScreen from './MainMenuScreen';
 import GameScreen from './GameScreen';
-import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
+import './braincloud.config.js'; // npx @braincloud/client setup
 import HowToScreen from './HowToScreen';
 
 let brainCloud = require("@braincloud/client")
-
-let appId = ids.appId
-let appSecret = ids.appSecret
-let url = ids.url
 
 class App extends Component {
     constructor() {
@@ -103,9 +99,12 @@ class App extends Component {
 
     initBC() {
         this.bc = new brainCloud.BrainCloudWrapper("warstone")
-        this.bc.initialize(appId, appSecret, "1.0.0")
-        if (url) this.bc.brainCloudClient.setServerUrl(url)
+        this.bc.init()
         this.bc.brainCloudClient.enableLogging(true)
+    }
+
+    isDev() {
+        return this.bc.brainCloudClient.brainCloudManager.getDispatcherUrl().includes(".internal.")
     }
 
     renderTitle() {
@@ -265,7 +264,7 @@ class App extends Component {
                     return (
                         <div className="App">
                             {this.renderTitle()}
-                            <LoginScreen onLogin={this.onLoginClicked.bind(this)}
+                            <LoginScreen dev={this.isDev()} onLogin={this.onLoginClicked.bind(this)}
                                 onLoad={this.onAutoLogin.bind(this)} />
                         </div>
                     )
@@ -284,7 +283,7 @@ class App extends Component {
                     return (
                         <div className="App">
                             {this.renderTitle()}
-                            <MainMenuScreen user={this.state.user}
+                            <MainMenuScreen dev={this.isDev()} user={this.state.user}
                                 onPlay={this.onPlayClicked.bind(this)}
                                 onHowTo={this.onHowToClicked.bind(this)}
                                 onLogout={this.onLogoutClicked.bind(this)} />
