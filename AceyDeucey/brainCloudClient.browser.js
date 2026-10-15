@@ -9338,6 +9338,8 @@ var brainCloud = (() => {
         bc2.appStore.OPERATION_FINALIZE_PURCHASE = "FINALIZE_PURCHASE";
         bc2.appStore.OPERATION_GET_ELIGIBLE_PROMOTIONS = "ELIGIBLE_PROMOTIONS";
         bc2.appStore.OPERATION_GET_SALES_INVENTORY = "GET_INVENTORY";
+        bc2.appStore.OPERATION_GET_STORE_INFO = "GET_STORE_INFO";
+        bc2.appStore.OPERATION_GET_USER_TOKEN = "GET_USER_TOKEN";
         bc2.appStore.OPERATION_REFRESH_PROMOTIONS = "REFRESH_PROMOTIONS";
         bc2.appStore.OPERATION_START_PURCHASE = "START_PURCHASE";
         bc2.appStore.OPERATION_VERIFY_PURCHASE = "VERIFY_PURCHASE";
@@ -9428,6 +9430,28 @@ var brainCloud = (() => {
           bc2.brainCloudManager.sendRequest({
             service: bc2.SERVICE_APP_STORE,
             operation: bc2.appStore.OPERATION_REFRESH_PROMOTIONS,
+            data: message,
+            callback
+          });
+        };
+        bc2.appStore.getStoreInfo = function(storeId, callback) {
+          var message = {
+            storeId
+          };
+          bc2.brainCloudManager.sendRequest({
+            service: bc2.SERVICE_APP_STORE,
+            operation: bc2.appStore.OPERATION_GET_STORE_INFO,
+            data: message,
+            callback
+          });
+        };
+        bc2.appStore.getUserToken = function(storeId, callback) {
+          var message = {
+            storeId
+          };
+          bc2.brainCloudManager.sendRequest({
+            service: bc2.SERVICE_APP_STORE,
+            operation: bc2.appStore.OPERATION_GET_USER_TOKEN,
             data: message,
             callback
           });
