@@ -13,7 +13,7 @@
 //     "data": { ... }      // Game data to be represented on the client
 // }
 
-var brainclouds2s = require('brainclouds2s');
+var brainclouds2s = require('../brainclouds2s');
 let S2S = require('../S2S')
 
 var CARD_TYPE_SKIP_TURN = "SkipTurnSpell";

@@ -1,7 +1,6 @@
 // Imports
 var net = require('net')
 var ConnectionManager = require('./ConnectionManager.js')
-const publicIp = require('public-ip')
 var brainclouds2s = require('./brainclouds2s')
 const WebSocket = require('ws')
 const S2S = require('./S2S.js')
@@ -62,36 +61,31 @@ S2S.context = brainclouds2s.init(
 )
 brainclouds2s.setLogEnabled(S2S.context, true)
 
-// Authenticate first, then get public IP and proceed
+// PRL waits on the lobby, so the no-connection death timer can't run during startup.
+var isPRL = prl.isPreReadyLaunch()
+console.log('[Server] PRL check: isPreReadyLaunch() = ' + isPRL)
+if (isPRL) ConnectionManager.cancelDeathTimer()
+
 brainclouds2s.authenticate(S2S.context, (context, result) => {
   if (!result || result.status !== 200) {
     console.log('Failed to authenticate with brainCloud S2S')
     process.exit(1)
   }
 
-  // Get our public IP
-  let myPublicIp = ''
-  publicIp.v4().then(ip => {
-    myPublicIp = ip
-    console.log('Public IP: ' + myPublicIp)
+  console.log('External IP: ' + process.env['EXTERNAL_IP'])
 
-    var isPRL = prl.isPreReadyLaunch()
-    console.log('[Server] PRL check: isPreReadyLaunch() = ' + isPRL)
-
-    if (isPRL) {
-      ConnectionManager.cancelDeathTimer()
-      prl.start(S2S.context, LOBBY_ID, proceed => {
-        console.log('[Server] PRL flow complete. proceed=' + proceed)
-        if (!proceed) {
-          console.log('[PRL] Server not proceeding with launch.')
-          process.exit(0)
-        }
-        retreiveLobby()
-      })
-    } else {
+  if (isPRL) {
+    prl.start(S2S.context, LOBBY_ID, proceed => {
+      console.log('[Server] PRL flow complete. proceed=' + proceed)
+      if (!proceed) {
+        console.log('[PRL] Server not proceeding with launch.')
+        process.exit(0)
+      }
       retreiveLobby()
-    }
-  })
+    })
+  } else {
+    retreiveLobby()
+  }
 })
 
 function retreiveLobby () {
@@ -175,5 +169,7 @@ function start () {
     data: {
       lobbyId: LOBBY_ID
     }
+  }, (context, result) => {
+    console.log('[Server] SYS_ROOM_READY result: ' + JSON.stringify(result))
   })
 }
