@@ -18011,6 +18011,9 @@ var brainCloud = (() => {
       );
       function BrainCloudRelayComms(_client) {
         var bcr = this;
+        function monotonicNowMs() {
+          return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+        }
         var Buffer2 = require_buffer().Buffer;
         bcr.CONTROL_BYTES_SIZE = 1;
         bcr.MAX_PLAYERS = 40;
@@ -18297,7 +18300,7 @@ var brainCloud = (() => {
             console.log("RELAY SEND PING: " + bcr.ping);
           }
           bcr._pingInFlight = true;
-          bcr._pingTime = (/* @__PURE__ */ new Date()).getTime();
+          bcr._pingTime = monotonicNowMs();
           var buffer = Buffer2.alloc(5);
           buffer.writeUInt16BE(5, 0);
           buffer.writeUInt8(bcr.CL2RS_PING, 2);
@@ -18333,7 +18336,7 @@ var brainCloud = (() => {
           } else if (controlByte == bcr.RS2CL_PONG) {
             if (bcr._pingInFlight) {
               bcr._pingInFlight = false;
-              bcr.ping = Math.min(999, (/* @__PURE__ */ new Date()).getTime() - bcr._pingTime);
+              bcr.ping = Math.min(999, monotonicNowMs() - bcr._pingTime);
             }
             if (bcr._debugEnabled) {
               console.log("RELAY RECV PONG: " + bcr.ping);

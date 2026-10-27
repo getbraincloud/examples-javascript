@@ -5,7 +5,7 @@
 			"label": "brainCloud: Setup",
 			"detail": "Opens the brainCloud setup panel in your browser and writes braincloud.config.js",
 			"type": "shell",
-			"command": "npx --yes @braincloud/client@develop setup",
+			"command": "npx --yes @braincloud/client@latest setup",
 			"options": { "cwd": "${workspaceFolder}" },
 			"problemMatcher": [],
 			"presentation": { "reveal": "always", "panel": "dedicated" }
@@ -14,7 +14,7 @@
 			"label": "brainCloud: Refresh config",
 			"detail": "Re-fetches braincloud.config.js from your saved login, no browser",
 			"type": "shell",
-			"command": "npx --yes @braincloud/client@develop setup --refresh",
+			"command": "npx --yes @braincloud/client@latest setup --refresh",
 			"options": { "cwd": "${workspaceFolder}" },
 			"problemMatcher": []
 		}
