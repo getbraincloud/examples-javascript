@@ -11,9 +11,9 @@
   "author": "davidstl",
   "contributors": [],
   "dependencies": {
+    "@braincloud/s2s": "^6.1.0",
     "@types/node": "^7.10.1",
     "@types/uuid": "^2.0.29",
-    "@braincloud/s2s": "^6.0.0",
     "carrier": "0.3.0",
     "cross-spawn": "^6.0.5",
     "docker-cli-js": "^2.5.1",

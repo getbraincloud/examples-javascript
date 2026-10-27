@@ -1,11 +1,11 @@
 // Imports
 var net = require('net')
 var ConnectionManager = require('./ConnectionManager.js')
-var brainclouds2s = require('./brainclouds2s')
+var brainclouds2s = require('@braincloud/s2s')
 const WebSocket = require('ws')
 const S2S = require('./S2S.js')
 let RoomServerManager = require('./RoomServerManager.js')
-var prl = require('./brainclouds2s-prl')
+var prl = require('@braincloud/s2s/brainclouds2s-prl')
 
 // Constants
 var TCP_PORT = 9314
