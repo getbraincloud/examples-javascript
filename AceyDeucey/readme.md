@@ -11,6 +11,11 @@ There are three outcomes when the third card is flipped:
 
 Unless the third card is between the other two (option 1) a portion of the money that is lost will contribute to the jackpot.
 
+## Setup
+From this folder run `npx @braincloud/client setup` (or, in VS Code, Terminal → Run Task… → **brainCloud: Setup**). Needs [Node.js](https://nodejs.org) 18+.
+
+Log in, pick your team and app, and it writes `braincloud.config.js` (gitignored). Then open `cardGame.html`.
+
 ## Jackpot
 A notable feature of this demo is the jackpot system. The jackpot is held by a Global Statistic, meaning that all users across the app can contribute to it (and collect it if they're lucky). It also uses brainCloud's RTT and Chat services so that its value will update in real time if there are multiple users playing at the same time.
 

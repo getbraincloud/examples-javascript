@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import './App.css';
 import Theme from './Theme';
 import packageJson from '../package.json';
-import bcPackageJson from '@braincloud/client/package.json'; // installed brainCloud client version (separate from the app version)
 import BC from '@braincloud/client';
 
 // Component imports
@@ -12,19 +11,12 @@ import CreateGroupScreen from './components/screens/CreateGroupScreen';
 import EnterNameScreen from './components/screens/EnterNameScreen';
 import LogInScreen from './components/screens/LogInScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
-import ids from './ids'; // CREATE ids.js AND EXPORT appId, appSecret and url
+import './braincloud.config.js'; // npx @braincloud/client setup
 
-let GAMES = {
-    bcchat: {
-        appId: ids.appId, 
-        appSecret: ids.appSecret, 
-        url: ids.url
-    }
-}
+let GAMES = ['bcchat'];
 
 let MAX_HISTORY = 100;
 
-let currentApp = GAMES.bcchat;
 let defaultChannelsInitState = {
     names: [],
     connected: 0,
@@ -103,8 +95,7 @@ class App extends Component
     initBC()
     {
         this.bcWrapper = new BC.BrainCloudWrapper("bcchat");
-        this.bcWrapper.initialize(currentApp.appId, currentApp.appSecret, packageJson.version);
-        if (currentApp.url) this.bcWrapper.brainCloudClient.setServerUrl(currentApp.url);
+        this.bcWrapper.init();
         this.bcWrapper.brainCloudClient.enableLogging(true);
     }
 
@@ -142,7 +133,7 @@ class App extends Component
     handlePlayerState(result)
     {
         console.log(JSON.stringify(result));
-        if (result.status === 200)
+        if (this.bcWrapper.isSuccess(result))
         {
             let state = this.state;
             state.user.id = result.data.profileId;
@@ -171,7 +162,6 @@ class App extends Component
 
     handleLogin(login)
     {
-        currentApp = GAMES[login.appName];
         this.initBC();
 
         console.log("BC: authenticateUniversal");
@@ -198,7 +188,7 @@ class App extends Component
         this.bcWrapper.playerState.updateUserName(fullName, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 this.onLoggedIn();
             }
@@ -226,7 +216,7 @@ class App extends Component
             this.bcWrapper.playerState.updateUserName(state.user.name, result =>
             {
                 console.log(JSON.stringify(result));
-                if (result.status !== 200)
+                if (!this.bcWrapper.isSuccess(result))
                 {
                     this.dieWithMessage("Failed to update username to brainCloud");
                 }
@@ -238,7 +228,7 @@ class App extends Component
             this.bcWrapper.file.prepareUserUpload("userImages", settings.picFile.name, true, true, settings.picFile.size, result =>
             {
                 console.log(JSON.stringify(result));
-                if (result.status !== 200)
+                if (!this.bcWrapper.isSuccess(result))
                 {
                     this.dieWithMessage("Failed to prepareUserUpload");
                     return;
@@ -252,7 +242,7 @@ class App extends Component
                     this.bcWrapper.file.listUserFiles("userImages", false, result =>
                     {
                         console.log(JSON.stringify(result));
-                        if (result.status !== 200)
+                        if (!this.bcWrapper.isSuccess(result))
                         {
                             this.dieWithMessage("Failed to listUserFiles");
                             return;
@@ -269,7 +259,7 @@ class App extends Component
                         this.bcWrapper.playerState.updateUserPictureUrl(file.downloadUrl, result =>
                         {
                             console.log(JSON.stringify(result));
-                            if (result.status !== 200)
+                            if (!this.bcWrapper.isSuccess(result))
                             {
                                 this.dieWithMessage("Failed to updateUserPictureUrl");
                                 return;
@@ -338,7 +328,7 @@ class App extends Component
         this.bcWrapper.friend.listFriends(this.bcWrapper.friend.friendPlatform.All, false, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 let state = this.state;
                 state.chatData.friends = result.data.friends;
@@ -365,7 +355,7 @@ class App extends Component
         this.bcWrapper.messaging.getMessageCounts(result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
 
             }
@@ -382,7 +372,7 @@ class App extends Component
         this.bcWrapper.group.getMyGroups(result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 result.data.groups.forEach(group => this.loadGroup(group));
 
@@ -402,7 +392,7 @@ class App extends Component
         this.bcWrapper.chat.getChannelId("gr", group.groupId, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 group.id = result.data.channelId;
                 this.connectToChannel(group, () =>
@@ -414,7 +404,7 @@ class App extends Component
                     this.bcWrapper.group.readGroupMembers(group.groupId, result =>
                     {
                         console.log(JSON.stringify(result));
-                        if (result.status === 200)
+                        if (this.bcWrapper.isSuccess(result))
                         {
                             let state = this.state;
                             group.members = [];
@@ -433,7 +423,7 @@ class App extends Component
                             this.bcWrapper.presence.registerListenersForGroup(group.groupId, true, result =>
                             {
                                 console.log(JSON.stringify(result));
-                                if (result.status === 200)
+                                if (this.bcWrapper.isSuccess(result))
                                 {
                                     let state = this.state;
                                     result.data.presence.forEach(presence =>
@@ -502,7 +492,7 @@ class App extends Component
         this.bcWrapper.chat.deleteChatMessage(channel.id, message.msgId, message.ver, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 let index = channel.messages.indexOf(message);
                 if (index > -1)
@@ -530,7 +520,7 @@ class App extends Component
         {
             console.log(JSON.stringify(result));
             message.hideRemoveBtn = false;
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 // All good
             }
@@ -557,7 +547,7 @@ class App extends Component
             result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 this.loadGroup(group);
             }
@@ -589,7 +579,7 @@ class App extends Component
             result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 this.loadGroup(result.data);
             }
@@ -613,7 +603,7 @@ class App extends Component
             this.bcWrapper.friend.addFriends([friend.id], result =>
             {
                 console.log(JSON.stringify(result));
-                if (result.status === 200)
+                if (this.bcWrapper.isSuccess(result))
                 {
                 }
                 else
@@ -653,7 +643,7 @@ class App extends Component
         this.bcWrapper.chat.getSubscribedChannels("gl", result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 defaultChannelsInitState.connected = 0;
                 defaultChannelsInitState.failed = 0;
@@ -706,7 +696,7 @@ class App extends Component
         this.bcWrapper.chat.channelConnect(channel.id, MAX_HISTORY, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 channel.messages = result.data.messages;
                 channel.sendMsgHandler = this.sendChatChannelMsg.bind(this);
@@ -854,7 +844,7 @@ class App extends Component
         this.bcWrapper.chat.getChatMessages(channel.id, 25, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 let state = this.state;
                 channel.messages = result.data.messages;
@@ -931,7 +921,7 @@ class App extends Component
         this.bcWrapper.group.leaveGroup(group.groupId, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 // ... yay
             }
@@ -970,7 +960,7 @@ class App extends Component
         this.bcWrapper.friend.removeFriends([friend.id], result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 // ... yay
             }
@@ -1012,7 +1002,7 @@ class App extends Component
         this.bcWrapper.chat.postChatMessage(this.state.chatData.activeChannel.id, content, recordInHistory, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
                 outgoingMessage.msgId = result.data.msgId;
                 outgoingMessage.content.rich.apiRoundTrip = new Date().getTime() - outgoingMessage.content.rich.localTime;
@@ -1047,7 +1037,7 @@ class App extends Component
         this.bcWrapper.messaging.sendSimpleMessage([friend.id], message, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.bcWrapper.isSuccess(result))
             {
             }
             else
@@ -1123,12 +1113,12 @@ class App extends Component
             }
             case AppState.LogIn:
             {
-                let versionSuffix = currentApp.url ? " - dev" : " - prod"
+                let versionSuffix = this.bcWrapper.brainCloudClient.brainCloudManager.getDispatcherUrl().includes(".internal.") ? " - dev" : " - prod"
                 return (
                     <div className="App">
-                        <LogInScreen onLogin={this.handleLogin.bind(this)} games={Object.keys(GAMES)} />
+                        <LogInScreen onLogin={this.handleLogin.bind(this)} games={GAMES} />
                         <div style={{color:Theme.DarkTextColor, marginTop:"16px"}}>
-                            {`app: ${packageJson.version} | bcclient: ${bcPackageJson.version}${versionSuffix}`}
+                            {`app: ${packageJson.version} | bcclient: ${this.bcWrapper.brainCloudClient.version}${versionSuffix}`}
                         </div>
                     </div>
                 );

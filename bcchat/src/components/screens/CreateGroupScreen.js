@@ -57,7 +57,7 @@ class CreateGroupScreen extends Component
             }, result =>
         {
             console.log(JSON.stringify(result));
-            if (result.status === 200)
+            if (this.props.bcWrapper.isSuccess(result))
             {
                 this.totalCount = result.data.results.count;
                 this.fetchedCount += result.data.results.items.length;
@@ -69,7 +69,7 @@ class CreateGroupScreen extends Component
                         this.props.bcWrapper.chat.getChannelId("gr", group.groupId, result =>
                         {
                             console.log(JSON.stringify(result));
-                            if (result.status === 200)
+                            if (this.props.bcWrapper.isSuccess(result))
                             {
                                 group.id = result.data.channelId;
                                 let state = this.state;

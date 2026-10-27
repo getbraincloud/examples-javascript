@@ -19,18 +19,15 @@ If you don't have it already, install NodeJS https://nodejs.org/.
 
 #### Running locally
 1. Clone this repository
-2. In the `bcchat/src` folder, create an ids.js file. See `bcchat/src/ids-example.js` for a reference.
-`brainCloudServerURL`:
-    ```
-    appId = "...", // Fill in your appId
-    appSecret = "...", // Fill in your appSecret
-    
-    ```
-    That information can be found in **Core App Info - Application IDs** section of the portal.
-3. Open Terminal into the repository and type:
+2. Open Terminal into the `bcchat` folder and type:
    ```
    npm install
    ```
+3. Set up your app. Log in, pick your team and app, and it writes `src/braincloud.config.js`:
+   ```
+   npx @braincloud/client setup
+   ```
+   In VS Code, open this folder and run Terminal → Run Task… → **brainCloud: Setup** instead (**brainCloud: Refresh config** re-fetches the config from your saved login without the browser).
 4. Then type:
    ```
    npm start

@@ -1,6 +1,6 @@
 var Connection = require('./Connection.js');
 var WSConnection = require('./WSConnection.js');
-var prl = require('./brainclouds2s-prl');
+var prl = require('@braincloud/s2s/brainclouds2s-prl');
 var S2S = require('./S2S.js');
 
 const TIMEOUT_TIME = 30 * 1000 // 30sec

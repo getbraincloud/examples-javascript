@@ -19,6 +19,9 @@
      defined" in the browser. Refresh it with: node bccm syncsdk js_fileuploader -->
 <script src="client/brainCloudClient.browser.js"></script>
 
+<!-- Written by client/brainCloud Setup (or client/setup.sh). Gitignored. -->
+<script src="client/braincloud.config.js"></script>
+
 	<style>
 		/* brainCloud dark theme — palette mirrors the bcchat example (src/Theme.js). */
 		:root {
@@ -213,15 +216,12 @@
 
 	var brainCloud = new BrainCloudWrapper("PlayerOne");
 
-	// App version of this example, kept separate from the brainCloud client SDK
-	// version (read live from the loaded client below). Passed to initialize().
-	var APP_VERSION = "1.0.0";
-
-
 	function bcInit() {
-		document.getElementById("appId").value = "20001";
-		document.getElementById("appSecret").value = "1cecb2f3-5a60-4b00-8c7e-7867c12eea49";
-		document.getElementById("serverUrl").value = "https://api.internal.braincloudservers.com";
+		if (!brainCloud.init()) {
+			document.getElementById("clientState").innerHTML =
+				"⚠ No braincloud.config.js. Run client/brainCloud Setup, then reload.";
+			return;
+		}
 
 		document.getElementById("userName").value = "TEST_USER";
 		document.getElementById("password").value = "TEST_PASSWORD";
@@ -237,9 +237,11 @@
 
 		// Show the app version alongside the live brainCloud client SDK version.
 		var clientVersion = (brainCloud.brainCloudClient && brainCloud.brainCloudClient.version) || "unknown";
-		document.getElementById("versionInfo").innerHTML = "app: " + APP_VERSION + " &nbsp;|&nbsp; bcclient: " + clientVersion;
+		document.getElementById("versionInfo").innerHTML = "app: " + brainCloud.brainCloudClient.getAppVersion() + " &nbsp;|&nbsp; bcclient: " + clientVersion;
 
 		brainCloud.brainCloudClient.setDebugEnabled(true);
+
+		initialize();
 
 		showStep(0); // start the wizard on the first step
 	}
@@ -256,9 +258,9 @@
 	var downloadPath = "downloader/bc/g/";
 
 	function getFullPath() {
-		return document.getElementById("serverUrl").value +
+		return brainCloud.brainCloudClient.brainCloudManager.getDispatcherUrl().replace(/\/dispatcherv2$/, "") +
 			"/downloader/bc/g/" +
-			document.getElementById("appId").value +
+			brainCloud.brainCloudClient.getAppId() +
 			"/u/" +
 			document.getElementById("profileId").value +
 			"/f/" +
@@ -269,9 +271,6 @@
 
 
 	function initialize() {
-		brainCloud.brainCloudClient.initialize(document.getElementById("appId").value, document.getElementById("appSecret").value, APP_VERSION);
-		brainCloud.brainCloudClient.setServerUrl(document.getElementById("serverUrl").value);
-		//brainCloud.brainCloudClient.useJQuery(true);
 		document.getElementById('clientState').innerHTML = "✓ Client Initialized";
 		bcInitialized = true;
 		refreshGate();
@@ -285,7 +284,7 @@
 		brainCloud.brainCloudClient.authentication.authenticateUniversal(document.getElementById("userName").value, document.getElementById("password").value, true, function(result) {
 			document.getElementById("incomingResponse").innerHTML = "authenticateUniversal: " + JSON.stringify(result, null, 2);
 			
-			if (result.status == 200) {
+			if (brainCloud.isSuccess(result)) {
 	    		document.getElementById('sessionId').innerHTML = "SessionId: " + brainCloud.brainCloudClient.getSessionId();
 				document.getElementById('profileId').innerHTML = "ProfileId: " + brainCloud.brainCloudClient.authentication.profileId;
 				document.getElementById('profileId').value = brainCloud.brainCloudClient.authentication.profileId;
@@ -365,13 +364,13 @@
 		xhr.addEventListener("abort", uploadCanceled, false);
 
 
-		brainCloud.file.prepareFileUpload(
+		brainCloud.file.prepareUserUpload(
 			document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value, document.getElementById("isShareable").checked, document.getElementById("replaceIfExists").checked, fileSize,
 			function(result) {
-				if (result.status == 200) {
+				if (brainCloud.isSuccess(result)) {
 					var uploadId = result.data.fileDetails.uploadId;
 
-					document.getElementById("incomingResponse").innerHTML = "prepareFileUpload: " + JSON.stringify(result, null, 2);
+					document.getElementById("incomingResponse").innerHTML = "prepareUserUpload: " + JSON.stringify(result, null, 2);
 
 
 
@@ -485,21 +484,13 @@
 		<button type="button" class="bc-step-tab" data-step="2" onclick="showStep(2)">3 &middot; Actions &amp; Response</button>
 	</div>
 
-	<!-- Step 1: Connect (initialize + authenticate) -->
+	<!-- Step 1: Connect (the client initializes from braincloud.config.js on load). -->
 	<section class="bc-step" data-step="0">
-		<div class="bc-grid">
-			<div class="bc-panel">
-				<h2>Initialize</h2>
-				<p class="bc-hint">Set up your app information and initialize the client.</p>
-				<label class="bc-field">App ID <input type="text" id="appId" /></label>
-				<label class="bc-field">App Secret <input type="text" id="appSecret" /></label>
-				<label class="bc-field">Server URL <input type="text" id="serverUrl" /></label>
-				<input type="button" class="bc-primary" onclick="initialize()" value="Initialize" />
-				<div id="clientState"></div>
-			</div>
+		<div class="bc-grid" style="grid-template-columns: 1fr; max-width: 460px;">
 			<div class="bc-panel">
 				<h2>Authenticate</h2>
 				<p class="bc-hint">Set up your user details and authenticate.</p>
+				<div id="clientState" style="margin-bottom: 10px;"></div>
 				<label class="bc-field">Username <input type="text" id="userName" /></label>
 				<label class="bc-field">Password <input type="text" id="password" /></label>
 				<input type="button" class="bc-primary" onclick="authenticate()" value="Authenticate" />

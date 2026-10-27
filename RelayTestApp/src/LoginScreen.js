@@ -1,7 +1,6 @@
 import React, { Component } from 'react'
 // import './style.css'
 import packageJson from '../package.json'
-import ids from './ids'
 
 // onLogin(user, pass)
 class LoginScreen extends Component
@@ -31,7 +30,7 @@ class LoginScreen extends Component
     render()
     {
         let versionSuffix = ""
-        switch(ids.url){
+        switch(this.props.serverUrl){
             case "https://api.internal.braincloudservers.com":
                 versionSuffix = " - internal"
                 break

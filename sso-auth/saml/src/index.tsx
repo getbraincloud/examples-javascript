@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 
 import bc from "@braincloud/client";
+import "./braincloud.config.js"; // npx @braincloud/client setup
 
 // Augment the global Window type with properties for the brainCloud wrapper.
 declare global {
@@ -15,21 +16,11 @@ declare global {
 
 // Agument the global window object with the brainCloud wrapper.
 window._bcInit = () => {
-  const API_SERVER_HOST = process.env.REACT_APP_BC_API_TARGET_HOST || "";
-  const API_SERVER_PORT = process.env.REACT_APP_BC_API_TARGET_PORT || "";
-  const API_SERVER_URL = `https://${API_SERVER_HOST}:${API_SERVER_PORT}`;
-
-  const APP_ID = process.env.REACT_APP_BC_APP_ID || "";
-  const APP_SECRET = process.env.REACT_APP_BC_APP_SECRET || "";
-  const APP_VERSION = process.env.REACT_APP_BC_APP_VERSION || "";
-
   window._bc = new bc.BrainCloudWrapper();
 
   console.log("Initializing brainCloud");
 
-  window._bc.initialize(APP_ID, APP_SECRET, APP_VERSION);
-
-  window._bc.brainCloudClient.setServerUrl(API_SERVER_URL);
+  window._bc.init();
 }
 
 // Initialize the brainCloud wrapper.
