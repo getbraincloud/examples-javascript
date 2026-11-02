@@ -162,8 +162,14 @@
 
 		.bc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 13px; }
 		.bc-field input[type="text"] { margin-left: 0; min-width: 0; width: 100%; box-sizing: border-box; }
+		.bc-filename { display: flex; align-items: center; gap: 4px; }
+		.bc-filename input[type="text"] { flex: 1; }
+		#cloudFileExt { color: var(--bc-dark-text); opacity: .7; white-space: nowrap; }
 		.bc-check { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px; }
 		.bc-check input[type="checkbox"] { margin-left: 0; }
+		input[type="radio"] { accent-color: var(--bc-accent); margin: 0; }
+		input[type="button"]:disabled, input[type="button"]:disabled:hover { opacity: .35; cursor: not-allowed; }
+		input:disabled { opacity: .5; }
 
 		.bc-actions { display: flex; flex-direction: column; gap: 10px; }
 		.bc-action-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -227,10 +233,12 @@
 		document.getElementById("password").value = "TEST_PASSWORD";
 
 		document.getElementById("cloudPath").value = "images";
-		document.getElementById("cloudFileName").value = "logo.png";
+		document.getElementById("cloudFileBase").value = "";
 		document.getElementById("fileInMemoryContent").value = "Hello World!";
 		document.getElementById("isShareable").checked = true;
 		document.getElementById("replaceIfExists").checked = true;
+		// Browsers can restore the picked file on reload without firing onchange.
+		fileSelected();
 
 
 		document.getElementById("incomingResponse").innerHTML = "no response";
@@ -266,7 +274,7 @@
 			"/f/" +
 			document.getElementById("cloudPath").value +
 			"/" +
-			document.getElementById("cloudFileName").value;
+			cloudFileName();
 	}
 
 
@@ -307,9 +315,79 @@
 			document.getElementById('fileName').innerHTML = 'Name: ' + file.name;
 			document.getElementById('fileSize').innerHTML = 'Size: ' + fileSize;
 			document.getElementById('fileType').innerHTML = 'Type: ' + file.type;
+
+			document.getElementById('cloudFileBase').value = baseName(file.name);
 		}
+		refreshUploadSource();
 	}
-	
+
+	// In-memory copy of the selected file; null = memory content is the text field.
+	var memoryCopy = null;
+
+	function selectedFile() {
+		return document.getElementById('fileToUpload').files[0];
+	}
+
+	function isMemoryMode() {
+		return document.getElementById('modeMemory').checked;
+	}
+
+	function extensionOf(name) {
+		var m = /\.[^./]*$/.exec(name);
+		return m ? m[0] : "";
+	}
+
+	function baseName(name) {
+		return name.slice(0, name.length - extensionOf(name).length);
+	}
+
+	// Extension follows the content, so only the base name is editable.
+	function cloudFileName() {
+		return document.getElementById('cloudFileBase').value + document.getElementById('cloudFileExt').innerHTML;
+	}
+
+	function copyFromSelectedFile() {
+		var file = selectedFile();
+		if (!file) return;
+		var reader = new FileReader();
+		reader.onload = function() {
+			memoryCopy = { name: file.name, blob: new Blob([reader.result], {type: file.type}) };
+			document.getElementById('cloudFileBase').value = baseName(file.name);
+			refreshUploadSource();
+		};
+		reader.readAsArrayBuffer(file);
+	}
+
+	function memoryTextEdited() {
+		memoryCopy = null;
+		refreshUploadSource();
+	}
+
+	// Upload mode toggle: greys out the other mode's actions and locks the extension to the content.
+	function refreshUploadSource() {
+		var memory = isMemoryMode();
+		var file = selectedFile();
+
+		var ext = "";
+		if (memory) ext = memoryCopy ? extensionOf(memoryCopy.name) : ".txt";
+		else if (file) ext = extensionOf(file.name);
+		document.getElementById('cloudFileExt').innerHTML = ext;
+
+		document.getElementById('fileInMemoryContent').disabled = !memory;
+		document.getElementById('btnCopyFromFile').disabled = !memory || !file;
+		document.getElementById('memoryStatus').innerHTML = !memory ? "" :
+			memoryCopy ? "Memory holds a copy of " + memoryCopy.name + " (" + (memoryCopy.blob.type || "unknown type") + ")" :
+			"Memory holds the text above (text/plain)";
+
+		document.getElementById('btnUploadFile').disabled = memory || !file;
+		document.getElementById('btnUploadFromMemory').disabled = !memory;
+
+		var hint = document.getElementById('uploadSourceHint');
+		if (memory) hint.innerHTML = "Upload From Memory mode: " + (memoryCopy ? "sending a copy of " + memoryCopy.name + "." : "sending the in-memory text.");
+		else if (!file) hint.innerHTML = "Select a file in Step 2 to enable Upload File.";
+		else hint.innerHTML = "Upload File mode: sending " + file.name + ".";
+	}
+
 	function updateProgress(progress) {
 		progress = progress >= 0 ? (progress <= 100 ? progress : 100) : 0;
 		document.getElementById('progress').innerHTML = "Progress: " + progress + "%";
@@ -354,6 +432,7 @@
 		if(file === undefined) {
 			console.log("Please select a file in Step 2. to upload.");
 			document.getElementById("incomingResponse").innerHTML = "Error uploading file. Please select a file in Step 2. to upload. ";
+			return;
 		}
 
 		var fileSize = file.size;
@@ -365,7 +444,7 @@
 
 
 		brainCloud.file.prepareUserUpload(
-			document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value, document.getElementById("isShareable").checked, document.getElementById("replaceIfExists").checked, fileSize,
+			document.getElementById("cloudPath").value, cloudFileName(), document.getElementById("isShareable").checked, document.getElementById("replaceIfExists").checked, fileSize,
 			function(result) {
 				if (brainCloud.isSuccess(result)) {
 					var uploadId = result.data.fileDetails.uploadId;
@@ -381,15 +460,22 @@
 	}
 
 	function uploadFileFromMemory() {
-		
+		var blob = memoryCopy ? memoryCopy.blob :
+			new Blob([document.getElementById("fileInMemoryContent").value], {type: 'text/plain'});
+
 		brainCloud.file.uploadFileFromMemory(
-			document.getElementById("cloudPath").value, 
-			document.getElementById("cloudFileName").value, 
-			document.getElementById("isShareable").checked, 
-			document.getElementById("replaceIfExists").checked, 
-			new Blob([document.getElementById("fileInMemoryContent").value], {type: 'text/plain'}),
+			document.getElementById("cloudPath").value,
+			cloudFileName(),
+			document.getElementById("isShareable").checked,
+			document.getElementById("replaceIfExists").checked,
+			blob,
 			function(result) {
 				document.getElementById("incomingResponse").innerHTML = "uploadFileFromMemory: " + JSON.stringify(result, null, 2);
+				if (brainCloud.isSuccess(result)) {
+					var path = getFullPath();
+					document.getElementById('downloadLink').innerHTML = path;
+					if (/^image\//.test(blob.type)) document.getElementById('downloadImage').src = path;
+				}
 			}
 		);
 	}
@@ -411,7 +497,7 @@
 	}
 
 	function getCdnUrl() {
-		brainCloud.file.getCDNUrl(document.getElementById("cloudPath").value, document.getElementById("cloudFileName").value,
+		brainCloud.file.getCDNUrl(document.getElementById("cloudPath").value, cloudFileName(),
 			function(result) {
 				document.getElementById("incomingResponse").innerHTML = "getCdnUrl: " + JSON.stringify(result, null, 2);
 			}
@@ -505,20 +591,28 @@
 		<div class="bc-grid">
 			<div class="bc-panel">
 				<h2>Select File</h2>
-				<p class="bc-hint">Choose a file to upload, or supply in-memory content.</p>
+				<p class="bc-hint">Choose a file, then pick how it's uploaded.</p>
 				<form action="Upload.aspx" enctype="multipart/form-data" method="post">
 					<input type="file" name="fileToUpload" id="fileToUpload" onchange="fileSelected();" />
 					<div id="fileName"></div>
 					<div id="fileSize"></div>
 					<div id="fileType"></div>
-					<label class="bc-field" style="margin-top:14px;">File In Memory Content <input type="text" id="fileInMemoryContent" /></label>
+					<div style="margin-top:14px;">
+						<label class="bc-check"><input type="radio" name="uploadMode" id="modeFile" checked onchange="refreshUploadSource();" /> Upload File</label>
+						<label class="bc-check"><input type="radio" name="uploadMode" id="modeMemory" onchange="refreshUploadSource();" /> Upload From Memory</label>
+					</div>
+					<label class="bc-field">File In Memory Content <input type="text" id="fileInMemoryContent" oninput="memoryTextEdited();" /></label>
+					<input type="button" id="btnCopyFromFile" onclick="copyFromSelectedFile()" value="Copy From Selected File" />
+					<div id="memoryStatus" class="bc-hint"></div>
 				</form>
 			</div>
 			<div class="bc-panel">
 				<h2>Upload Information</h2>
 				<p class="bc-hint">Where the file lands and how it's stored.</p>
 				<label class="bc-field">Cloud Path <input type="text" id="cloudPath" /></label>
-				<label class="bc-field">Cloud File Name <input type="text" id="cloudFileName" /></label>
+				<label class="bc-field">Cloud File Name
+					<span class="bc-filename"><input type="text" id="cloudFileBase" /><span id="cloudFileExt"></span></span>
+				</label>
 				<label class="bc-check"><input type="checkbox" id="isShareable" /> Is Shareable</label>
 				<label class="bc-check"><input type="checkbox" id="replaceIfExists" /> Replace If Exists</label>
 			</div>
@@ -531,9 +625,10 @@
 			<div class="bc-panel">
 				<h2>Actions</h2>
 				<p class="bc-hint">Upload the file or run a different file action.</p>
+				<p class="bc-hint" id="uploadSourceHint"></p>
 				<div class="bc-actions">
-					<div class="bc-action-row"><input type="button" class="bc-primary" onclick="uploadFile()" value="Upload File" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfile">DocLink</a></div>
-					<div class="bc-action-row"><input type="button" onclick="uploadFileFromMemory()" value="Upload File From Memory" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfilefrommemory">DocLink</a></div>
+					<div class="bc-action-row"><input type="button" class="bc-primary" id="btnUploadFile" onclick="uploadFile()" value="Upload File" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfile">DocLink</a></div>
+					<div class="bc-action-row"><input type="button" id="btnUploadFromMemory" onclick="uploadFileFromMemory()" value="Upload File From Memory" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-uploadfilefrommemory">DocLink</a></div>
 					<div class="bc-action-row"><input type="button" onclick="listUserFiles()" value="List User Files" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-listuserfiles">DocLink</a></div>
 					<div class="bc-action-row"><input type="button" onclick="deleteUserFile()" value="Delete User File" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-deleteuserfile">DocLink</a></div>
 					<div class="bc-action-row"><input type="button" onclick="getCdnUrl()" value="Get CDN URL" /> <a href="http://getbraincloud.com/apidocs/apiref/#capi-file-getcdnurl">DocLink</a></div>
