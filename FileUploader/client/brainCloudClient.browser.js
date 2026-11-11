@@ -17856,7 +17856,7 @@ var brainCloud = (() => {
           bcc.brainCloudRttComms.brainCloudClient = bcc;
           bcc.brainCloudRelayComms.brainCloudClient = bcc;
         }
-        bcc.version = "6.1.0";
+        bcc.version = "6.1.1";
         bcc.countryCode;
         bcc.languageCode;
         bcc.enableCompression = function(compressionEnabled) {
@@ -18831,6 +18831,10 @@ var brainCloud = (() => {
           var cfg = root[tag];
           if (!cfg || typeof cfg.appProfile !== "function") {
             console.log("ERROR | brainCloud init(): no braincloud.config.js loaded. Run `npx @braincloud/client setup` and import it. " + SETUP_DOCS);
+            return false;
+          }
+          if (typeof cfg.ready === "function" && !cfg.ready()) {
+            console.log("ERROR | brainCloud init(): braincloud.config.js could not be read. Re-run `npx @braincloud/client setup`. " + SETUP_DOCS);
             return false;
           }
           if (cfg.appProfiles && Object.keys(cfg.appProfiles).length > 1) {

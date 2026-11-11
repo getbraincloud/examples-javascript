@@ -1,2 +1,4 @@
 .vscode
 node_modules/
+# S2S server ids (restored by bccm generate from data/rsm_ids_<env>.js)
+Scripts/ids.js
